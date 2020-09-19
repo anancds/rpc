@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.17)
 project(rpc)
 
 set(CMAKE_CXX_STANDARD 11)
+SET(GCC_COVERAGE_LINK_FLAGS    "-lboost_ program_options")
 
 find_package(PkgConfig)
 find_package(nlohmann_json REQUIRED
@@ -22,8 +23,8 @@ find_library(ZeroMQ_LIBRARY
 
 add_executable(server hwserver.cpp zhelpers.hpp BenchmarkLogger.hpp)
 
-target_link_libraries(server "${ZMQ_LIBRARIES}")
+target_link_libraries(server "${ZMQ_LIBRARIES}" ${Boost_LIBRARIES})
 
 add_executable(client hwclient.cpp)
 
-target_link_libraries(client "${ZMQ_LIBRARIES}")
+target_link_libraries(client "${ZMQ_LIBRARIES}" ${Boost_LIBRARIES})
