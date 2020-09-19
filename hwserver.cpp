@@ -17,6 +17,7 @@
 #include "zhelpers.hpp"
 #include "nlohmann/json.hpp"
 #include "BenchmarkLogger.hpp"
+
 using namespace std;
 using namespace std::chrono;
 using json = nlohmann::json;
@@ -59,9 +60,9 @@ int main() {
 //                    microsecLatency);
 //        }
 
-        zmq::message_t reply (0);
-        memcpy (reply.data (), "", 0);
-        socket.send (reply);
+        zmq::message_t reply(0);
+        memcpy(reply.data(), "", 0);
+        socket.send(reply);
     }
     return 0;
 }
