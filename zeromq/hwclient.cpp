@@ -45,8 +45,8 @@ void sendData() {
     std::string data(Config::payloadSize, 'a');
 
     std::size_t request_nbr = 0;
+    std::chrono::time_point<std::chrono::high_resolution_clock> executionStartTime = chrono::high_resolution_clock::now();
     while (true) {
-        std::chrono::time_point<std::chrono::high_resolution_clock> executionStartTime = chrono::high_resolution_clock::now();
 
         if ((chrono::duration_cast<chrono::seconds>(
                 chrono::high_resolution_clock::now() - executionStartTime)).count() > Config::executionTime) {
@@ -59,7 +59,6 @@ void sendData() {
         memcpy(request.data(), data.c_str(), Config::payloadSize);
         std::cout << "Sending Hello " << request_nbr << "..." << std::endl;
         socket.send(request);
-
 
 
         //  Get the reply.
@@ -82,9 +81,9 @@ int main(int argc, char *argv[]) {
             ("msgLength", boost::program_options::value(&Config::payloadSize)->default_value(100),
              "Message Length (bytes)")
             ("executionTime", boost::program_options::value(&Config::executionTime)->default_value(10),
-             "Benchmark Execution Time (sec)"),
+             "Benchmark Execution Time (sec)")
             ("threads", boost::program_options::value(&Config::threads)->default_value(
-                    1), "Number of threads per client"),
+                    1), "Number of threads per client")
             ("clients", boost::program_options::value(&Config::clients)->default_value(1), "Number of clients");
     boost::program_options::variables_map vm;
 
@@ -105,6 +104,13 @@ int main(int argc, char *argv[]) {
 
     thread clientThread[Config::threads];
 
+    for (std::size_t i = 0; i < Config::threads; i++) {
+        clientThread[i] = thread(sendData);
+    }
+
+    for (std::size_t i = 0; i < Config::threads; i++) {
+        clientThread[i].join();
+    }
 
 
     return 0;
