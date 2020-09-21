@@ -1,28 +1,10 @@
-/*
- *
- * Copyright 2015 gRPC authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
-
-#include <memory>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <thread>
 
-#include <grpcpp/grpcpp.h>
 #include <grpc/support/log.h>
+#include <grpcpp/grpcpp.h>
 
 #ifdef BAZEL_BUILD
 #include "examples/protos/helloworld.grpc.pb.h"
@@ -33,12 +15,12 @@
 using grpc::Server;
 using grpc::ServerAsyncResponseWriter;
 using grpc::ServerBuilder;
-using grpc::ServerContext;
 using grpc::ServerCompletionQueue;
+using grpc::ServerContext;
 using grpc::Status;
-using helloworld::HelloRequest;
-using helloworld::HelloReply;
 using helloworld::Greeter;
+using helloworld::HelloReply;
+using helloworld::HelloRequest;
 
 class ServerImpl final {
  public:
@@ -76,7 +58,7 @@ class ServerImpl final {
     // Take in the "service" instance (in this case representing an asynchronous
     // server) and the completion queue "cq" used for asynchronous communication
     // with the gRPC runtime.
-    CallData(Greeter::AsyncService* service, ServerCompletionQueue* cq)
+    CallData(Greeter::AsyncService *service, ServerCompletionQueue *cq)
         : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE) {
       // Invoke the serving logic right away.
       Proceed();
@@ -92,8 +74,7 @@ class ServerImpl final {
         // the tag uniquely identifying the request (so that different CallData
         // instances can serve different requests concurrently), in this case
         // the memory address of this CallData instance.
-        service_->RequestSayHello(&ctx_, &request_, &responder_, cq_, cq_,
-                                  this);
+        service_->RequestSayHello(&ctx_, &request_, &responder_, cq_, cq_, this);
       } else if (status_ == PROCESS) {
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as
@@ -119,9 +100,9 @@ class ServerImpl final {
    private:
     // The means of communication with the gRPC runtime for an asynchronous
     // server.
-    Greeter::AsyncService* service_;
+    Greeter::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
-    ServerCompletionQueue* cq_;
+    ServerCompletionQueue *cq_;
     // Context for the rpc, allowing to tweak aspects of it such as the use
     // of compression, authentication, as well as to send metadata back to the
     // client.
@@ -144,7 +125,7 @@ class ServerImpl final {
   void HandleRpcs() {
     // Spawn a new CallData instance to serve new clients.
     new CallData(&service_, cq_.get());
-    void* tag;  // uniquely identifies a request.
+    void *tag;  // uniquely identifies a request.
     bool ok;
     while (true) {
       // Block waiting to read the next event from the completion queue. The
@@ -154,7 +135,7 @@ class ServerImpl final {
       // tells us whether there is any kind of event or cq_ is shutting down.
       GPR_ASSERT(cq_->Next(&tag, &ok));
       GPR_ASSERT(ok);
-      static_cast<CallData*>(tag)->Proceed();
+      static_cast<CallData *>(tag)->Proceed();
     }
   }
 
@@ -163,7 +144,7 @@ class ServerImpl final {
   std::unique_ptr<Server> server_;
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   ServerImpl server;
   server.Run();
 
