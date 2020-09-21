@@ -41,7 +41,7 @@ uint64_t Config::payloadSize;
 int64_t Config::executionTime;
 int Config::clients;
 int Config::threads;
-std::atomic_int64_t num;
+std::atomic_int64_t throughput = {0};
 
 class GreeterClient {
  public:
@@ -77,35 +77,39 @@ class GreeterClient {
   std::unique_ptr<Greeter::Stub> stub_;
 };
 
-void sendData() {
+void sendData(int i) {
   GreeterClient greeter(grpc::CreateChannel(Config::gRPCEndpoint, grpc::InsecureChannelCredentials()));
 
   std::size_t request_nbr = 0;
   std::chrono::time_point<std::chrono::high_resolution_clock> executionStartTime = chrono::high_resolution_clock::now();
+  std::string user(Config::payloadSize, 'a');
+  float latency = 0.0f;
   while (true) {
     if ((chrono::duration_cast<chrono::seconds>(chrono::high_resolution_clock::now() - executionStartTime)).count() >
         Config::executionTime) {
+      cout << "thread" << i << ":the throughput is: " << request_nbr / Config::executionTime << endl;
+      cout << "thread" << i << ":the latency is: " << latency / request_nbr << " milliseconds" << endl;
       break;
     }
+    throughput++;
     request_nbr++;
-    std::string user(Config::payloadSize, 'a');
+    std::chrono::time_point<std::chrono::high_resolution_clock> startTime = chrono::high_resolution_clock::now();
     std::string reply = greeter.SayHello(user);
-    std::cout << "Greeter received: " << reply << std::endl;
 
     chrono::duration<double, std::ratio<1, 1000>> duration_ms =
       chrono::duration_cast<chrono::duration<double, std::ratio<1, 1000>>>(chrono::high_resolution_clock::now() -
-                                                                           executionStartTime);
-    std::cout << duration_ms.count() << " milliseconds" << std::endl;
+                                                                           startTime);
+    latency += duration_ms.count();
   }
 }
 
 int main(int argc, char **argv) {
   boost::program_options::options_description description("Options");
   description.add_options()("help", "produce help message")(
-    "gRPC_srver", boost::program_options::value(&Config::gRPCEndpoint)->default_value("tcp://localhost:50051"),
-    "Publish endpoint (e.g. tcp://localhost:50051")(
+    "gRPC_srver", boost::program_options::value(&Config::gRPCEndpoint)->default_value("localhost:50051"),
+    "Publish endpoint (e.g. localhost:50051")(
     "pubUniqueName", boost::program_options::value(&Config::reqUniqueName)->default_value("req1"), "req Unique Name")(
-    "msgLength", boost::program_options::value(&Config::payloadSize)->default_value(100), "Message Length (bytes)")(
+    "msgLength", boost::program_options::value(&Config::payloadSize)->default_value(100000), "Message Length (bytes)")(
     "executionTime", boost::program_options::value(&Config::executionTime)->default_value(10),
     "Benchmark Execution Time (sec)")("threads", boost::program_options::value(&Config::threads)->default_value(1),
                                       "Number of threads per client")(
@@ -125,13 +129,13 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
   }
 
-  std::thread clientThread[Config::threads];
+  std::thread clientThread[Config::clients];
 
-  for (std::size_t i = 0; i < Config::threads; i++) {
-    clientThread[i] = std::thread(sendData);
+  for (std::size_t i = 0; i < Config::clients; i++) {
+    clientThread[i] = std::thread(sendData, i);
   }
 
-  for (std::size_t i = 0; i < Config::threads; i++) {
+  for (std::size_t i = 0; i < Config::clients; i++) {
     clientThread[i].join();
   }
 
