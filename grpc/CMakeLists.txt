@@ -5,9 +5,9 @@ find_package(Threads REQUIRED)
 
 #find_package(protobuf REQUIRED)
 set(protobuf_MODULE_COMPATIBLE TRUE)
-find_package(Protobuf CONFIG REQUIRED)
+find_package(Protobuf REQUIRED)
 set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
-set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
+set(_PROTOBUF_PROTOC protobuf::protoc)
 message(STATUS "Using protobuf ${protobuf_VERSION}")
 
 find_package(gRPC CONFIG REQUIRED)
@@ -38,6 +38,14 @@ get_filename_component(hw_proto_path "${hw_proto}" PATH)
 # Include generated *.pb.h files
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
+## Find gRPC CPP generator
+#find_program(GRPC_CPP_PLUGIN NAMES grpc_cpp_plugin)
+#mark_as_advanced(GRPC_CPP_PLUGIN)
+#add_executable(gRPC::grpc_cpp_plugin IMPORTED)
+#set_target_properties(gRPC::grpc_cpp_plugin PROPERTIES
+#    IMPORTED_LOCATION ${GRPC_CPP_PLUGIN}
+#)
+
 
 # Generated sources
 set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.pb.cc")
@@ -45,6 +53,8 @@ set(hw_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.pb.h")
 set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.grpc.pb.cc")
 set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.grpc.pb.h")
 message(STATUS "bin: ${CMAKE_CURRENT_BINARY_DIR}")
+message(STATUS "protoc: ${_PROTOBUF_PROTOC}")
+message(STATUS "path: ${hw_proto_path}")
 add_custom_command(
         OUTPUT "${hw_proto_srcs}" "${hw_proto_hdrs}" "${hw_grpc_srcs}" "${hw_grpc_hdrs}"
         COMMAND ${_PROTOBUF_PROTOC}
@@ -53,7 +63,7 @@ add_custom_command(
         -I "${hw_proto_path}"
         --plugin=protoc-gen-grpc="/usr/local/bin/grpc_cpp_plugin"
         "${hw_proto}"
-        DEPENDS "${hw_proto}")
+        DEPENDS "${hw_proto}" protobuf::protoc gRPC::grpc_cpp_plugin)
 
 # Include generated *.pb.h files
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
@@ -65,6 +75,7 @@ foreach (_target
             ${GRPC_SRCS})
     target_link_libraries(${_target}
             ${_GRPC_GRPCPP_REFLECTION}
+            ${_GRPC_GRPCPP}
             ${_PROTOBUF_LIBPROTOBUF})
 endforeach ()
 
