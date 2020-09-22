@@ -4,7 +4,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 SET(GCC_COVERAGE_LINK_FLAGS "-lboost_ program_options")
 
-find_package(Threads REQUIRED)
+#find_package(Threads REQUIRED)
 option(LINK_SO "Whether examples are linked dynamically" OFF)
 
 execute_process(
@@ -15,7 +15,11 @@ execute_process(
 set(CMAKE_PREFIX_PATH ${OUTPUT_PATH})
 
 include(FindThreads)
-include(FindProtobuf)
+set(protobuf_MODULE_COMPATIBLE TRUE)
+find_package(Protobuf CONFIG REQUIRED)
+message(STATUS "Using protobuf ${protobuf_VERSION}")
+
+set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
 protobuf_generate_cpp(PROTO_SRC PROTO_HEADER ../protos/echo.proto)
 # include PROTO_HEADER
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -36,7 +40,7 @@ if(LINK_SO)
 else()
     find_library(BRPC_LIB NAMES libbrpc.a brpc)
 endif()
-message(STATUS "brpc:${BRPC_LIB}")
+message(STATUS "BRPC_LIB:${BRPC_LIB}")
 if((NOT BRPC_INCLUDE_PATH) OR (NOT BRPC_LIB))
     message(FATAL_ERROR "Fail to find brpc")
 endif()
@@ -110,19 +114,8 @@ set(DYNAMIC_LIB
         dl
         )
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set(DYNAMIC_LIB ${DYNAMIC_LIB}
-            pthread
-            "-framework CoreFoundation"
-            "-framework CoreGraphics"
-            "-framework CoreData"
-            "-framework CoreText"
-            "-framework Security"
-            "-framework Foundation"
-            "-Wl,-U,_MallocExtension_ReleaseFreeMemory"
-            "-Wl,-U,_ProfilerStart"
-            "-Wl,-U,_ProfilerStop")
-endif()
-
-target_link_libraries(echo_client ${BRPC_LIB} ${DYNAMIC_LIB})
-target_link_libraries(echo_server ${BRPC_LIB} ${DYNAMIC_LIB})
+message(STATUS "DYNAMIC_LIB: ${DYNAMIC_LIB}")
+#现在是写死的，后面需要看一下
+set(DYNAMIC_LIB "-lpthread;/usr/lib/x86_64-linux-gnu/libgflags.so;/usr/lib/libprotobuf.so;-lpthread;/usr/lib/x86_64-linux-gnu/libleveldb.so;/usr/lib/x86_64-linux-gnu/libcrypto.so;/usr/lib/x86_64-linux-gnu/libssl.so;dl")
+target_link_libraries(echo_client ${_PROTOBUF_LIBPROTOBUF} ${BRPC_LIB} ${DYNAMIC_LIB})
+target_link_libraries(echo_server ${_PROTOBUF_LIBPROTOBUF} ${BRPC_LIB} ${DYNAMIC_LIB})
