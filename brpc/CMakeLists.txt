@@ -14,6 +14,12 @@ execute_process(
 
 set(CMAKE_PREFIX_PATH ${OUTPUT_PATH})
 
+include(FindThreads)
+include(FindProtobuf)
+protobuf_generate_cpp(PROTO_SRC PROTO_HEADER ../protos/echo.proto)
+# include PROTO_HEADER
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 find_library(THRIFT_LIB NAMES thrift)
 if (NOT THRIFT_LIB)
     set(THRIFT_LIB "")
@@ -85,11 +91,6 @@ if ((NOT LEVELDB_INCLUDE_PATH) OR (NOT LEVELDB_LIB))
 endif()
 include_directories(${LEVELDB_INCLUDE_PATH})
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set(OPENSSL_ROOT_DIR
-            "/usr/local/opt/openssl"    # Homebrew installed OpenSSL
-            )
-endif()
 message(STATUS "OPENSSL_INCLUDE_DIR:${OPENSSL_INCLUDE_DIR}")
 include_directories(${OPENSSL_INCLUDE_DIR})
 find_package(OpenSSL)

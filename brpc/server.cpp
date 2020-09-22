@@ -1,58 +1,36 @@
 #include <gflags/gflags.h>
 #include <butil/logging.h>
 #include <brpc/server.h>
-#include "echo.pb.h"
+#include <brpc/restful.h>
+#include "build/echo.pb.h"
 
-DEFINE_bool(echo_attachment, true, "Echo attachment as well");
-DEFINE_int32(port, 8000, "TCP Port of this server");
+using helloworld::Greeter;
+using helloworld::HelloReply;
+using helloworld::HelloRequest;
+
+DEFINE_int32(port, 50051, "TCP Port of this server");
 DEFINE_int32(idle_timeout_s, -1, "Connection will be closed if there is no "
                                  "read/write operations during the last `idle_timeout_s'");
 DEFINE_int32(logoff_ms, 2000, "Maximum duration of server's LOGOFF state "
                               "(waiting for client to close connection before server stops)");
+DEFINE_bool(gzip, false, "compress body using gzip");
 
-// Your implementation of example::EchoService
-// Notice that implementing brpc::Describable grants the ability to put
-// additional information in /status.
-namespace example {
-class EchoServiceImpl : public EchoService {
+class GreeterImpl : public helloworld::Greeter {
  public:
-  EchoServiceImpl() {};
-  virtual ~EchoServiceImpl() {};
-  virtual void Echo(google::protobuf::RpcController* cntl_base,
-                    const EchoRequest* request,
-                    EchoResponse* response,
-                    google::protobuf::Closure* done) {
-    // This object helps you to call done->Run() in RAII style. If you need
-    // to process the request asynchronously, pass done_guard.release().
+  GreeterImpl() {};
+  virtual ~GreeterImpl() {};
+  void SayHello(google::protobuf::RpcController* cntl_base,
+                const helloworld::HelloRequest* req,
+                helloworld::HelloReply* res,
+                google::protobuf::Closure* done) {
     brpc::ClosureGuard done_guard(done);
-
-    brpc::Controller* cntl =
-      static_cast<brpc::Controller*>(cntl_base);
-
-    // The purpose of following logs is to help you to understand
-    // how clients interact with servers more intuitively. You should
-    // remove these logs in performance-sensitive servers.
-    LOG(INFO) << "Received request[log_id=" << cntl->log_id()
-              << "] from " << cntl->remote_side()
-              << " to " << cntl->local_side()
-              << ": " << request->message()
-              << " (attached=" << cntl->request_attachment() << ")";
-
-    // Fill response.
-    response->set_message(request->message());
-
-    // You can compress the response by setting Controller, but be aware
-    // that compression may be costly, evaluate before turning on.
-    // cntl->set_response_compress_type(brpc::COMPRESS_TYPE_GZIP);
-
-    if (FLAGS_echo_attachment) {
-      // Set attachment which is wired to network directly instead of
-      // being serialized into protobuf messages.
-      cntl->response_attachment().append(cntl->request_attachment());
+    brpc::Controller* cntl = static_cast<brpc::Controller*>(cntl_base);
+    if (FLAGS_gzip) {
+      cntl->set_response_compress_type(brpc::COMPRESS_TYPE_GZIP);
     }
+    res->set_message("Hello " + req->name());
   }
 };
-}  // namespace example
 
 int main(int argc, char* argv[]) {
   // Parse gflags. We recommend you to use gflags as well.
@@ -61,15 +39,14 @@ int main(int argc, char* argv[]) {
   // Generally you only need one Server.
   brpc::Server server;
 
-  // Instance of your service.
-  example::EchoServiceImpl echo_service_impl;
+  GreeterImpl http_svc;
 
-  // Add the service into server. Notice the second parameter, because the
+  // Add services into server. Notice the second parameter, because the
   // service is put on stack, we don't want server to delete it, otherwise
   // use brpc::SERVER_OWNS_SERVICE.
-  if (server.AddService(&echo_service_impl,
+  if (server.AddService(&http_svc,
                         brpc::SERVER_DOESNT_OWN_SERVICE) != 0) {
-    LOG(ERROR) << "Fail to add service";
+    LOG(ERROR) << "Fail to add http_svc";
     return -1;
   }
 
@@ -77,7 +54,7 @@ int main(int argc, char* argv[]) {
   brpc::ServerOptions options;
   options.idle_timeout_sec = FLAGS_idle_timeout_s;
   if (server.Start(FLAGS_port, &options) != 0) {
-    LOG(ERROR) << "Fail to start EchoServer";
+    LOG(ERROR) << "Fail to start HttpServer";
     return -1;
   }
 
