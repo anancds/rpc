@@ -15,12 +15,12 @@
 
 #include <chrono>
 #include "zhelpers.hpp"
-#include "nlohmann/json.hpp"
+//#include "nlohmann/json.hpp"
 #include "BenchmarkLogger.hpp"
 
 using namespace std;
 using namespace std::chrono;
-using json = nlohmann::json;
+//using json = nlohmann::json;
 
 int main() {
     //  Prepare our context and socket

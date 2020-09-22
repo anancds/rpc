@@ -4,9 +4,9 @@ SET(GCC_COVERAGE_LINK_FLAGS "-lboost_ program_options")
 find_package(Threads REQUIRED)
 
 find_package(PkgConfig)
-find_package(nlohmann_json REQUIRED
-        CONFIG
-        PATHS "/usr/lib/cmake")
+#find_package(nlohmann_json REQUIRED
+#        CONFIG
+#        PATHS "/usr/lib/cmake")
 find_package(Boost REQUIRED)
 FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
