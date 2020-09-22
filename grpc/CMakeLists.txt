@@ -42,15 +42,6 @@ get_filename_component(hw_proto_path "${hw_proto}" PATH)
 # Include generated *.pb.h files
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
-## Find gRPC CPP generator
-#find_program(GRPC_CPP_PLUGIN NAMES grpc_cpp_plugin)
-#mark_as_advanced(GRPC_CPP_PLUGIN)
-#add_executable(gRPC::grpc_cpp_plugin IMPORTED)
-#set_target_properties(gRPC::grpc_cpp_plugin PROPERTIES
-#    IMPORTED_LOCATION ${GRPC_CPP_PLUGIN}
-#)
-
-
 # Generated sources
 set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.pb.cc")
 set(hw_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.pb.h")

@@ -76,11 +76,11 @@ int main(int argc, char *argv[]) {
     "PubEP", boost::program_options::value(&Config::repEndpoint)->default_value("tcp://localhost:5555"),
     "Publish endpoint (e.g. tcp://*:4242")(
     "pubUniqueName", boost::program_options::value(&Config::reqUniqueName)->default_value("req1"), "req Unique Name")(
-    "msgLength", boost::program_options::value(&Config::payloadSize)->default_value(100000), "Message Length (bytes)")(
+    "msgLength", boost::program_options::value(&Config::payloadSize)->default_value(100), "Message Length (bytes)")(
     "executionTime", boost::program_options::value(&Config::executionTime)->default_value(10),
     "Benchmark Execution Time (sec)")("threads", boost::program_options::value(&Config::threads)->default_value(1),
                                       "Number of threads per client")(
-    "clients", boost::program_options::value(&Config::clients)->default_value(1), "Number of clients");
+    "clients", boost::program_options::value(&Config::clients)->default_value(100), "Number of clients");
   boost::program_options::variables_map vm;
 
   try {

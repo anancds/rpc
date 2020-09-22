@@ -36,7 +36,6 @@ int main() {
 
 
         auto msg = std::string(static_cast<char *>(message.data()), message.size());
-        cout << msg << endl;
 //        std::vector<float> *v1 = static_cast<std::vector<float>*>(message.data());
 //         cout << (*v1).size() << endl;
         //char *msg = static_cast<char*>(message.data());
