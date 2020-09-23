@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
     "gRPC_srver", boost::program_options::value(&Config::gRPCEndpoint)->default_value("localhost:50051"),
     "Publish endpoint (e.g. localhost:50051")(
     "pubUniqueName", boost::program_options::value(&Config::reqUniqueName)->default_value("req1"), "req Unique Name")(
-    "msgLength", boost::program_options::value(&Config::payloadSize)->default_value(100),
+    "msgLength", boost::program_options::value(&Config::payloadSize)->default_value(100000),
     "Message Length (bytes)")("executionTime", boost::program_options::value(&Config::executionTime)->default_value(10),
                               "Benchmark Execution Time (sec)")(
     "threads", boost::program_options::value(&Config::threads)->default_value(1), "Number of threads per client")(
