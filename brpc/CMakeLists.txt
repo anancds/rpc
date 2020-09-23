@@ -4,6 +4,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 SET(GCC_COVERAGE_LINK_FLAGS "-lboost_ program_options")
 
+find_package(Threads REQUIRED)
+
+find_package(PkgConfig)
+find_package(Boost REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
+INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+
 #find_package(Threads REQUIRED)
 option(LINK_SO "Whether examples are linked dynamically" OFF)
 
@@ -117,5 +124,5 @@ set(DYNAMIC_LIB
 message(STATUS "DYNAMIC_LIB: ${DYNAMIC_LIB}")
 #现在是写死的，后面需要看一下
 set(DYNAMIC_LIB "-lpthread;/usr/lib/x86_64-linux-gnu/libgflags.so;/usr/lib/libprotobuf.so;-lpthread;/usr/lib/x86_64-linux-gnu/libleveldb.so;/usr/lib/x86_64-linux-gnu/libcrypto.so;/usr/lib/x86_64-linux-gnu/libssl.so;dl")
-target_link_libraries(echo_client ${_PROTOBUF_LIBPROTOBUF} ${BRPC_LIB} ${DYNAMIC_LIB})
-target_link_libraries(echo_server ${_PROTOBUF_LIBPROTOBUF} ${BRPC_LIB} ${DYNAMIC_LIB})
+target_link_libraries(echo_client ${_PROTOBUF_LIBPROTOBUF} ${BRPC_LIB} ${DYNAMIC_LIB} ${Boost_LIBRARIES})
+target_link_libraries(echo_server ${_PROTOBUF_LIBPROTOBUF} ${BRPC_LIB} ${DYNAMIC_LIB} ${Boost_LIBRARIES})
