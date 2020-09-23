@@ -22,19 +22,14 @@ int tcp_connect_server(const char* server_ip, int port);
 
 
 void cmd_msg_cb(int fd, short events, void* arg);
+void custom_msg_cb(int fd, short events, void* arg);
 void socket_read_cb(int fd, short events, void *arg);
 
 int main(int argc, char** argv)
 {
-  if( argc < 3 )
-  {
-    printf("please input 2 parameter\n");
-    return -1;
-  }
-
 
   //两个参数依次是服务器端的IP地址、端口号
-  int sockfd = tcp_connect_server(argv[1], atoi(argv[2]));
+  int sockfd = tcp_connect_server("127.0.0.1", 9999);
   if( sockfd == -1)
   {
     perror("tcp_connect error ");
@@ -85,6 +80,24 @@ void cmd_msg_cb(int fd, short events, void* arg)
   //把终端的消息发送给服务器端
   //为了简单起见，不考虑写一半数据的情况
   write(sockfd, msg, ret);
+}
+
+void custom_msg_cb(int fd, short events, void* arg)
+{
+  char msg[1024];
+
+ char *data = new char[1024];
+ for (size_t i = 0; i < 1024; i++) {
+   data[i] = 'a';
+ }
+
+  int sockfd = *((int*)arg);
+
+  //把终端的消息发送给服务器端
+  //为了简单起见，不考虑写一半数据的情况
+  while (true) {
+    write(sockfd, data, 1024);
+  }
 }
 
 
