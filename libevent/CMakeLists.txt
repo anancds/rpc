@@ -25,3 +25,11 @@ add_executable(server3 server3.cpp)
 
 target_link_libraries(server3 event event_core Threads::Threads)
 
+add_executable(client4 client4.cpp)
+
+target_link_libraries(client4 event event_core Threads::Threads)
+
+add_executable(server4 server4.cpp)
+
+target_link_libraries(server4 event event_core Threads::Threads)
+
