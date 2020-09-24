@@ -49,15 +49,15 @@ int main(int argc, char* argv[])
 {
   try
   {
-    if (argc != 2)
-    {
-      std::cerr << "Usage: blocking_tcp_echo_server <port>\n";
-      return 1;
-    }
+//    if (argc != 2)
+//    {
+//      std::cerr << "Usage: blocking_tcp_echo_server <port>\n";
+//      return 1;
+//    }
 
     boost::asio::io_context io_context;
 
-    server(io_context, std::atoi(argv[1]));
+    server(io_context, 9999);
   }
   catch (std::exception& e)
   {

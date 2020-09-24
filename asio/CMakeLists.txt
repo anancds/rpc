@@ -13,3 +13,8 @@ target_link_libraries(asioserver ${Boost_LIBRARIES} Threads::Threads)
 add_executable(asioclient asioclient.cpp)
 
 target_link_libraries(asioclient ${Boost_LIBRARIES} Threads::Threads)
+
+add_executable(async_server async_tcp_echo_server.cpp)
+
+target_link_libraries(async_server ${Boost_LIBRARIES} Threads::Threads)
+
