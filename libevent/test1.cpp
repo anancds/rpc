@@ -1,20 +1,20 @@
 //
 // Created by cds on 2020/9/23.
 //
-#include <string.h>
-#include <errno.h>
-#include <stdio.h>
-#include <signal.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <signal.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/socket.h>
 
 // 引入libevent 2.x相关的头文件
-#include <event2/bufferevent.h>
 #include <event2/buffer.h>
+#include <event2/bufferevent.h>
+#include <event2/event.h>
 #include <event2/listener.h>
 #include <event2/util.h>
-#include <event2/event.h>
 
 // 定义字符串常量，将会回应给Client用
 static const char MESSAGE[] = "Hello, World!\n";
@@ -23,22 +23,19 @@ static const char MESSAGE[] = "Hello, World!\n";
 static const int PORT = 9995;
 
 // 定义几个event callback的prototype（原型）
-static void listener_cb(struct evconnlistener * , evutil_socket_t,
-                        struct sockaddr * , int socklen, void * );
-static void conn_writecb(struct bufferevent * , void * );
-static void conn_eventcb(struct bufferevent * , short, void * );
-static void signal_cb(evutil_socket_t, short, void * );
+static void listener_cb(struct evconnlistener *, evutil_socket_t, struct sockaddr *, int socklen, void *);
+static void conn_writecb(struct bufferevent *, void *);
+static void conn_eventcb(struct bufferevent *, short, void *);
+static void signal_cb(evutil_socket_t, short, void *);
 
 // 定义标准的main函数
-int
-main(int argc, char ** argv)
-{
+int main(int argc, char **argv) {
   // event_base是整个event循环必要的结构体
-  struct event_base * base;
+  struct event_base *base;
   // libevent的高级API专为监听的FD使用
-  struct evconnlistener * listener;
+  struct evconnlistener *listener;
   // 信号处理event指针
-  struct event * signal_event;
+  struct event *signal_event;
   // 保存监听地址和端口的结构体
   struct sockaddr_in sin;
 
@@ -59,10 +56,8 @@ main(int argc, char ** argv)
 
   // bind在上面制定的IP和端口，同时初始化listen的事件循环和callback：listener_cb
   // 并把listener的事件循环注册在event_base：base上
-  listener = evconnlistener_new_bind(base, listener_cb, (void * )base,
-                                     LEV_OPT_REUSEABLE|LEV_OPT_CLOSE_ON_FREE, -1,
-                                     (struct sockaddr*)&sin,
-                                     sizeof(sin));
+  listener = evconnlistener_new_bind(base, listener_cb, (void *)base, LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, -1,
+                                     (struct sockaddr *)&sin, sizeof(sin));
 
   if (!listener) {
     // 如果发生任何错误，向stderr（标准错误输出）打一条日志，退出
@@ -71,10 +66,10 @@ main(int argc, char ** argv)
   }
 
   // 初始化信号处理event
-  signal_event = evsignal_new(base, SIGINT, signal_cb, (void * )base);
+  signal_event = evsignal_new(base, SIGINT, signal_cb, (void *)base);
 
   // 把这个callback放入base中
-  if (!signal_event || event_add(signal_event, NULL)<0) {
+  if (!signal_event || event_add(signal_event, NULL) < 0) {
     fprintf(stderr, "Could not create/add a signal event!\n");
     return 1;
   }
@@ -93,12 +88,10 @@ main(int argc, char ** argv)
 }
 
 // 监听端口的event callback
-static void
-listener_cb(struct evconnlistener * listener, evutil_socket_t fd,
-            struct sockaddr * sa, int socklen, void * user_data)
-{
-  struct event_base * base = (event_base *)user_data;
-  struct bufferevent * bev;
+static void listener_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *sa, int socklen,
+                        void *user_data) {
+  struct event_base *base = (event_base *)user_data;
+  struct bufferevent *bev;
 
   // 新建一个bufferevent，设定BEV_OPT_CLOSE_ON_FREE，
   // 保证bufferevent被free的时候fd也会被关闭
@@ -119,15 +112,12 @@ listener_cb(struct evconnlistener * listener, evutil_socket_t fd,
   bufferevent_write(bev, MESSAGE, strlen(MESSAGE));
 }
 
-
 // 每次fd可写，数据非阻塞写入后，会雕也难怪conn_writecb
 // 这个函数每次检查eventbuffer的剩余大小，如果为0
 // 表示数据已经全部写完，将eventbuffer free掉
 // 由于在上面设定了BEV_OPT_CLOSE_ON_FREE，所以fd也会被关闭
-static void
-conn_writecb(struct bufferevent * bev, void * user_data)
-{
-  struct evbuffer * output = bufferevent_get_output(bev);
+static void conn_writecb(struct bufferevent *bev, void *user_data) {
+  struct evbuffer *output = bufferevent_get_output(bev);
   if (evbuffer_get_length(output) == 0) {
     printf("flushed answer\n");
     bufferevent_free(bev);
@@ -135,27 +125,22 @@ conn_writecb(struct bufferevent * bev, void * user_data)
 }
 
 // 处理读、写event之外的event的callback
-static void
-conn_eventcb(struct bufferevent * bev, short events, void * user_data)
-{
+static void conn_eventcb(struct bufferevent *bev, short events, void *user_data) {
   if (events & BEV_EVENT_EOF) {
     // Client端关闭连接
     printf("Connection closed.\n");
   } else if (events & BEV_EVENT_ERROR) {
     // 连接出错
-    printf("Got an error on the connection: %s\n",
-           strerror(errno));
+    printf("Got an error on the connection: %s\n", strerror(errno));
   }
   // 如果还有其它的event没有处理，那就关闭这个bufferevent
   bufferevent_free(bev);
 }
 
 // 信号处理event，收到SIGINT (ctrl-c)信号后，延迟2s退出event循环
-static void
-signal_cb(evutil_socket_t sig, short events, void * user_data)
-{
-  struct event_base * base = (event_base *)user_data;
-  struct timeval delay = { 2, 0 };
+static void signal_cb(evutil_socket_t sig, short events, void *user_data) {
+  struct event_base *base = (event_base *)user_data;
+  struct timeval delay = {2, 0};
 
   printf("Caught an interrupt signal; exiting cleanly in two seconds.\n");
 

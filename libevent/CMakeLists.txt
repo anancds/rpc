@@ -33,3 +33,5 @@ add_executable(server4 server4.cpp)
 
 target_link_libraries(server4 event event_core Threads::Threads)
 
+add_subdirectory(src)
+
