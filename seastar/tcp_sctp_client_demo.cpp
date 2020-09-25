@@ -12,9 +12,9 @@ using namespace seastar;
 using namespace net;
 using namespace std::chrono_literals;
 
-static int rx_msg_size = 4 * 1024;
+static int rx_msg_size = 100;
 static int tx_msg_total_size = 100 * 1024 * 1024;
-static int tx_msg_size = 4 * 1024;
+static int tx_msg_size = 100;
 static int tx_msg_nr = tx_msg_total_size / tx_msg_size;
 static std::string str_txbuf(tx_msg_size, 'X');
 
@@ -30,8 +30,8 @@ class client {
   unsigned _concurrent_connections;
   ipv4_addr _server_addr;
   std::string _test;
-  lowres_clock::time_point _earliest_started;
-  lowres_clock::time_point _latest_finished;
+  lowres_clock::time_point _earliest_started = lowres_clock::time_point::max();
+  lowres_clock::time_point _latest_finished = lowres_clock::time_point::min();
   size_t _processed_bytes;
   unsigned _num_reported;
  public:
