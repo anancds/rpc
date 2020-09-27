@@ -26,6 +26,13 @@ static void timeoutcb(evutil_socket_t fd, short what, void *arg)
   struct event_base *base = (event_base*)arg;
   printf("timeout\n");
 
+  printf("Got an event on socket %d:%s%s%s%s\n",
+         (int) fd,
+         (what&EV_TIMEOUT) ? " timeout" : "",
+         (what&EV_READ)    ? " read" : "",
+         (what&EV_WRITE)   ? " write" : "",
+         (what&EV_SIGNAL)  ? " signal" : "");
+
   event_base_loopexit(base, NULL);
 }
 

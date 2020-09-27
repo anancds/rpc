@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
 
   signal_event = evsignal_new(base, SIGINT, signal_cb, (void *)base);
 
-  if (!signal_event || event_add(signal_event, NULL) < 0) {
+  if (!signal_event || event_add(signal_event, NULL) < 0) event_assign{
     fprintf(stderr, "Could not create/add a signal event!\n");
     return 1;
   }
