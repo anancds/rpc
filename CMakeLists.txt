@@ -6,10 +6,10 @@ add_subdirectory(grpc)
 add_subdirectory(libevent)
 add_subdirectory(brpc)
 add_subdirectory(libuv)
+add_subdirectory(ps-lite)
 add_subdirectory(ps-lite-test)
 add_subdirectory(asio)
 add_subdirectory(seastar)
-#add_subdirectory(ps-lite)
 
 
 #FILE(GLOB_RECURSE newList *.cpp)
