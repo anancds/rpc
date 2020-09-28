@@ -8,8 +8,8 @@
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 
 int64_t total_bytes_read = 0;
 int64_t total_messages_read = 0;
@@ -23,7 +23,7 @@ static void set_tcp_no_delay(evutil_socket_t fd)
 
 static void timeoutcb(evutil_socket_t fd, short what, void *arg)
 {
-  struct event_base *base = (event_base*)arg;
+  auto *base = (event_base*)arg;
   printf("timeout\n");
 
   printf("Got an event on socket %d:%s%s%s%s\n",
@@ -33,7 +33,7 @@ static void timeoutcb(evutil_socket_t fd, short what, void *arg)
          (what&EV_WRITE)   ? " write" : "",
          (what&EV_SIGNAL)  ? " signal" : "");
 
-  event_base_loopexit(base, NULL);
+  event_base_loopexit(base, nullptr);
 }
 
 static void readcb(struct bufferevent *bev, void *ctx)
@@ -63,9 +63,9 @@ int main(int argc, char **argv)
 {
   struct event_base *base;
   struct bufferevent **bevs;
-  struct sockaddr_in sin;
+  struct sockaddr_in sin{};
   struct event *evtimeout;
-  struct timeval timeout;
+  struct timeval timeout{};
   int i;
 
   if (argc != 5) {
@@ -74,9 +74,9 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  int port = atoi(argv[1]);
+  int port = atoi("5555");
   int block_size = atoi(argv[2]);
-  int session_count = atoi(argv[3]);
+  int session_count = atoi("1");
   int seconds = atoi(argv[4]);
   timeout.tv_sec = seconds;
   timeout.tv_usec = 0;
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
   for (i = 0; i < session_count; ++i) {
     struct bufferevent *bev = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
 
-    bufferevent_setcb(bev, readcb, NULL, eventcb, NULL);
+    bufferevent_setcb(bev, readcb, nullptr, eventcb, nullptr);
     bufferevent_enable(bev, EV_READ|EV_WRITE);
     evbuffer_add(bufferevent_get_output(bev), message, block_size);
 

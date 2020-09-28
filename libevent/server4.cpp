@@ -9,10 +9,10 @@
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 static void set_tcp_no_delay(evutil_socket_t fd) {
   int one = 1;
@@ -20,10 +20,10 @@ static void set_tcp_no_delay(evutil_socket_t fd) {
 }
 
 static void signal_cb(evutil_socket_t fd, short what, void *arg) {
-  struct event_base *base = (event_base *)arg;
+  auto *base = (event_base *)arg;
   printf("stop\n");
 
-  event_base_loopexit(base, NULL);
+  event_base_loopexit(base, nullptr);
 }
 
 static void echo_read_cb(struct bufferevent *bev, void *ctx) {
@@ -54,7 +54,7 @@ static void accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, 
   struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
   set_tcp_no_delay(fd);
 
-  bufferevent_setcb(bev, echo_read_cb, NULL, echo_event_cb, NULL);
+  bufferevent_setcb(bev, echo_read_cb, nullptr, echo_event_cb, nullptr);
 
   bufferevent_enable(bev, EV_READ | EV_WRITE);
 }
@@ -62,7 +62,7 @@ static void accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, 
 int main(int argc, char **argv) {
   struct event_base *base;
   struct evconnlistener *listener;
-  struct sockaddr_in sin;
+  struct sockaddr_in sin{};
   struct event *evstop;
 
   int port = 9876;
@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
   int i;
   const char **methods = event_get_supported_methods();
   printf("Starting Libevent %s.  Available methods are:\n", event_get_version());
-  for (i = 0; methods[i] != NULL; ++i) {
+  for (i = 0; methods[i] != nullptr; ++i) {
     printf("    %s\n", methods[i]);
   }
 
@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
   /* Listen on the given port. */
   sin.sin_port = htons(port);
 
-  listener = evconnlistener_new_bind(base, accept_conn_cb, NULL, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
+  listener = evconnlistener_new_bind(base, accept_conn_cb, nullptr, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
                                      (struct sockaddr *)&sin, sizeof(sin));
   if (!listener) {
     perror("Couldn't create listener");

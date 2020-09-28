@@ -33,5 +33,6 @@ add_executable(server4 server4.cpp)
 
 target_link_libraries(server4 event_core Threads::Threads)
 
-add_subdirectory(src)
+add_subdirectory(example)
+add_subdirectory(multithread)
 
