@@ -65,6 +65,7 @@ class EvHttpServ {
   bool RegistHandler(std::string const &strUrl, handle_t *func);
   bool UnRegistHandler(std::string const &strUrl);
   bool Start();
+  bool Stop();
 };
 
 }  // namespace Network

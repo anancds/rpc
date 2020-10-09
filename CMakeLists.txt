@@ -11,6 +11,7 @@ add_subdirectory(ps-lite-test)
 add_subdirectory(asio)
 add_subdirectory(seastar)
 add_subdirectory(even-http)
+add_subdirectory(tests)
 
 
 #FILE(GLOB_RECURSE newList *.cpp)

@@ -39,7 +39,6 @@ class EvHttpResp{
     0
   };
   bool postParamParsed{false};
-  // struct evbuffer         *bodyBuf_{nullptr};
   std::string strBody_;
 
   struct evkeyvalq *respHeaders_{nullptr};
@@ -47,7 +46,7 @@ class EvHttpResp{
   int respCode_{HTTP_OK};
 
  private:
-  /// Body length should no more than MAX_POST_BODY_LEN, default 64kB
+  // Body length should no more than MAX_POST_BODY_LEN, default 64kB
   void parsePostParam();
 
  public:
@@ -56,11 +55,11 @@ class EvHttpResp{
 
   std::string GetRequestUri();
   std::string GetUriHost();  //#TODO add const of this
-  /// It will return -1 if no port set
+  // It will return -1 if no port set
   int GetUriPort();
   std::string GetUriPath();
   std::string GetUriQuery();
-  /// Useless to get from a request url, fragment is only for browser to locate
+  // Useless to get from a request url, fragment is only for browser to locate
   /// sth.
   std::string GetUriFragment();
 
