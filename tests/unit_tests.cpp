@@ -19,21 +19,23 @@ class TestHttpServer : public ::testing::Test {
   void SetUp() override {
     server_ = new Network::EvHttpServ("0.0.0.0", 8077);
     server_->RegistHandler("/hello", [](Network::EvHttpResp *resp) { resp->QuickResponse(200, "Hello World!\n"); });
+    std::unique_ptr<std::thread> http_server_thread_(nullptr);
+    http_server_thread_.reset(new std::thread([&]() {
+      server_->Start();
+      std::cout << "hello" << std::endl;
+    }));
+    http_server_thread_->detach();
   }
 
-  void TearDown() override { server_->Stop(); }
+  void TearDown() override {
+    std::cout << "tear down" << std::endl;
+    server_->Stop(); }
 
   Network::EvHttpServ *server_;
 };
 
 TEST_F(TestHttpServer, helloworld) {
-  std::unique_ptr<std::thread> http_server_thread_(nullptr);
-  http_server_thread_.reset(new std::thread([&]() {
-    server_->Start();
-    std::cout << "hello" << std::endl;
-  }));
-  http_server_thread_->detach();
-  char line[100];
+  char buffer[100];
   FILE *file;
   std::string cmd = "curl -X GET http://127.0.0.1:8077/hello";
   std::string result;
@@ -42,10 +44,10 @@ TEST_F(TestHttpServer, helloworld) {
     cout << "error" << endl;
     return;
   }
-  while (fgets(line, sizeof(line) - 1, file) != nullptr) {
-    result += line;
+  while (fgets(buffer, sizeof(buffer) - 1, file) != nullptr) {
+    result += buffer;
   }
-  std::cout << result << std::endl;
+  EXPECT_STREQ("Hello World!\n", result.c_str());
   pclose(file);
 }
 }  // namespace Network
