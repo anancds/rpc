@@ -31,6 +31,7 @@ EvHttpResp::EvHttpResp(struct evhttp_request *req)
 //    throw EvHttpRespRTEXCP(500, "Request is Null");
   }
   evUri_ = evhttp_request_get_evhttp_uri(evReq_);
+  const char* test = evhttp_request_get_uri(evReq_);
   if (evUri_) {
     const char *query = evhttp_uri_get_query(evUri_);
     if (query) {
@@ -100,9 +101,9 @@ std::string EvHttpResp::GetRequestUri() {
   return std::string("");
 }
 
-std::string EvHttpResp::GetUriHost() {
-  if (evUri_) {
-    const char *host = evhttp_uri_get_host(evUri_);
+std::string EvHttpResp::GetRequestHost() {
+  if (evReq_) {
+    const char *host = evhttp_request_get_host(evReq_);
     if (host) {
       return std::string(host);
     }

@@ -54,7 +54,7 @@ class EvHttpResp{
   ~EvHttpResp();
 
   std::string GetRequestUri();
-  std::string GetUriHost();  //#TODO add const of this
+  std::string GetRequestHost();  //#TODO add const of this
   // It will return -1 if no port set
   int GetUriPort();
   std::string GetUriPath();

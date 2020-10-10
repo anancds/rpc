@@ -148,11 +148,9 @@ bool EvHttpServ::Start() {
 
 bool EvHttpServ::Stop() {
   if (evHttp_) {
-    std::cout << evHttp_ << std::endl;
     evhttp_free(evHttp_);
   }
   if (evBase_) {
-    std::cout << evBase_ << std::endl;
     event_base_free(evBase_);
   }
 }

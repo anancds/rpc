@@ -5,6 +5,11 @@ enable_testing()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../even-http)
 add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/event_http_server.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/event_http_request.cpp)
 find_package(Threads REQUIRED)
+set(protobuf_MODULE_COMPATIBLE TRUE)
+find_package(Protobuf CONFIG REQUIRED)
+message(STATUS "Using protobuf ${protobuf_VERSION}")
+find_package(gRPC CONFIG REQUIRED)
+message(STATUS "Using gRPC ${gRPC_VERSION}")
 
 # Add a testing executable
 add_executable(unit_tests unit_tests.cpp)
