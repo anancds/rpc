@@ -24,6 +24,7 @@ class TestHttpServer : public ::testing::Test {
   static void testGetHandler(EvHttpResp *resp) {
     std::string strHost = resp->GetRequestHost();
     int nPort = resp->GetUriPort();
+    EXPECT_STREQ(strHost.c_str(), "127.0.0.1");
     std::string strPath = resp->GetUriPath();
     std::string strQuery = resp->GetUriQuery();
     std::cout << "Get host:" << strHost << std::endl;
@@ -50,7 +51,7 @@ class TestHttpServer : public ::testing::Test {
     const std::string rBody("Hello World!\n");
     resp->AddRespHeadParam(rKey, rVal);
     resp->AddRespString(rBody);
-    const std::string rBuf("Winter is over!\n");
+    const std::string rBuf("Hello World is over!\n");
     resp->AddRespBuf(rBuf.c_str(), rBuf.length());
 
     resp->SetRespCode(200);
@@ -72,9 +73,7 @@ class TestHttpServer : public ::testing::Test {
     http_server_thread_->detach();
   }
 
-  void TearDown() override {
-    server_->Stop();
-  }
+  void TearDown() override { server_->Stop(); }
 
   Network::EvHttpServ *server_;
 };
@@ -110,7 +109,7 @@ TEST_F(TestHttpServer, messageHandlerTest) {
   while (fgets(buffer, sizeof(buffer) - 1, file) != nullptr) {
     result += buffer;
   }
-  //  EXPECT_STREQ("Hello World!\n", result.c_str());
+  EXPECT_STREQ("Hello World!\nHello World is over!\n", result.substr(result.find("Hello")).c_str());
   pclose(file);
 }
 }  // namespace Network

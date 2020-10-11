@@ -43,7 +43,7 @@ EvHttpServ::~EvHttpServ() {
 EvHttpServ::EvHttpServ(std::string const &strAddr,
                        std::uint16_t nPort)  {
   if (strAddr != "") {
-    unsigned long uAddr = inet_addr(strAddr.c_str());
+    int64_t uAddr = inet_addr(strAddr.c_str());
     if (INADDR_NONE == uAddr) {
 //      Utilis::LogFatal(
 //        "Server address illegal, inet_addr convertion failed!\n");
