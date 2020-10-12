@@ -12,6 +12,7 @@ add_subdirectory(asio)
 add_subdirectory(seastar)
 add_subdirectory(even-http)
 add_subdirectory(tests)
+add_subdirectory(incubator-brpc)
 
 
 #FILE(GLOB_RECURSE newList *.cpp)

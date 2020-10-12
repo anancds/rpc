@@ -1,3 +1,6 @@
 [submodule "ps-lite"]
 	path = ps-lite
 	url = git@github.com:dmlc/ps-lite.git
+[submodule "brpc-src"]
+	path = incubator-brpc
+	url = git@github.com:apache/incubator-brpc.git

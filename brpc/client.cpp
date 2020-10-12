@@ -10,7 +10,7 @@
 #include <memory>
 #include <string>
 #include <thread>
-#include "build/echo.pb.h"
+#include "../build/brpc/echo.pb.h"
 
 using namespace std;
 
