@@ -2,7 +2,7 @@
 #include <butil/logging.h>
 #include <brpc/server.h>
 #include <brpc/restful.h>
-#include "build/echo.pb.h"
+#include "../build/brpc/echo.pb.h"
 
 using helloworld::Greeter;
 using helloworld::HelloReply;
