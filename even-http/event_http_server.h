@@ -47,12 +47,14 @@ class EvHttpServ {
 
   struct event_base *evBase_ = NULL;
   struct evhttp *evHttp_ = NULL;
+  bool is_init = false;
 
  public:
   EvHttpServ();
   ~EvHttpServ();
   /// Server address only support IPV4 now, and should be in format of "x.x.x.x"
-  EvHttpServ(std::string const &strAddr, std::uint16_t nPort);
+  EvHttpServ(std::string const &strAddr, std::uint16_t nPort)  : servAddr_(strAddr), servPort_(nPort), evBase_(nullptr), evHttp_(nullptr) {}
+  void InitServer();
   /// Time unit: seconds
   void SetTimeOut(int seconds = 5);
   /// Default allowed methods: GET, POST, HEAD, PUT, DELETE
