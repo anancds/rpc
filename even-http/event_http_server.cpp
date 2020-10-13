@@ -98,6 +98,7 @@ bool EvHttpServ::RegistHandler(std::string const &strUrl, handle_t *funcPtr) {
     }
     EvHttpResp httpReq(req);
     try {
+      httpReq.Init();
       handle_t *f = reinterpret_cast<handle_t *>(arg);
       f(&httpReq);
     } catch (std::exception e) {

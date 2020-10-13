@@ -85,6 +85,7 @@ class EvHttpResp{
   void SimpleResponse(int code, HttpHeaders &headers, std::string const &strBody);
   /// If strMsg is empty, libevent will use default error code message instead
   void RespError(int nCode, std::string const &strMsg);
+  void Init();
 };
 
 }  // namespace Network

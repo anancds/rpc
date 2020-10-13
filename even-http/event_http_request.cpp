@@ -24,14 +24,14 @@
 
 namespace Network {
 
-EvHttpResp::EvHttpResp(struct evhttp_request *req)
-  : evReq_(req) {
+EvHttpResp::EvHttpResp(struct evhttp_request *req) : evReq_(req) {}
+void EvHttpResp::Init() {
   if (nullptr == evReq_) {
-//    Utilis::LogError("Request is Null\n");
-//    throw EvHttpRespRTEXCP(500, "Request is Null");
+    //    Utilis::LogError("Request is Null\n");
+    //    throw EvHttpRespRTEXCP(500, "Request is Null");
   }
   evUri_ = evhttp_request_get_evhttp_uri(evReq_);
-  const char* test = evhttp_request_get_uri(evReq_);
+  const char *test = evhttp_request_get_uri(evReq_);
   if (evUri_) {
     const char *query = evhttp_uri_get_query(evUri_);
     if (query) {
@@ -51,7 +51,7 @@ std::string EvHttpResp::GetHeadParam(std::string const &strKey) {
     const char *val = evhttp_find_header(headParams_, strKey.c_str());
     if (val) {
       return std::string(val);
-    } /// Must judge herer to prevent val be NULL
+    }  /// Must judge herer to prevent val be NULL
   }
   return std::string("");
 }
@@ -72,9 +72,7 @@ void EvHttpResp::parsePostParam() {
   if (len > 0) {
     // size_t msgLen = len > MAX_POST_BODY_LEN ? MAX_POST_BODY_LEN : len;
     /// #TODO pullup may not necessary
-    evhttp_parse_query_str(reinterpret_cast<const char *>(
-                             evbuffer_pullup(evReq_->input_buffer, -1)),
-                           &postParams_);
+    evhttp_parse_query_str(reinterpret_cast<const char *>(evbuffer_pullup(evReq_->input_buffer, -1)), &postParams_);
   }
 }
 
@@ -151,17 +149,14 @@ std::string EvHttpResp::GetPostMsg() {
   len = evbuffer_get_length(evReq_->input_buffer);
   if (len > 0) {
     strBody_.resize(len);
-    strBody_.assign(reinterpret_cast<const char *>(
-                      evbuffer_pullup(evReq_->input_buffer, -1)),
-                    len);
+    strBody_.assign(reinterpret_cast<const char *>(evbuffer_pullup(evReq_->input_buffer, -1)), len);
   }
   return strBody_;
 }
 
-bool EvHttpResp::AddRespHeadParam(std::string const &key,
-                                  std::string const &val) {
+bool EvHttpResp::AddRespHeadParam(std::string const &key, std::string const &val) {
   if (0 != evhttp_add_header(respHeaders_, key.c_str(), val.c_str())) {
-//    Utilis::LogWarn("Add parameter of response header failed\n");
+    //    Utilis::LogWarn("Add parameter of response header failed\n");
     return false;
   }
   return true;
@@ -180,22 +175,20 @@ void EvHttpResp::AddRespHeaders(HttpHeaders &headers) {
 
 bool EvHttpResp::AddRespString(std::string const &str) {
   if (-1 == evbuffer_add_printf(respBuf_, str.c_str())) {
-//    Utilis::LogWarn("Add string to response body failed\n");
+    //    Utilis::LogWarn("Add string to response body failed\n");
     return false;
   }
   return true;
 }
 
 bool EvHttpResp::AddRespBuf(void const *data, std::size_t len) {
-  auto cbFreeBuf = [](const void *pData, size_t datalen, void *extra) {
-    ::operator delete(const_cast<void *>(pData));
-  };
+  auto cbFreeBuf = [](const void *pData, size_t datalen, void *extra) { ::operator delete(const_cast<void *>(pData)); };
 
   void *dataCpy = ::operator new(len);
   std::memcpy(dataCpy, data, len);
   if (0 != evbuffer_add_reference(respBuf_, dataCpy, len, cbFreeBuf, nullptr)) {
     ::operator delete(dataCpy);
-//    Utilis::LogWarn("Add data buffer to response body failed\n");
+    //    Utilis::LogWarn("Add data buffer to response body failed\n");
     return false;
   }
   return true;
@@ -206,34 +199,31 @@ void EvHttpResp::SetRespCode(int code) { respCode_ = code; }
 bool EvHttpResp::AddRespFile(std::string const &fileName) {
   int fd = open(fileName.c_str(), 0);
   if (fd == -1) {
-//    Utilis::LogError(
-//      "Add file content to response body failed: open file error\n");
+    //    Utilis::LogError(
+    //      "Add file content to response body failed: open file error\n");
     return false;
   }
-//  Utilis::DEFER([&] {
-//    if (fd != -1)
-//      close(fd);
-//  });
+  //  Utilis::DEFER([&] {
+  //    if (fd != -1)
+  //      close(fd);
+  //  });
   ev_off_t len = lseek(fd, 0, SEEK_END);
   if (evbuffer_add_file(respBuf_, fd, 0, len) == -1) {
-//    Utilis::LogError(
-//      "Add file content to response body failed: evbuffer_add_file error\n");
+    //    Utilis::LogError(
+    //      "Add file content to response body failed: evbuffer_add_file error\n");
     return false;
   }
   return true;
 }
 
-void EvHttpResp::SendResponse() {
-  evhttp_send_reply(evReq_, respCode_, nullptr, respBuf_);
-}
+void EvHttpResp::SendResponse() { evhttp_send_reply(evReq_, respCode_, nullptr, respBuf_); }
 
 void EvHttpResp::QuickResponse(int code, std::string const &strBody) {
   AddRespString(strBody);
   evhttp_send_reply(evReq_, code, nullptr, respBuf_);
 }
 
-void EvHttpResp::SimpleResponse(int code, HttpHeaders &headers,
-                                std::string const &strBody) {
+void EvHttpResp::SimpleResponse(int code, HttpHeaders &headers, std::string const &strBody) {
   AddRespHeaders(headers);
   AddRespString(strBody);
   evhttp_send_reply(evReq_, respCode_, nullptr, respBuf_);
@@ -247,4 +237,4 @@ void EvHttpResp::RespError(int nCode, std::string const &strMsg) {
   }
 }
 
-} // namespace Network
+}  // namespace Network
