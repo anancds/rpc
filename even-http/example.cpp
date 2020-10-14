@@ -1,10 +1,15 @@
 //
 // Created by cds on 2020/9/29.
 //
-#include "event_http_server.h"
-#include <thread>
+#include <unistd.h>
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <regex>
+#include <thread>
+#include "event_http_server.h"
+#include <sys/syscall.h>
+#include <thread>
 
 using namespace Network;
 using namespace std;
@@ -18,11 +23,15 @@ bool CheckIp(const std::string &ip) {
 }
 void StartHttpServer() {
   EvHttpServ Serv("0.0.0.0", 8077);
-  Serv.RegistHandler("/hello", [](EvHttpResp *resp) { resp->QuickResponse(200, "Hello World!\n"); });
+  Serv.RegistHandler("/hello", [](EvHttpResp *resp) {
+    std::cout << "id:" << std::this_thread::get_id << std::endl;
+
+    sleep(10);
+    resp->QuickResponse(200, "Hello World!\n");
+  });
   Serv.Start();
 }
-int main()
-{
+int main() {
   std::int16_t test = -1;
   std::cout << test << std::endl;
   cout << CheckIp("0.0.0.0") << endl;
@@ -30,11 +39,11 @@ int main()
   http_server_thread_.reset(new std::thread(&StartHttpServer));
   http_server_thread_->join();
 
-//  EvHttpServ Serv("0.0.0.0", 8077);
-//
-//  Serv.RegistHandler("/hi/testget",  [](EvHttpResp *resp){
-//    resp->QuickResponse(200,"Hello World!\n");});
-//
-//  Serv.Start();
+  //  EvHttpServ Serv("0.0.0.0", 8077);
+  //
+  //  Serv.RegistHandler("/hi/testget",  [](EvHttpResp *resp){
+  //    resp->QuickResponse(200,"Hello World!\n");});
+  //
+  //  Serv.Start();
   return 0;
 }
