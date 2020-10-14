@@ -2,9 +2,11 @@
 #include <thread>
 #include <iostream>
 #include <stdlib.h>
+#include "log_adapter.h"
 
 int main(int /*argc*/, char** /*argv*/)
 {
+  MS_LOG(INFO) << "Init http server failed!";
     // Run msg server
     proto::msgserver server;
     server.set_msg_callback([](proto::msgserver& server, proto::msgconnection& conn, const void* buffer, size_t num)

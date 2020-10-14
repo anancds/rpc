@@ -16,8 +16,8 @@ if (CMAKE_SYSTEM MATCHES "Windows*")
 endif()
 
 
-set (CMAKE_CXX_STANDARD 11)
-set (CMAKE_CXX_STANDARD_REQUIRED 11)
+set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD_REQUIRED 17)
 set (SRC proto_client.cpp proto_server.cpp proto_utils.cpp)
 set (HDR proto_client.h proto_server.h proto_utils.h)
 add_library(msg_io STATIC ${SRC} ${HDR})
@@ -43,7 +43,8 @@ if (TARGET_WIN)
     target_compile_definitions(msg_io PRIVATE -DTARGET_WIN)
 endif()
 
+
 add_executable(msg_server msg_server.cpp)
-target_link_libraries(msg_server msg_io event event_core event_pthreads)
+target_link_libraries(msg_server msg_io event event_core event_pthreads rpc-log)
 add_executable(msg_client msg_client.cpp)
-target_link_libraries(msg_client msg_io event event_core event_pthreads)
+target_link_libraries(msg_client msg_io event event_core event_pthreads rpc-log)

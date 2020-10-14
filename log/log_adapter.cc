@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "log/log_adapter.h"
+#include "log_adapter.h"
 
 #include <unistd.h>
 #include <sys/time.h>
