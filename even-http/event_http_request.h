@@ -12,13 +12,13 @@
 #include <list>
 #include <map>
 
+#include <event2/buffer.h>
 #include <event2/event.h>
 #include <event2/http.h>
-#include <event2/listener.h>
-#include <event2/buffer.h>
-#include <event2/util.h>
 #include <event2/keyvalq_struct.h>
-
+#include <event2/listener.h>
+#include <event2/util.h>
+#include <memory>
 
 namespace Network {
 typedef std::list<std::string> HttpHeadVal;
@@ -39,7 +39,7 @@ class EvHttpResp{
     0
   };
   bool postParamParsed{false};
-  std::string strBody_;
+  std::unique_ptr<std::string> strBody_{new std::string("")};
 
   struct evkeyvalq *respHeaders_{nullptr};
   struct evbuffer *respBuf_{nullptr};

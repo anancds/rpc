@@ -142,16 +142,15 @@ std::string EvHttpResp::GetUriFragment() {
 }
 
 std::string EvHttpResp::GetPostMsg() {
-  if (!strBody_.empty()) {
-    return strBody_;
+  if (!(*strBody_).empty()) {
+    return *strBody_;
   }
   size_t len = 0;
   len = evbuffer_get_length(evReq_->input_buffer);
   if (len > 0) {
-    strBody_.resize(len);
-    strBody_.assign(reinterpret_cast<const char *>(evbuffer_pullup(evReq_->input_buffer, -1)), len);
+    strBody_.reset(new std::string(reinterpret_cast<const char *>(evbuffer_pullup(evReq_->input_buffer, -1))));
   }
-  return strBody_;
+  return *strBody_;
 }
 
 bool EvHttpResp::AddRespHeadParam(std::string const &key, std::string const &val) {

@@ -24,7 +24,7 @@ int main(int /*argc*/, char** /*argv*/)
     // Run for 5 minutes
     auto start_tp = std::chrono::steady_clock::now();
 
-    while (std::chrono::steady_clock::now() - start_tp < std::chrono::minutes(5))
+    while (std::chrono::steady_clock::now() - start_tp < std::chrono::minutes(1))
     {
         server.update();
         std::this_thread::sleep_for(std::chrono::milliseconds(1));

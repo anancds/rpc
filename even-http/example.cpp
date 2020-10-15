@@ -23,10 +23,11 @@ bool CheckIp(const std::string &ip) {
 }
 void StartHttpServer() {
   EvHttpServ Serv("0.0.0.0", 8077);
+  Serv.InitServer();
   Serv.RegistHandler("/hello", [](EvHttpResp *resp) {
     std::cout << "id:" << std::this_thread::get_id << std::endl;
 
-    sleep(10);
+    sleep(1);
     resp->QuickResponse(200, "Hello World!\n");
   });
   Serv.Start();
