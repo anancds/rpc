@@ -1,4 +1,4 @@
-set(CMAKE_CXX_STANDARD  11)
+set(CMAKE_CXX_STANDARD  17)
 
 find_package(Threads REQUIRED)
 
@@ -7,5 +7,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall")
 include_directories(${CMAKE_SOURCE_DIR})
 
 add_executable(example example.cpp event_http_request.cpp event_http_server.cpp http_message_handler.cc http_server.cc)
+add_executable(exampleold example_old.cpp event_http_request.cpp event_http_server.cpp http_message_handler.cc http_server.cc)
 
 target_link_libraries(example event event_core Threads::Threads rpc-log)
+
+target_link_libraries(exampleold event event_core Threads::Threads rpc-log)

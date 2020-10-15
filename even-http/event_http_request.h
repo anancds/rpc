@@ -29,7 +29,7 @@ class EvHttpResp{
   // following MAX_POST_BODY_LEN is defined by libevent
   // const size_t               MAX_POST_BODY_LEN{1024*64};
  private:
-  struct evhttp_request *evReq_{nullptr};
+  struct evhttp_request *const evReq_{nullptr};
   const struct evhttp_uri *evUri_;
   struct evkeyvalq pathParams_ {
     0

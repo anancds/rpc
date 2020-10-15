@@ -44,7 +44,9 @@ void EvHttpResp::Init() {
   respBuf_ = evhttp_request_get_output_buffer(evReq_);
 }
 
-EvHttpResp::~EvHttpResp() {}
+EvHttpResp::~EvHttpResp() {
+//  evbuffer_free(evReq_->input_buffer);
+}
 
 std::string EvHttpResp::GetHeadParam(std::string const &strKey) {
   if (headParams_) {

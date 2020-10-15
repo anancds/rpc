@@ -115,10 +115,8 @@ void HttpServer::SetMaxBodySize(size_t num) {
 }
 
 bool HttpServer::RegisterRoute(const std::string &url, handle_t *function) {
-  if (!is_init_) {
-    if (!InitServer()) {
-      MS_LOG(EXCEPTION) << "Init http server failed!";
-    }
+  if ((!is_init_) && (!InitServer())) {
+    MS_LOG(EXCEPTION) << "Init http server failed!";
   }
   HandlerFunc func = function;
   if (!func) {
@@ -142,9 +140,10 @@ bool HttpServer::RegisterRoute(const std::string &url, handle_t *function) {
   if (ret == 0) {
     MS_LOG(INFO) << "Ev http register handle of:" << url.c_str() << " success.";
   } else if (ret == -1) {
-    MS_LOG(INFO) << "Ev http register handle of:" << url.c_str() << " exist.";
+    MS_LOG(WARNING) << "Ev http register handle of:" << url.c_str() << " exist.";
   } else {
-    MS_LOG(EXCEPTION) << "Ev http register handle of:" << url.c_str() << " failed.";
+    MS_LOG(ERROR) << "Ev http register handle of:" << url.c_str() << " failed.";
+    return false;
   }
   return true;
 }

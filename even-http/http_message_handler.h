@@ -49,12 +49,12 @@ class HttpMessageHandler {
         head_params_(nullptr),
         post_params_{0},
         post_param_parsed_(false),
-        body_(new std::string("")),
+        body_(nullptr),
         resp_headers_(nullptr),
         resp_buf_(nullptr),
         resp_code_(HTTP_OK) {}
 
-  virtual ~HttpMessageHandler() = default;
+  ~HttpMessageHandler();
 
   void InitHttpMessage();
   std::string GetRequestUri();

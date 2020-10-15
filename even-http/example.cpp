@@ -13,6 +13,43 @@
 
 using namespace Network;
 using namespace std;
+int i = 0;
+static void testGetHandler(EvHttpResp *resp) {
+  std::string strHost = resp->GetRequestHost();
+  int nPort = resp->GetUriPort();
+  std::string strPath = resp->GetUriPath();
+  std::string strQuery = resp->GetUriQuery();
+  std::cout << "Get host:" << strHost << std::endl;
+  std::cout << "Get port:" << nPort << std::endl;
+  std::cout << "Get uri:" << strPath << std::endl;
+  std::cout << "Get uri params:" << strQuery << std::endl;
+
+  const std::string gKey("key1");
+  const std::string hKey("header");
+  const std::string pKey("hello");
+  std::string strGVal = resp->GetPathParam(gKey);
+  std::string strHVal = resp->GetHeadParam(hKey);
+  std::string strPVal = resp->GetPostParam(pKey);
+  std::string post_message = resp->GetPostMsg();
+  std::cout << "Get path param:" << strGVal << std::endl;
+  std::cout << "Get head param:" << strHVal << std::endl;
+  std::cout << "Get post param:" << strPVal << std::endl;
+  std::cout << "Get post message:" << post_message << std::endl;
+
+  std::string strBody = resp->GetPostMsg();
+i++;
+  const std::string rKey("retHead");
+  const std::string rVal("retValue");
+  const std::string rBody("Hello World!" + strQuery + "\n");
+//  const std::string rBody("Hello World!");
+  resp->AddRespHeadParam(rKey, rVal);
+  resp->AddRespString(rBody);
+//    const std::string rBuf("Hello World is over!\n");
+//    resp->AddRespBuf(rBuf.c_str(), rBuf.length());
+
+  resp->SetRespCode(200);
+  resp->SendResponse();
+}
 bool CheckIp(const std::string &ip) {
   std::regex pattern("((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)");
   std::smatch res;
@@ -28,8 +65,10 @@ void StartHttpServer() {
     std::cout << "id:" << std::this_thread::get_id << std::endl;
 
     sleep(1);
-    resp->QuickResponse(200, "Hello World!\n");
+    resp->QuickResponse(200, "Hello Worlds!\n");
   });
+
+  Serv.RegistHandler("/handler", testGetHandler);
   Serv.Start();
 }
 int main() {
