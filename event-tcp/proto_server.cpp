@@ -145,7 +145,7 @@ void server::update()
     std::unique_lock<std::recursive_mutex> l(mConnectionsMutex);
     if(base != nullptr)
     {
-        event_base_loop(base, EVLOOP_NONBLOCK);
+      event_base_dispatch(base);
     }
 }
 

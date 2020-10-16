@@ -4,36 +4,45 @@
 
 #ifndef RPC_TCP_SERVER_H
 #define RPC_TCP_SERVER_H
-extern "C" {
+
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
-}
-
+#include <event2/listener.h>
+#include <exception>
 #include <functional>
 #include <iostream>
 #include <map>
 #include <mutex>
 #include <string>
+#include "tcp_message_handler.h"
 
 namespace mindspore {
 namespace ps {
 namespace comm {
 
+class TcpServer;
+class TcpConnection {
+  friend class TcpServer;
+
+ public:
+  explicit TcpConnection() = default;
+  virtual ~TcpConnection() = default;
+
+  virtual void setup(evutil_socket_t fd, struct bufferevent *bev, TcpServer *srv);
+  void send_msg(const void *buffer, size_t num);
+  virtual void on_read_handler(const void *buffer, size_t numBytes);
+
+ protected:
+  TcpMessageHandler tcp_message_handler_;
+
+  struct bufferevent *mBufferEvent;
+  evutil_socket_t mFd;
+  TcpServer *mServer;
+};
 class TcpServer {
-  class TcpConnection {
-   public:
-    TcpConnection();
-    virtual ~TcpConnection();
-
-    virtual void setup(evutil_socket_t fd, struct bufferevent *bev, TcpServer *srv);
-    void send(const void *data, size_t numBytes);
-    virtual void on_read_handler(const void *buffer, size_t numBytes);
-
-    struct bufferevent *mBufferEvent;
-    evutil_socket_t mFd;
-    TcpServer *mServer;
-  };
+  friend class TcpConnection;
+  typedef std::function<void(TcpServer &, TcpConnection &conn, const void *buffer, size_t num)> on_message;
 
  public:
   // Callbacks
@@ -52,6 +61,9 @@ class TcpServer {
   void sendToAllClients(const char *data, size_t len);
   void addConnection(evutil_socket_t fd, TcpConnection *connection);
   void removeConnection(evutil_socket_t fd);
+  void set_msg_callback(on_message cb);
+  void send_msg(TcpConnection &conn, const void *data, size_t num);
+  void send_msg(const void *data, size_t num);
 
  protected:
   static void listenerCallback(struct evconnlistener *listener, evutil_socket_t socket, struct sockaddr *saddr,
@@ -73,7 +85,7 @@ class TcpServer {
   on_accepted client_accept;
   on_received client_recv;
   std::recursive_mutex mConnectionsMutex;
-
+  on_message mMessageCb;
   virtual TcpConnection *on_create_conn();
 };
 }  // namespace comm
