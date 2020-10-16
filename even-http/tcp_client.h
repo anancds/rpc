@@ -5,8 +5,17 @@
 #ifndef RPC_TCP_CLIENT_H
 #define RPC_TCP_CLIENT_H
 #include <event2/event.h>
+#include "event2/bufferevent.h"
 #include <functional>
+#include "tcp_message_handler.h"
+
+namespace mindspore {
+namespace ps {
+namespace comm {
+
 class TcpClient {
+  using on_message = std::function<void(TcpClient &, const void *, size_t)>;
+
  public:
   const int IO_TIMEOUT = 5;       // Seconds
   const int DEFAULT_PORT = 9000;  // Default port number for target
@@ -23,11 +32,12 @@ class TcpClient {
   std::string get_target() const;
 
   void set_callbacks(on_connected conn, on_disconnected disconn, on_read read, on_timeout timeout);
-  void start();
+  void InitTcpClient();
   void start_with_delay(int seconds);
 
   void stop();
-  void write(const void *buffer, size_t num);
+  void set_message_callback(on_message cb);
+  void send_msg(const void *buf, size_t num);
 
   void update();
 
@@ -35,6 +45,8 @@ class TcpClient {
   static void timeoutcb(evutil_socket_t fd, short what, void *arg);
   static void readcb(struct bufferevent *bev, void *ctx);
   static void eventcb(struct bufferevent *bev, short events, void *ptr);
+  TcpMessageHandler tcpMessageHandler;
+  on_message mMessageCb;
 
   on_connected mConnectedCb;
   on_disconnected mDisconnectedCb;
@@ -49,4 +61,7 @@ class TcpClient {
 
   virtual void on_read_handler(const void *buf, size_t num);
 };
+}  // namespace comm
+}  // namespace ps
+}  // namespace mindspore
 #endif  // RPC_TCP_CLIENT_H

@@ -9,8 +9,10 @@ include_directories(${CMAKE_SOURCE_DIR})
 add_executable(example example.cpp event_http_request.cpp event_http_server.cpp http_message_handler.cc http_server.cc)
 add_executable(exampleold example_old.cpp event_http_request.cpp event_http_server.cpp http_message_handler.cc http_server.cc)
 add_executable(exampletcp tcp_server.cc tcp_message_handler.cpp tcp_server_example.cpp)
+add_executable(exampletcpclient tcp_client.cpp tcp_message_handler.cpp tcp_client_example.cpp)
 
 target_link_libraries(example event event_core Threads::Threads rpc-log)
 
 target_link_libraries(exampleold event event_core Threads::Threads rpc-log)
 target_link_libraries(exampletcp event event_core Threads::Threads rpc-log)
+target_link_libraries(exampletcpclient event event_core Threads::Threads rpc-log)

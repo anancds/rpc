@@ -15,7 +15,20 @@
 #include <sys/socket.h>
 #include <iostream>
 
-TcpClient::TcpClient() : mBase(nullptr), mTimeoutEvent(nullptr), mBufferEvent(nullptr) {}
+namespace mindspore {
+namespace ps {
+namespace comm {
+
+TcpClient::TcpClient() : mBase(nullptr), mTimeoutEvent(nullptr), mBufferEvent(nullptr) {
+  tcpMessageHandler.SetCallback([this](const void *buf, size_t num) {
+    if (buf == nullptr) {
+      // Format error, disconnect
+      if (mDisconnectedCb) mDisconnectedCb(*this, 200);
+      stop();
+    }
+    if (mMessageCb) mMessageCb(*this, buf, num);
+  });
+}
 
 TcpClient::~TcpClient() { stop(); }
 
@@ -30,7 +43,7 @@ void TcpClient::set_callbacks(on_connected conn, on_disconnected disconn, on_rea
   mTimeoutCb = timeout;
 }
 
-void TcpClient::start() {
+void TcpClient::InitTcpClient() {
   if (mBufferEvent) return;
 
   int retcode = 0;
@@ -95,12 +108,6 @@ void TcpClient::stop() {
   }
 }
 
-void TcpClient::write(const void *buffer, size_t num) {
-  if (mBufferEvent) {
-    evbuffer_add(bufferevent_get_output(mBufferEvent), buffer, num);
-  }
-}
-
 /*
 static void set_tcp_no_delay(evutil_socket_t fd)
 {
@@ -113,7 +120,7 @@ void TcpClient::timeoutcb(evutil_socket_t fd, short what, void *arg) {
   // Time to start connecting
   TcpClient *c = reinterpret_cast<TcpClient *>(arg);
   try {
-    c->start();
+    c->InitTcpClient();
   } catch (const std::exception &e) {
   }
 }
@@ -135,6 +142,7 @@ void TcpClient::readcb(struct bufferevent *bev, void *ctx) {
 
 void TcpClient::on_read_handler(const void *buf, size_t num) {
   if (mReadCb) mReadCb(*this, buf, num);
+  tcpMessageHandler.ReceiveMessage(buf, num);
 }
 
 void TcpClient::eventcb(struct bufferevent *bev, short events, void *ptr) {
@@ -155,3 +163,14 @@ void TcpClient::eventcb(struct bufferevent *bev, short events, void *ptr) {
 void TcpClient::update() {
   if (mBase) event_base_loop(mBase, EVLOOP_NONBLOCK);
 }
+
+void TcpClient::set_message_callback(on_message cb) { mMessageCb = cb; }
+
+void TcpClient::send_msg(const void *buf, size_t num) {
+  if (mBufferEvent) {
+    evbuffer_add(bufferevent_get_output(mBufferEvent), buf, num);
+  }
+}
+}  // namespace comm
+}  // namespace ps
+}  // namespace mindspore
