@@ -101,13 +101,13 @@ server::~server()
     }
 }
 
-//void server::set_callbacks(on_connected client_conn, on_disconnected client_disconn, on_accepted client_accept, on_received client_recv)
-//{
-//    this->client_conn = client_conn;
-//    this->client_disconn = client_disconn;
-//    this->client_accept = client_accept;
-//    this->client_recv = client_recv;
-//}
+void server::set_callbacks(on_connected client_conn, on_disconnected client_disconn, on_accepted client_accept, on_received client_recv)
+{
+    this->client_conn = client_conn;
+    this->client_disconn = client_disconn;
+    this->client_accept = client_accept;
+    this->client_recv = client_recv;
+}
 
 void server::setup(const unsigned short& port)
 {

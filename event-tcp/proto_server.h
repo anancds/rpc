@@ -73,8 +73,8 @@ class server {
   server();
   virtual ~server();
 
-  //        void set_callbacks(on_connected client_conn, on_disconnected client_disconn,
-  //                           on_accepted client_accept, on_received client_recv);
+  void set_callbacks(on_connected client_conn, on_disconnected client_disconn, on_accepted client_accept,
+                     on_received client_recv);
   void setup(const unsigned short &port);
   void update();
   void sendToAllClients(const char *data, size_t len);

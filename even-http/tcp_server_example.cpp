@@ -18,9 +18,9 @@ static void StartServer() {
   });
 
   // Run on port 9000
-  server.setup(9000);
+  server.InitServer(9000);
 
-  server.update();
+  server.Start();
 }
 int main(int /*argc*/, char** /*argv*/) {
 

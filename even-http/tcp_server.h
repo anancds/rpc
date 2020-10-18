@@ -16,7 +16,7 @@
 #include <mutex>
 #include <string>
 #include "tcp_message_handler.h"
-
+#include "log_adapter.h"
 namespace mindspore {
 namespace ps {
 namespace comm {
@@ -42,37 +42,34 @@ class TcpConnection {
 };
 class TcpServer {
   friend class TcpConnection;
-  typedef std::function<void(TcpServer &, TcpConnection &conn, const void *buffer, size_t num)> on_message;
 
  public:
-  // Callbacks
-  typedef std::function<void(TcpServer *, TcpConnection *)> on_connected;
-  typedef std::function<void(TcpServer *, TcpConnection *)> on_disconnected;
-  typedef std::function<TcpConnection *(TcpServer *)> on_accepted;
-  typedef std::function<void(TcpServer *, TcpConnection *, const void *buffer, size_t num)> on_received;
+  using OnServerReceiveMessage = std::function<void(TcpServer &, TcpConnection &conn, const void *buffer, size_t num)>;
+  using OnConnected = std::function<void(TcpServer *, TcpConnection *)>;
+  using OnDisconnected = std::function<void(TcpServer *, TcpConnection *)>;
+  using OnAccepted = std::function<TcpConnection *(TcpServer *)>;
 
-  TcpServer();
+  explicit TcpServer();
   virtual ~TcpServer();
 
-  //        void set_callbacks(on_connected client_conn, on_disconnected client_disconn,
-  //                           on_accepted client_accept, on_received client_recv);
-  void setup(const unsigned short &port);
-  void update();
-  void sendToAllClients(const char *data, size_t len);
-  void addConnection(evutil_socket_t fd, TcpConnection *connection);
-  void removeConnection(evutil_socket_t fd);
-  void set_msg_callback(on_message cb);
-  void send_msg(TcpConnection &conn, const void *data, size_t num);
-  void send_msg(const void *data, size_t num);
+  void SetServerCallback(OnConnected client_conn, OnDisconnected client_disconn, OnAccepted client_accept);
+  void InitServer(const unsigned short &port);
+  void Start();
+  void SendToAllClients(const char *data, size_t len);
+  void AddConnection(evutil_socket_t fd, TcpConnection *connection);
+  void RemoveConnection(evutil_socket_t fd);
+  void SetMessageCallback(OnServerReceiveMessage cb);
+  void SendMessage(TcpConnection &conn, const void *data, size_t num);
+  void SendMessage(const void *data, size_t num);
 
  protected:
-  static void listenerCallback(struct evconnlistener *listener, evutil_socket_t socket, struct sockaddr *saddr,
+  static void ListenerCallback(struct evconnlistener *listener, evutil_socket_t socket, struct sockaddr *saddr,
                                int socklen, void *server);
 
-  static void signalCallback(evutil_socket_t sig, short events, void *server);
-  static void writeCallback(struct bufferevent *, void *server);
-  static void readCallback(struct bufferevent *, void *connection);
-  static void eventCallback(struct bufferevent *, short, void *server);
+  static void SignalCallback(evutil_socket_t sig, short events, void *server);
+  static void WriteCallback(struct bufferevent *, void *server);
+  static void ReadCallback(struct bufferevent *, void *connection);
+  static void EventCallback(struct bufferevent *, short, void *server);
 
   struct sockaddr_in sin;
   struct event_base *base;
@@ -80,12 +77,11 @@ class TcpServer {
   struct evconnlistener *listener;
 
   std::map<evutil_socket_t, TcpConnection *> connections;
-  on_connected client_conn;
-  on_disconnected client_disconn;
-  on_accepted client_accept;
-  on_received client_recv;
+  OnConnected client_conn;
+  OnDisconnected client_disconn;
+  OnAccepted client_accept;
   std::recursive_mutex mConnectionsMutex;
-  on_message mMessageCb;
+  OnServerReceiveMessage mMessageCb;
   virtual TcpConnection *on_create_conn();
 };
 }  // namespace comm
