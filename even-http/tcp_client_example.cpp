@@ -7,20 +7,20 @@
 const std::string test_message = "TEST_MESSAGE";
 static void StartClient(mindspore::ps::comm::TcpClient *client) {
   // Run msg server
-  client->set_message_callback([](mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
+  client->SetMessageCallback([](mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
     std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
-    client.send_msg(buffer, num);
+    client.SendMessage(buffer, num);
   });
 
   // Run on port 9000
-  client->set_target("127.0.0.1:9000");
+  client->SetTarget("127.0.0.1:9000");
   client->InitTcpClient();
 
   // Run for 5 minutes
   auto start_tp = std::chrono::steady_clock::now();
 
-  client->send_msg(test_message.c_str(), test_message.size());
-  client->update();
+  client->SendMessage(test_message.c_str(), test_message.size());
+  client->Start();
 }
 int main(int /*argc*/, char ** /*argv*/) {
   mindspore::ps::comm::TcpClient client;

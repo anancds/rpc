@@ -15,8 +15,8 @@
 #include <map>
 #include <mutex>
 #include <string>
-#include "tcp_message_handler.h"
 #include "log_adapter.h"
+#include "tcp_message_handler.h"
 namespace mindspore {
 namespace ps {
 namespace comm {
@@ -26,19 +26,18 @@ class TcpConnection {
   friend class TcpServer;
 
  public:
-  explicit TcpConnection() = default;
+  explicit TcpConnection() : buffer_event_(nullptr), fd_(0), server_(nullptr) {}
   virtual ~TcpConnection() = default;
 
-  virtual void setup(evutil_socket_t fd, struct bufferevent *bev, TcpServer *srv);
-  void send_msg(const void *buffer, size_t num);
-  virtual void on_read_handler(const void *buffer, size_t numBytes);
+  virtual void InitConnection(evutil_socket_t fd, struct bufferevent *bev, TcpServer *srv);
+  void SendMessage(const void *buffer, size_t num);
+  virtual void OnReadHandler(const void *buffer, size_t numBytes);
 
  protected:
   TcpMessageHandler tcp_message_handler_;
-
-  struct bufferevent *mBufferEvent;
-  evutil_socket_t mFd;
-  TcpServer *mServer;
+  struct bufferevent *buffer_event_;
+  evutil_socket_t fd_;
+  TcpServer *server_;
 };
 class TcpServer {
   friend class TcpConnection;
@@ -70,19 +69,18 @@ class TcpServer {
   static void WriteCallback(struct bufferevent *, void *server);
   static void ReadCallback(struct bufferevent *, void *connection);
   static void EventCallback(struct bufferevent *, short, void *server);
+  virtual TcpConnection *onCreateConnection();
 
-  struct sockaddr_in sin;
-  struct event_base *base;
-  struct event *signal_event;
-  struct evconnlistener *listener;
+  struct event_base *base_;
+  struct event *signal_event_;
+  struct evconnlistener *listener_;
 
-  std::map<evutil_socket_t, TcpConnection *> connections;
-  OnConnected client_conn;
-  OnDisconnected client_disconn;
-  OnAccepted client_accept;
-  std::recursive_mutex mConnectionsMutex;
-  OnServerReceiveMessage mMessageCb;
-  virtual TcpConnection *on_create_conn();
+  std::map<evutil_socket_t, TcpConnection *> connections_;
+  OnConnected client_connection_;
+  OnDisconnected client_disconnection_;
+  OnAccepted client_accept_;
+  std::recursive_mutex connection_mutex_;
+  OnServerReceiveMessage message_callback_;
 };
 }  // namespace comm
 }  // namespace ps

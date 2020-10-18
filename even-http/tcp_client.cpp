@@ -21,22 +21,22 @@ namespace comm {
 
 TcpClient::TcpClient() : mBase(nullptr), mTimeoutEvent(nullptr), mBufferEvent(nullptr) {
   tcpMessageHandler.SetCallback([this](const void *buf, size_t num) {
-//    if (buf == nullptr) {
-//      // Format error, disconnect
-//      if (mDisconnectedCb) mDisconnectedCb(*this, 200);
-//      stop();
-//    }
+    //    if (buf == nullptr) {
+    //      // Format error, disconnect
+    //      if (mDisconnectedCb) mDisconnectedCb(*this, 200);
+    //      stop();
+    //    }
     if (mMessageCb) mMessageCb(*this, buf, num);
   });
 }
 
-TcpClient::~TcpClient() { stop(); }
+TcpClient::~TcpClient() { Stop(); }
 
-void TcpClient::set_target(const std::string &target) { mTarget = target; }
+void TcpClient::SetTarget(const std::string &target) { mTarget = target; }
 
-std::string TcpClient::get_target() const { return mTarget; }
+std::string TcpClient::GetTarget() const { return mTarget; }
 
-void TcpClient::set_callbacks(on_connected conn, on_disconnected disconn, on_read read, on_timeout timeout) {
+void TcpClient::SetCallback(on_connected conn, on_disconnected disconn, on_read read, on_timeout timeout) {
   mConnectedCb = conn;
   mDisconnectedCb = disconn;
   mReadCb = read;
@@ -76,7 +76,7 @@ void TcpClient::InitTcpClient() {
   }
 }
 
-void TcpClient::start_with_delay(int seconds) {
+void TcpClient::StartWithDelay(int seconds) {
   if (mBufferEvent) return;
 
   mBase = event_base_new();
@@ -85,11 +85,11 @@ void TcpClient::start_with_delay(int seconds) {
   timeout_value.tv_sec = seconds;
   timeout_value.tv_usec = 0;
 
-  mTimeoutEvent = evtimer_new(mBase, timeoutcb, this);
+  mTimeoutEvent = evtimer_new(mBase, TimeoutCallback, this);
   evtimer_add(mTimeoutEvent, &timeout_value);
 }
 
-void TcpClient::stop() {
+void TcpClient::Stop() {
   if (!mBase) return;
 
   if (mBufferEvent) {
@@ -116,9 +116,9 @@ static void set_tcp_no_delay(evutil_socket_t fd)
 }
 */
 
-void TcpClient::timeoutcb(evutil_socket_t fd, short what, void *arg) {
+void TcpClient::TimeoutCallback(evutil_socket_t fd, short what, void *arg) {
   // Time to start connecting
-  TcpClient *c = reinterpret_cast<TcpClient *>(arg);
+  auto *c = reinterpret_cast<TcpClient *>(arg);
   try {
     c->InitTcpClient();
   } catch (const std::exception &e) {
@@ -126,7 +126,7 @@ void TcpClient::timeoutcb(evutil_socket_t fd, short what, void *arg) {
 }
 
 void TcpClient::readcb(struct bufferevent *bev, void *ctx) {
-  TcpClient *c = reinterpret_cast<TcpClient *>(ctx);
+  auto *c = reinterpret_cast<TcpClient *>(ctx);
 
   /* This callback is invoked when there is data to read on bev. */
   struct evbuffer *input = bufferevent_get_input(bev);
@@ -146,7 +146,7 @@ void TcpClient::on_read_handler(const void *buf, size_t num) {
 }
 
 void TcpClient::eventcb(struct bufferevent *bev, short events, void *ptr) {
-  TcpClient *c = reinterpret_cast<TcpClient *>(ptr);
+  auto *c = reinterpret_cast<TcpClient *>(ptr);
   if (events & BEV_EVENT_CONNECTED) {
     // Connected
     if (c->mConnectedCb) c->mConnectedCb(*c);
@@ -160,13 +160,13 @@ void TcpClient::eventcb(struct bufferevent *bev, short events, void *ptr) {
   }
 }
 
-void TcpClient::update() {
+void TcpClient::Start() {
   if (mBase) event_base_dispatch(mBase);
 }
 
-void TcpClient::set_message_callback(on_message cb) { mMessageCb = cb; }
+void TcpClient::SetMessageCallback(on_message cb) { mMessageCb = cb; }
 
-void TcpClient::send_msg(const void *buf, size_t num) {
+void TcpClient::SendMessage(const void *buf, size_t num) {
   if (mBufferEvent) {
     evbuffer_add(bufferevent_get_output(mBufferEvent), buf, num);
   }
