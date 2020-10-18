@@ -9,12 +9,12 @@
 
 static void StartServer() {
   mindspore::ps::comm::TcpServer server;
-  server.set_msg_callback([](mindspore::ps::comm::TcpServer &server, mindspore::ps::comm::TcpConnection &conn, const void *buffer, size_t num) {
+  server.SetMessageCallback([](mindspore::ps::comm::TcpServer &server, mindspore::ps::comm::TcpConnection &conn, const void *buffer, size_t num) {
     // Dump message
     std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
 
     // Send echo
-    server.send_msg(conn, buffer, num);
+    server.SendMessage(conn, buffer, num);
   });
 
   // Run on port 9000

@@ -39,22 +39,22 @@ class TcpClient {
 
  protected:
   static void TimeoutCallback(evutil_socket_t fd, short what, void *arg);
-  static void readcb(struct bufferevent *bev, void *ctx);
-  static void eventcb(struct bufferevent *bev, short events, void *ptr);
-  virtual void on_read_handler(const void *buf, size_t num);
+  static void ReadCallback(struct bufferevent *bev, void *ctx);
+  static void EventCallback(struct bufferevent *bev, short events, void *ptr);
+  virtual void OnReadHandler(const void *buf, size_t num);
 
-  TcpMessageHandler tcpMessageHandler;
-  on_message mMessageCb;
-  on_connected mConnectedCb;
-  on_disconnected mDisconnectedCb;
-  on_read mReadCb;
-  on_timeout mTimeoutCb;
+  TcpMessageHandler message_handler_;
+  on_message message_callback_;
+  on_connected connected_callback_;
+  on_disconnected disconnected_callback_;
+  on_read read_callback_;
+  on_timeout timeout_callback_;
 
-  event_base *mBase;
-  event *mTimeoutEvent;
-  bufferevent *mBufferEvent;
+  event_base *event_base_;
+  event *event_timeout_;
+  bufferevent *buffer_event_;
 
-  std::string mTarget;
+  std::string target_;
 };
 }  // namespace comm
 }  // namespace ps

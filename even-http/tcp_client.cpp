@@ -19,92 +19,92 @@ namespace mindspore {
 namespace ps {
 namespace comm {
 
-TcpClient::TcpClient() : mBase(nullptr), mTimeoutEvent(nullptr), mBufferEvent(nullptr) {
-  tcpMessageHandler.SetCallback([this](const void *buf, size_t num) {
-    //    if (buf == nullptr) {
-    //      // Format error, disconnect
-    //      if (mDisconnectedCb) mDisconnectedCb(*this, 200);
-    //      stop();
-    //    }
-    if (mMessageCb) mMessageCb(*this, buf, num);
+TcpClient::TcpClient() : event_base_(nullptr), event_timeout_(nullptr), buffer_event_(nullptr) {
+  message_handler_.SetCallback([this](const void *buf, size_t num) {
+    if (buf == nullptr) {
+      // Format error, disconnect
+      if (disconnected_callback_) disconnected_callback_(*this, 200);
+      Stop();
+    }
+    if (message_callback_) message_callback_(*this, buf, num);
   });
 }
 
 TcpClient::~TcpClient() { Stop(); }
 
-void TcpClient::SetTarget(const std::string &target) { mTarget = target; }
+void TcpClient::SetTarget(const std::string &target) { target_ = target; }
 
-std::string TcpClient::GetTarget() const { return mTarget; }
+std::string TcpClient::GetTarget() const { return target_; }
 
 void TcpClient::SetCallback(on_connected conn, on_disconnected disconn, on_read read, on_timeout timeout) {
-  mConnectedCb = conn;
-  mDisconnectedCb = disconn;
-  mReadCb = read;
-  mTimeoutCb = timeout;
+  connected_callback_ = conn;
+  disconnected_callback_ = disconn;
+  read_callback_ = read;
+  timeout_callback_ = timeout;
 }
 
 void TcpClient::InitTcpClient() {
-  if (mBufferEvent) return;
+  if (buffer_event_) return;
 
   int retcode = 0;
 
-  mBase = event_base_new();
+  event_base_ = event_base_new();
 
   // Find IP address
   uint16_t port = static_cast<uint16_t>(DEFAULT_PORT);
-  std::string::size_type p = mTarget.find(':');
-  if (p != std::string::npos) port = static_cast<uint16_t>(std::atoi(mTarget.c_str() + p + 1));
+  std::string::size_type p = target_.find(':');
+  if (p != std::string::npos) port = static_cast<uint16_t>(std::atoi(target_.c_str() + p + 1));
 
   sockaddr_in sin;
   memset(&sin, 0, sizeof(sin));
   sin.sin_family = AF_INET;
-  if (evutil_inet_pton(AF_INET, mTarget.c_str(), &sin.sin_addr.s_addr) != 0) {
+  if (evutil_inet_pton(AF_INET, target_.c_str(), &sin.sin_addr.s_addr) != 0) {
   }
   sin.sin_port = htons(port);
 
   // Prepare bufferevent
-  mBufferEvent = bufferevent_socket_new(mBase, -1, BEV_OPT_CLOSE_ON_FREE);
+  buffer_event_ = bufferevent_socket_new(event_base_, -1, BEV_OPT_CLOSE_ON_FREE);
 
   // No write callback for now
-  bufferevent_setcb(mBufferEvent, readcb, nullptr, eventcb, this);
-  bufferevent_enable(mBufferEvent, EV_READ | EV_WRITE);
+  bufferevent_setcb(buffer_event_, ReadCallback, nullptr, EventCallback, this);
+  bufferevent_enable(buffer_event_, EV_READ | EV_WRITE);
 
   // evbuffer_add(bufferevent_get_output(bev), message, block_size);
 
-  retcode = bufferevent_socket_connect(mBufferEvent, reinterpret_cast<struct sockaddr *>(&sin), sizeof(sin));
+  retcode = bufferevent_socket_connect(buffer_event_, reinterpret_cast<struct sockaddr *>(&sin), sizeof(sin));
   if (retcode < 0) {
   }
 }
 
 void TcpClient::StartWithDelay(int seconds) {
-  if (mBufferEvent) return;
+  if (buffer_event_) return;
 
-  mBase = event_base_new();
+  event_base_ = event_base_new();
 
   timeval timeout_value;
   timeout_value.tv_sec = seconds;
   timeout_value.tv_usec = 0;
 
-  mTimeoutEvent = evtimer_new(mBase, TimeoutCallback, this);
-  evtimer_add(mTimeoutEvent, &timeout_value);
+  event_timeout_ = evtimer_new(event_base_, TimeoutCallback, this);
+  evtimer_add(event_timeout_, &timeout_value);
 }
 
 void TcpClient::Stop() {
-  if (!mBase) return;
+  if (!event_base_) return;
 
-  if (mBufferEvent) {
-    bufferevent_free(mBufferEvent);
-    mBufferEvent = nullptr;
+  if (buffer_event_) {
+    bufferevent_free(buffer_event_);
+    buffer_event_ = nullptr;
   }
 
-  if (mTimeoutEvent) {
-    event_free(mTimeoutEvent);
-    mTimeoutEvent = nullptr;
+  if (event_timeout_) {
+    event_free(event_timeout_);
+    event_timeout_ = nullptr;
   }
 
-  if (mBase) {
-    event_base_free(mBase);
-    mBase = nullptr;
+  if (event_base_) {
+    event_base_free(event_base_);
+    event_base_ = nullptr;
   }
 }
 
@@ -125,7 +125,7 @@ void TcpClient::TimeoutCallback(evutil_socket_t fd, short what, void *arg) {
   }
 }
 
-void TcpClient::readcb(struct bufferevent *bev, void *ctx) {
+void TcpClient::ReadCallback(struct bufferevent *bev, void *ctx) {
   auto *c = reinterpret_cast<TcpClient *>(ctx);
 
   /* This callback is invoked when there is data to read on bev. */
@@ -136,39 +136,39 @@ void TcpClient::readcb(struct bufferevent *bev, void *ctx) {
   size_t read = 0;
 
   while ((read = static_cast<size_t>(evbuffer_remove(input, &readbuf, sizeof(readbuf)))) > 0) {
-    c->on_read_handler(readbuf, read);
+    c->OnReadHandler(readbuf, read);
   }
 }
 
-void TcpClient::on_read_handler(const void *buf, size_t num) {
-  if (mReadCb) mReadCb(*this, buf, num);
-  tcpMessageHandler.ReceiveMessage(buf, num);
+void TcpClient::OnReadHandler(const void *buf, size_t num) {
+  if (read_callback_) read_callback_(*this, buf, num);
+  message_handler_.ReceiveMessage(buf, num);
 }
 
-void TcpClient::eventcb(struct bufferevent *bev, short events, void *ptr) {
+void TcpClient::EventCallback(struct bufferevent *bev, short events, void *ptr) {
   auto *c = reinterpret_cast<TcpClient *>(ptr);
   if (events & BEV_EVENT_CONNECTED) {
     // Connected
-    if (c->mConnectedCb) c->mConnectedCb(*c);
+    if (c->connected_callback_) c->connected_callback_(*c);
     // evutil_socket_t fd = bufferevent_getfd(bev);
     // set_tcp_no_delay(fd);
   } else if (events & BEV_EVENT_ERROR) {
     // printf("NOT Connected\n");
-    if (c->mDisconnectedCb) c->mDisconnectedCb(*c, errno);
+    if (c->disconnected_callback_) c->disconnected_callback_(*c, errno);
   } else if (events & BEV_EVENT_EOF) {
-    if (c->mDisconnectedCb) c->mDisconnectedCb(*c, 0);
+    if (c->disconnected_callback_) c->disconnected_callback_(*c, 0);
   }
 }
 
 void TcpClient::Start() {
-  if (mBase) event_base_dispatch(mBase);
+  if (event_base_) event_base_dispatch(event_base_);
 }
 
-void TcpClient::SetMessageCallback(on_message cb) { mMessageCb = cb; }
+void TcpClient::SetMessageCallback(on_message cb) { message_callback_ = cb; }
 
 void TcpClient::SendMessage(const void *buf, size_t num) {
-  if (mBufferEvent) {
-    evbuffer_add(bufferevent_get_output(mBufferEvent), buf, num);
+  if (buffer_event_) {
+    evbuffer_add(bufferevent_get_output(buffer_event_), buf, num);
   }
 }
 }  // namespace comm
