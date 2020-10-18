@@ -21,11 +21,11 @@ namespace comm {
 
 TcpClient::TcpClient() : mBase(nullptr), mTimeoutEvent(nullptr), mBufferEvent(nullptr) {
   tcpMessageHandler.SetCallback([this](const void *buf, size_t num) {
-    if (buf == nullptr) {
-      // Format error, disconnect
-      if (mDisconnectedCb) mDisconnectedCb(*this, 200);
-      stop();
-    }
+//    if (buf == nullptr) {
+//      // Format error, disconnect
+//      if (mDisconnectedCb) mDisconnectedCb(*this, 200);
+//      stop();
+//    }
     if (mMessageCb) mMessageCb(*this, buf, num);
   });
 }
@@ -161,7 +161,7 @@ void TcpClient::eventcb(struct bufferevent *bev, short events, void *ptr) {
 }
 
 void TcpClient::update() {
-  if (mBase) event_base_loop(mBase, EVLOOP_NONBLOCK);
+  if (mBase) event_base_dispatch(mBase);
 }
 
 void TcpClient::set_message_callback(on_message cb) { mMessageCb = cb; }
