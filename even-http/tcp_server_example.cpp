@@ -2,14 +2,15 @@
 // Created by cds on 2020/10/16.
 //
 
-#include "tcp_server.h"
-#include <thread>
-#include <iostream>
 #include <stdlib.h>
+#include <iostream>
+#include <thread>
+#include "tcp_server.h"
 
 static void StartServer() {
-  mindspore::ps::comm::TcpServer server;
-  server.SetMessageCallback([](mindspore::ps::comm::TcpServer &server, mindspore::ps::comm::TcpConnection &conn, const void *buffer, size_t num) {
+  mindspore::ps::comm::TcpServer *server = new mindspore::ps::comm::TcpServer("127.0.0.1", 9000);
+  server->ReceiveMessage([](mindspore::ps::comm::TcpServer &server, mindspore::ps::comm::TcpConnection &conn,
+                            const void *buffer, size_t num) {
     // Dump message
     std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
 
@@ -18,13 +19,11 @@ static void StartServer() {
   });
 
   // Run on port 9000
-  server.InitServer(9000);
+  server->InitServer();
 
-  server.Start();
+  server->Start();
 }
-int main(int /*argc*/, char** /*argv*/) {
-
-
+int main(int /*argc*/, char ** /*argv*/) {
   std::unique_ptr<std::thread> http_server_thread_(nullptr);
   http_server_thread_.reset(new std::thread(&StartServer));
   http_server_thread_->join();

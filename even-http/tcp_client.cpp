@@ -21,7 +21,12 @@ namespace mindspore {
 namespace ps {
 namespace comm {
 
-TcpClient::TcpClient() : event_base_(nullptr), event_timeout_(nullptr), buffer_event_(nullptr) {
+TcpClient::TcpClient(std::string address, std::int16_t port)
+    : event_base_(nullptr),
+      event_timeout_(nullptr),
+      buffer_event_(nullptr),
+      server_address_(std::move(address)),
+      server_port_(port) {
   message_handler_.SetCallback([this](const void *buf, size_t num) {
     if (buf == nullptr) {
       if (disconnected_callback_) disconnected_callback_(*this, 200);
@@ -33,9 +38,7 @@ TcpClient::TcpClient() : event_base_(nullptr), event_timeout_(nullptr), buffer_e
 
 TcpClient::~TcpClient() { Stop(); }
 
-void TcpClient::SetTarget(const std::string &target) { target_ = target; }
-
-std::string TcpClient::GetTarget() const { return target_; }
+std::string TcpClient::GetServerAddress() const { return server_address_; }
 
 void TcpClient::SetCallback(OnConnected conn, OnDisconnected disconn, OnRead read, OnTimeout timeout) {
   connected_callback_ = std::move(conn);
@@ -46,30 +49,16 @@ void TcpClient::SetCallback(OnConnected conn, OnDisconnected disconn, OnRead rea
 
 void TcpClient::InitTcpClient() {
   if (buffer_event_) return;
+  CommUtil::CheckIpAndPort(server_address_, server_port_);
 
   event_base_ = event_base_new();
   MS_EXCEPTION_IF_NULL(event_base_);
 
-  std::string::size_type colon_index = target_.find(':');
-  if (colon_index == std::string::npos) {
-    MS_LOG(EXCEPTION) << "The target ip:" << target_ << " is illegal!";
-  }
-
-  auto port = static_cast<int16_t>(std::atoi(target_.c_str() + colon_index + 1));
-  if (port <= 0) {
-    MS_LOG(EXCEPTION) << "tcp client port:" << port << " illegal!";
-  }
-  auto server_address = target_.substr(0, colon_index);
-  if (!CommUtil::CheckIp(server_address)) {
-    MS_LOG(EXCEPTION) << "Server address" << server_address << " illegal!";
-  }
   sockaddr_in sin{};
   memset(&sin, 0, sizeof(sin));
   sin.sin_family = AF_INET;
-  if (evutil_inet_pton(AF_INET, target_.c_str(), &sin.sin_addr.s_addr) != 0) {
-    MS_LOG(EXCEPTION) << "The target:" << target_ << " is illegal!";
-  }
-  sin.sin_port = htons(port);
+  sin.sin_addr.s_addr = inet_addr(server_address_.c_str());
+  sin.sin_port = htons(server_port_);
 
   buffer_event_ = bufferevent_socket_new(event_base_, -1, BEV_OPT_CLOSE_ON_FREE);
   MS_EXCEPTION_IF_NULL(buffer_event_);
@@ -79,7 +68,7 @@ void TcpClient::InitTcpClient() {
 
   int result_code = bufferevent_socket_connect(buffer_event_, reinterpret_cast<struct sockaddr *>(&sin), sizeof(sin));
   if (result_code < 0) {
-    MS_LOG(EXCEPTION) << "Connect target ip:" << target_ << "is failed!";
+    MS_LOG(EXCEPTION) << "Connect server ip:" << server_address_ << " and port: " << server_port_ << " is failed!";
   }
 }
 
@@ -173,7 +162,7 @@ void TcpClient::Start() {
   event_base_dispatch(event_base_);
 }
 
-void TcpClient::SetMessageCallback(OnMessage cb) { message_callback_ = std::move(cb); }
+void TcpClient::ReceiveMessage(OnMessage cb) { message_callback_ = std::move(cb); }
 
 void TcpClient::SendMessage(const void *buf, size_t num) {
   MS_EXCEPTION_IF_NULL(buffer_event_);

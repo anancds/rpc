@@ -32,6 +32,7 @@
 #include <functional>
 #include <string>
 #include <utility>
+#include "comm_util.h"
 
 namespace mindspore {
 namespace ps {

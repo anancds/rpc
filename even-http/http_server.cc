@@ -54,16 +54,7 @@ HttpServer::~HttpServer() {
 }
 
 bool HttpServer::InitServer() {
-  if (!CommUtil::CheckIp(server_address_)) {
-    MS_LOG(EXCEPTION) << "Server address" << server_address_ << " illegal!";
-  }
-  int64_t uAddr = inet_addr(server_address_.c_str());
-  if (INADDR_NONE == uAddr) {
-    MS_LOG(EXCEPTION) << "Server address illegal, inet_addr converting failed!";
-  }
-  if (server_port_ <= 0) {
-    MS_LOG(EXCEPTION) << "Server port:" << server_port_ << " illegal!";
-  }
+  CommUtil::CheckIpAndPort(server_address_, server_port_);
 
   event_base_ = event_base_new();
   MS_EXCEPTION_IF_NULL(event_base_);

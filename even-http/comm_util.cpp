@@ -4,22 +4,15 @@
 
 #include "comm_util.h"
 #include <arpa/inet.h>
-#include <event.h>
-#include <event2/buffer.h>
-#include <event2/bufferevent.h>
-#include <event2/bufferevent_compat.h>
-#include <event2/http.h>
-#include <event2/http_compat.h>
-#include <event2/http_struct.h>
-#include <event2/listener.h>
-#include <event2/util.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <regex>
-#include "http_message_handler.h"
-#include "http_server.h"
+
+namespace mindspore {
+namespace ps {
+namespace comm {
 
 bool CommUtil::CheckIp(const std::string &ip) {
   std::regex pattern("((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)");
@@ -29,3 +22,19 @@ bool CommUtil::CheckIp(const std::string &ip) {
   }
   return false;
 }
+
+void CommUtil::CheckIpAndPort(const std::string &ip, std::int16_t port) {
+  if (!CheckIp(ip)) {
+    MS_LOG(EXCEPTION) << "Server address" << ip << " illegal!";
+  }
+  int64_t uAddr = inet_addr(ip.c_str());
+  if (INADDR_NONE == uAddr) {
+    MS_LOG(EXCEPTION) << "Server address illegal, inet_addr converting failed!";
+  }
+  if (port <= 0) {
+    MS_LOG(EXCEPTION) << "Server port:" << port << " illegal!";
+  }
+}
+}  // namespace comm
+}  // namespace ps
+}  // namespace mindspore

@@ -21,7 +21,7 @@ class TestTcpClient : public UT::Common {
 
 TEST_F(TestTcpClient, InitClientColonMiss) {
   mindspore::ps::comm::TcpClient client;
-  client.SetMessageCallback([](mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
+  client.ReceiveMessage([](mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
     std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
     client.SendMessage(buffer, num);
   });
@@ -32,7 +32,7 @@ TEST_F(TestTcpClient, InitClientColonMiss) {
 
 TEST_F(TestTcpClient, InitClientPortError) {
   mindspore::ps::comm::TcpClient client;
-  client.SetMessageCallback([](mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
+  client.ReceiveMessage([](mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
     std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
     client.SendMessage(buffer, num);
   });
@@ -43,7 +43,7 @@ TEST_F(TestTcpClient, InitClientPortError) {
 
 TEST_F(TestTcpClient, InitClientIPError) {
   mindspore::ps::comm::TcpClient client;
-  client.SetMessageCallback([](mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
+  client.ReceiveMessage([](mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
     std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
     client.SendMessage(buffer, num);
   });

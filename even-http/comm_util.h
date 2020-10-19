@@ -17,10 +17,19 @@
 #include <functional>
 #include <string>
 #include <utility>
-#include "http_message_handler.h"
+#include "log_adapter.h"
+
+namespace mindspore {
+namespace ps {
+namespace comm {
+
 class CommUtil {
  public:
   static bool CheckIp(const std::string &ip);
+  static void CheckIpAndPort(const std::string &ip, std::int16_t port);
 };
+}  // namespace comm
+}  // namespace ps
+}  // namespace mindspore
 
 #endif  // RPC_COMM_UTIL_H

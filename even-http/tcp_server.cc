@@ -2,6 +2,7 @@
 // Created by cds on 2020/10/15.
 //
 #include "tcp_server.h"
+#include <arpa/inet.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
@@ -10,6 +11,7 @@
 #include <sys/socket.h>
 #include <csignal>
 #include <utility>
+#include "comm_util.h"
 namespace mindspore {
 namespace ps {
 namespace comm {
@@ -36,7 +38,12 @@ void TcpConnection::SendMessage(const void *buffer, size_t num) {
   }
 }
 
-TcpServer::TcpServer() : base_(nullptr), signal_event_(nullptr), listener_(nullptr) {}
+TcpServer::TcpServer(std::string address, std::int16_t port)
+    : base_(nullptr),
+      signal_event_(nullptr),
+      listener_(nullptr),
+      server_address_(std::move(address)),
+      server_port_(port) {}
 
 TcpServer::~TcpServer() {
   if (signal_event_ != nullptr) {
@@ -61,13 +68,16 @@ void TcpServer::SetServerCallback(OnConnected client_conn, OnDisconnected client
   this->client_accept_ = std::move(client_accept);
 }
 
-void TcpServer::InitServer(const unsigned short &port) {
+void TcpServer::InitServer() {
   base_ = event_base_new();
   MS_EXCEPTION_IF_NULL(base_);
+  CommUtil::CheckIpAndPort(server_address_, server_port_);
+
   struct sockaddr_in sin {};
   memset(&sin, 0, sizeof(sin));
   sin.sin_family = AF_INET;
-  sin.sin_port = htons(port);
+  sin.sin_port = htons(server_port_);
+  sin.sin_addr.s_addr = inet_addr(server_address_.c_str());
 
   listener_ = evconnlistener_new_bind(base_, ListenerCallback, reinterpret_cast<void *>(this),
                                       LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, -1,
@@ -208,7 +218,7 @@ void TcpServer::EventCallback(struct bufferevent *bev, short events, void *data)
   }
 }
 
-void TcpServer::SetMessageCallback(OnServerReceiveMessage cb) { message_callback_ = cb; }
+void TcpServer::ReceiveMessage(OnServerReceiveMessage cb) { message_callback_ = cb; }
 
 void TcpServer::SendMessage(TcpConnection &conn, const void *data, size_t num) {
   MS_EXCEPTION_IF_NULL(data);

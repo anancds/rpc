@@ -49,32 +49,34 @@ class TcpServer {
   using OnDisconnected = std::function<void(TcpServer *, TcpConnection *)>;
   using OnAccepted = std::function<TcpConnection *(TcpServer *)>;
 
-  explicit TcpServer();
+  explicit TcpServer(std::string address, std::int16_t port);
   virtual ~TcpServer();
 
   void SetServerCallback(OnConnected client_conn, OnDisconnected client_disconn, OnAccepted client_accept);
-  void InitServer(const unsigned short &port);
+  void InitServer();
   void Start();
   void SendToAllClients(const char *data, size_t len);
   void AddConnection(evutil_socket_t fd, TcpConnection *connection);
   void RemoveConnection(evutil_socket_t fd);
-  void SetMessageCallback(OnServerReceiveMessage cb);
+  void ReceiveMessage(OnServerReceiveMessage cb);
   void SendMessage(TcpConnection &conn, const void *data, size_t num);
   void SendMessage(const void *data, size_t num);
 
  protected:
   static void ListenerCallback(struct evconnlistener *listener, evutil_socket_t socket, struct sockaddr *saddr,
                                int socklen, void *server);
-
   static void SignalCallback(evutil_socket_t sig, short events, void *server);
   static void WriteCallback(struct bufferevent *, void *server);
   static void ReadCallback(struct bufferevent *, void *connection);
   static void EventCallback(struct bufferevent *, short, void *server);
   virtual TcpConnection *onCreateConnection();
 
+ private:
   struct event_base *base_;
   struct event *signal_event_;
   struct evconnlistener *listener_;
+  std::string server_address_;
+  std::int16_t server_port_;
 
   std::map<evutil_socket_t, TcpConnection *> connections_;
   OnConnected client_connection_;

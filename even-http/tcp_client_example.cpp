@@ -7,13 +7,12 @@
 const std::string test_message = "TEST_MESSAGE";
 static void StartClient(mindspore::ps::comm::TcpClient *client) {
   // Run msg server
-  client->SetMessageCallback([](mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
+  client->ReceiveMessage([](mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
     std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
     client.SendMessage(buffer, num);
   });
 
   // Run on port 9000
-  client->SetTarget("127.0.0.1:9000");
   client->InitTcpClient();
 
   // Run for 5 minutes
@@ -23,9 +22,9 @@ static void StartClient(mindspore::ps::comm::TcpClient *client) {
   client->Start();
 }
 int main(int /*argc*/, char ** /*argv*/) {
-  mindspore::ps::comm::TcpClient client;
+  mindspore::ps::comm::TcpClient* client = new mindspore::ps::comm::TcpClient("127.0.0.1", 9000);
   std::unique_ptr<std::thread> http_server_thread_(nullptr);
-  http_server_thread_ = std::make_unique<std::thread>(&StartClient, &client);
+  http_server_thread_ = std::make_unique<std::thread>(&StartClient, client);
   //  client.send_msg(test_message.c_str(), test_message.size());
   http_server_thread_->join();
 

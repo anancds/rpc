@@ -21,16 +21,15 @@ class TcpClient {
   using OnRead = std::function<void(TcpClient &, const void *, size_t)>;
   using OnTimeout = std::function<void(TcpClient &)>;
 
-  TcpClient();
+  explicit TcpClient(std::string address, std::int16_t port);
   virtual ~TcpClient();
 
-  void SetTarget(const std::string &target);
-  [[nodiscard]] std::string GetTarget() const;
+  [[nodiscard]] std::string GetServerAddress() const;
   void SetCallback(OnConnected conn, OnDisconnected disconn, OnRead read, OnTimeout timeout);
   void InitTcpClient();
   void StartWithDelay(int seconds);
   void Stop();
-  void SetMessageCallback(OnMessage cb);
+  void ReceiveMessage(OnMessage cb);
   void SendMessage(const void *buf, size_t num);
   void Start();
 
@@ -41,6 +40,7 @@ class TcpClient {
   static void EventCallback(struct bufferevent *bev, short events, void *ptr);
   virtual void OnReadHandler(const void *buf, size_t num);
 
+ private:
   TcpMessageHandler message_handler_;
   OnMessage message_callback_;
   OnConnected connected_callback_;
@@ -52,7 +52,8 @@ class TcpClient {
   event *event_timeout_;
   bufferevent *buffer_event_;
 
-  std::string target_;
+  std::string server_address_;
+  std::int16_t server_port_;
 };
 }  // namespace comm
 }  // namespace ps
