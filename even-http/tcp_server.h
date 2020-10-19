@@ -17,6 +17,7 @@
 #include <string>
 #include "log_adapter.h"
 #include "tcp_message_handler.h"
+
 namespace mindspore {
 namespace ps {
 namespace comm {
@@ -29,7 +30,7 @@ class TcpConnection {
   explicit TcpConnection() : buffer_event_(nullptr), fd_(0), server_(nullptr) {}
   virtual ~TcpConnection() = default;
 
-  virtual void InitConnection(evutil_socket_t fd, struct bufferevent *bev, TcpServer *srv);
+  virtual void InitConnection(evutil_socket_t fd, struct bufferevent *bev, TcpServer *server);
   void SendMessage(const void *buffer, size_t num);
   virtual void OnReadHandler(const void *buffer, size_t numBytes);
 

@@ -4,15 +4,16 @@
 #ifndef RPC_TCP_MESSAGE_HANDLER_H
 #define RPC_TCP_MESSAGE_HANDLER_H
 
+#include "log_adapter.h"
 #include <functional>
-#include <memory>
 #include <iostream>
+#include <memory>
 
 using messageReceive = std::function<void(const void *buffer, size_t len)>;
 
 class TcpMessageHandler {
  public:
-  explicit TcpMessageHandler() : message_buffer_(new std::string("")) {}
+  TcpMessageHandler() = default;
   virtual ~TcpMessageHandler() = default;
 
   void SetCallback(messageReceive cb);
@@ -20,6 +21,5 @@ class TcpMessageHandler {
 
  private:
   messageReceive message_callback_;
-  std::unique_ptr<std::string> message_buffer_;
 };
 #endif  // RPC_TCP_MESSAGE_HANDLER_H

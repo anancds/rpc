@@ -13,25 +13,25 @@ namespace mindspore {
 namespace ps {
 namespace comm {
 
-void TcpConnection::InitConnection(evutil_socket_t fd, struct bufferevent *bev, TcpServer *srv) {
+void TcpConnection::InitConnection(evutil_socket_t fd, struct bufferevent *bev, TcpServer *server) {
+  MS_EXCEPTION_IF_NULL(bev);
+  MS_EXCEPTION_IF_NULL(server);
   buffer_event_ = bev;
   fd_ = fd;
-  server_ = srv;
+  server_ = server;
 
-  auto *ms = dynamic_cast<TcpServer *>(srv);
-  if (ms) {
-    tcp_message_handler_.SetCallback([this, ms](const void *buf, size_t num) {
-      if (ms->message_callback_) ms->message_callback_(*ms, *this, buf, num);
-    });
-  }
+  auto *tcp_server = dynamic_cast<TcpServer *>(server);
+  MS_EXCEPTION_IF_NULL(tcp_server);
+  tcp_message_handler_.SetCallback([this, tcp_server](const void *buf, size_t num) {
+    if (tcp_server->message_callback_) tcp_server->message_callback_(*tcp_server, *this, buf, num);
+  });
 }
 
-void TcpConnection::OnReadHandler(const void *buffer, size_t num) {
-  tcp_message_handler_.ReceiveMessage(buffer, num);
-}
+void TcpConnection::OnReadHandler(const void *buffer, size_t num) { tcp_message_handler_.ReceiveMessage(buffer, num); }
 
 void TcpConnection::SendMessage(const void *buffer, size_t num) {
   if (bufferevent_write(buffer_event_, buffer, num) == -1) {
+    MS_LOG(ERROR) << "Write message to buffer event failed!";
   }
 }
 
@@ -85,10 +85,19 @@ void TcpServer::Start() {
   std::unique_lock<std::recursive_mutex> l(connection_mutex_);
   MS_EXCEPTION_IF_NULL(base_);
   int ret = event_base_dispatch(base_);
+  if (ret == 0) {
+    MS_LOG(INFO) << "Event base dispatch success!";
+  } else if (ret == 1) {
+    MS_LOG(ERROR) << "Event base dispatch failed with no events pending or active!";
+  } else if (ret == -1) {
+    MS_LOG(ERROR) << "Event base dispatch failed with error occurred!";
+  } else {
+    MS_LOG(EXCEPTION) << "Event base dispatch with unexpect error code!";
+  }
 }
 void TcpServer::SendToAllClients(const char *data, size_t len) {
-  std::unique_lock<std::recursive_mutex> l(connection_mutex_);
-
+  MS_EXCEPTION_IF_NULL(data);
+  std::unique_lock<std::recursive_mutex> lock(connection_mutex_);
   auto it = connections_.begin();
   while (it != connections_.end()) {
     it->second->SendMessage(data, len);
@@ -97,12 +106,13 @@ void TcpServer::SendToAllClients(const char *data, size_t len) {
 }
 
 void TcpServer::AddConnection(evutil_socket_t fd, TcpConnection *connection) {
-  std::unique_lock<std::recursive_mutex> l(connection_mutex_);
+  MS_EXCEPTION_IF_NULL(connection);
+  std::unique_lock<std::recursive_mutex> lock(connection_mutex_);
   connections_.insert(std::pair<evutil_socket_t, class TcpConnection *>(fd, connection));
 }
 
 void TcpServer::RemoveConnection(evutil_socket_t fd) {
-  std::unique_lock<std::recursive_mutex> l(connection_mutex_);
+  std::unique_lock<std::recursive_mutex> lock(connection_mutex_);
   connections_.erase(fd);
 }
 
@@ -110,25 +120,22 @@ void TcpServer::ListenerCallback(struct evconnlistener *listener, evutil_socket_
                                  int socklen, void *data) {
   auto *server = reinterpret_cast<class TcpServer *>(data);
   auto *base = reinterpret_cast<struct event_base *>(server->base_);
-  struct bufferevent *bev;
+  MS_EXCEPTION_IF_NULL(server);
+  MS_EXCEPTION_IF_NULL(base);
 
+  struct bufferevent *bev;
   bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
   if (!bev) {
+    MS_LOG(ERROR) << "Error constructing buffer event!";
     event_base_loopbreak(base);
-    printf("Error constructing bufferevent!\n");
     return;
   }
 
   TcpConnection *conn = server->onCreateConnection();
-  if (!conn) {
-    printf("Error creation of connection object.");
-    return;
-  }
+  MS_EXCEPTION_IF_NULL(conn);
 
   conn->InitConnection(fd, bev, server);
-
   server->AddConnection(fd, conn);
-
   bufferevent_setcb(bev, TcpServer::ReadCallback, TcpServer::WriteCallback, TcpServer::EventCallback,
                     reinterpret_cast<void *>(conn));
   bufferevent_enable(bev, EV_WRITE);
@@ -147,42 +154,47 @@ TcpConnection *TcpServer::onCreateConnection() {
 
 void TcpServer::SignalCallback(evutil_socket_t sig, short events, void *data) {
   auto *server = reinterpret_cast<class TcpServer *>(data);
+  MS_EXCEPTION_IF_NULL(server);
   struct event_base *base = server->base_;
   struct timeval delay = {0, 0};
   MS_LOG(ERROR) << "Caught an interrupt signal; exiting cleanly in 0 seconds.";
   event_base_loopexit(base, &delay);
-  // Exited
 }
 
 void TcpServer::WriteCallback(struct bufferevent *bev, void *data) {
+  MS_EXCEPTION_IF_NULL(bev);
+  MS_EXCEPTION_IF_NULL(data);
   struct evbuffer *output = bufferevent_get_output(bev);
   if (evbuffer_get_length(output) == 0) {
+    MS_LOG(WARNING) << "output from event buffer is 0!";
   }
 }
 
 void TcpServer::ReadCallback(struct bufferevent *bev, void *connection) {
+  MS_EXCEPTION_IF_NULL(bev);
+  MS_EXCEPTION_IF_NULL(connection);
   auto *conn = static_cast<class TcpConnection *>(connection);
   struct evbuffer *buf = bufferevent_get_input(bev);
-  char readbuf[1024];
+  char read_buffer[1024];
   int read = 0;
 
-  while ((read = evbuffer_remove(buf, &readbuf, sizeof(readbuf))) > 0) {
-    conn->OnReadHandler(readbuf, static_cast<size_t>(read));
+  while ((read = evbuffer_remove(buf, &read_buffer, sizeof(read_buffer))) > 0) {
+    conn->OnReadHandler(read_buffer, static_cast<size_t>(read));
   }
 }
 
 void TcpServer::EventCallback(struct bufferevent *bev, short events, void *data) {
+  MS_EXCEPTION_IF_NULL(bev);
+  MS_EXCEPTION_IF_NULL(data);
   auto *conn = reinterpret_cast<TcpConnection *>(data);
   TcpServer *srv = conn->server_;
 
   if (events & BEV_EVENT_EOF) {
     // Notify about disconnection
     if (srv->client_disconnection_) srv->client_disconnection_(conn->server_, conn);
-
     // Free connection structures
     conn->server_->RemoveConnection(conn->fd_);
     bufferevent_free(bev);
-
   } else if (events & BEV_EVENT_ERROR) {
     // Free connection structures
     conn->server_->RemoveConnection(conn->fd_);
@@ -190,18 +202,21 @@ void TcpServer::EventCallback(struct bufferevent *bev, short events, void *data)
 
     // Notify about disconnection
     if (srv->client_disconnection_) srv->client_disconnection_(conn->server_, conn);
-
   } else {
-    printf("unhandled.\n");
+    MS_LOG(ERROR) << "unhandled event!";
   }
 }
+
 void TcpServer::SetMessageCallback(OnServerReceiveMessage cb) { message_callback_ = cb; }
+
 void TcpServer::SendMessage(TcpConnection &conn, const void *data, size_t num) {
+  MS_EXCEPTION_IF_NULL(data);
   auto &mc = dynamic_cast<TcpConnection &>(conn);
   mc.SendMessage(data, num);
 }
 
 void TcpServer::SendMessage(const void *data, size_t num) {
+  MS_EXCEPTION_IF_NULL(data);
   std::unique_lock<std::recursive_mutex> l(connection_mutex_);
 
   auto it = connections_.begin();

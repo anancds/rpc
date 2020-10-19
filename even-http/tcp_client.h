@@ -15,40 +15,38 @@ namespace comm {
 
 class TcpClient {
  public:
-  const int IO_TIMEOUT = 5;       // Seconds
-  const int DEFAULT_PORT = 9000;  // Default port number for target
-
-  using on_message = std::function<void(TcpClient &, const void *, size_t)>;
-  using on_connected = std::function<void(TcpClient &)>;
-  using on_disconnected = std::function<void(TcpClient &, int)>;
-  using on_read = std::function<void(TcpClient &, const void *, size_t)>;
-  using on_timeout = std::function<void(TcpClient &)>;
+  using OnMessage = std::function<void(TcpClient &, const void *, size_t)>;
+  using OnConnected = std::function<void(TcpClient &)>;
+  using OnDisconnected = std::function<void(TcpClient &, int)>;
+  using OnRead = std::function<void(TcpClient &, const void *, size_t)>;
+  using OnTimeout = std::function<void(TcpClient &)>;
 
   TcpClient();
   virtual ~TcpClient();
 
   void SetTarget(const std::string &target);
-  std::string GetTarget() const;
-  void SetCallback(on_connected conn, on_disconnected disconn, on_read read, on_timeout timeout);
+  [[nodiscard]] std::string GetTarget() const;
+  void SetCallback(OnConnected conn, OnDisconnected disconn, OnRead read, OnTimeout timeout);
   void InitTcpClient();
   void StartWithDelay(int seconds);
   void Stop();
-  void SetMessageCallback(on_message cb);
+  void SetMessageCallback(OnMessage cb);
   void SendMessage(const void *buf, size_t num);
   void Start();
 
  protected:
+  static void SetTcpNoDelay(evutil_socket_t fd);
   static void TimeoutCallback(evutil_socket_t fd, short what, void *arg);
   static void ReadCallback(struct bufferevent *bev, void *ctx);
   static void EventCallback(struct bufferevent *bev, short events, void *ptr);
   virtual void OnReadHandler(const void *buf, size_t num);
 
   TcpMessageHandler message_handler_;
-  on_message message_callback_;
-  on_connected connected_callback_;
-  on_disconnected disconnected_callback_;
-  on_read read_callback_;
-  on_timeout timeout_callback_;
+  OnMessage message_callback_;
+  OnConnected connected_callback_;
+  OnDisconnected disconnected_callback_;
+  OnRead read_callback_;
+  OnTimeout timeout_callback_;
 
   event_base *event_base_;
   event *event_timeout_;

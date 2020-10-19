@@ -13,7 +13,7 @@ static void StartClient(mindspore::ps::comm::TcpClient *client) {
   });
 
   // Run on port 9000
-  client->SetTarget("127.0.0.1:9000");
+  client->SetTarget("127.0.0.1:900");
   client->InitTcpClient();
 
   // Run for 5 minutes

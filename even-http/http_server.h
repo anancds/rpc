@@ -31,6 +31,7 @@
 #include <cstring>
 #include <functional>
 #include <string>
+#include <utility>
 
 namespace mindspore {
 namespace ps {
