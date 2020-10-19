@@ -3,6 +3,7 @@
 //
 
 #include "tcp_client.h"
+#include "comm_util.h"
 
 #include <arpa/inet.h>
 #include <event2/buffer.h>
@@ -49,17 +50,24 @@ void TcpClient::InitTcpClient() {
   event_base_ = event_base_new();
   MS_EXCEPTION_IF_NULL(event_base_);
 
-  std::string::size_type p = target_.find(':');
-  if (p == std::string::npos) {
-    MS_LOG(EXCEPTION) << "The target ip:" << target_ << "is illegal!";
+  std::string::size_type colon_index = target_.find(':');
+  if (colon_index == std::string::npos) {
+    MS_LOG(EXCEPTION) << "The target ip:" << target_ << " is illegal!";
   }
 
-  auto port = static_cast<uint16_t>(std::atoi(target_.c_str() + p + 1));
-
+  auto port = static_cast<int16_t>(std::atoi(target_.c_str() + colon_index + 1));
+  if (port <= 0) {
+    MS_LOG(EXCEPTION) << "tcp client port:" << port << " illegal!";
+  }
+  auto server_address = target_.substr(0, colon_index);
+  if (!CommUtil::CheckIp(server_address)) {
+    MS_LOG(EXCEPTION) << "Server address" << server_address << " illegal!";
+  }
   sockaddr_in sin{};
   memset(&sin, 0, sizeof(sin));
   sin.sin_family = AF_INET;
   if (evutil_inet_pton(AF_INET, target_.c_str(), &sin.sin_addr.s_addr) != 0) {
+    MS_LOG(EXCEPTION) << "The target:" << target_ << " is illegal!";
   }
   sin.sin_port = htons(port);
 

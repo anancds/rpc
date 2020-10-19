@@ -15,6 +15,7 @@
  */
 
 #include "http_server.h"
+#include "comm_util.h"
 #include "http_message_handler.h"
 
 #ifdef WIN32
@@ -53,7 +54,7 @@ HttpServer::~HttpServer() {
 }
 
 bool HttpServer::InitServer() {
-  if (!CheckIp(server_address_)) {
+  if (!CommUtil::CheckIp(server_address_)) {
     MS_LOG(EXCEPTION) << "Server address" << server_address_ << " illegal!";
   }
   int64_t uAddr = inet_addr(server_address_.c_str());
@@ -74,15 +75,6 @@ bool HttpServer::InitServer() {
   }
   is_init_ = true;
   return true;
-}
-
-bool HttpServer::CheckIp(const std::string &ip) {
-  std::regex pattern("((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)");
-  std::smatch res;
-  if (regex_match(ip, res, pattern)) {
-    return true;
-  }
-  return false;
 }
 
 void HttpServer::SetTimeOut(int seconds) {

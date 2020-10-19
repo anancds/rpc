@@ -64,7 +64,6 @@ class HttpServer {
   typedef std::function<handle_t> HandlerFunc;
 
   bool InitServer();
-  static bool CheckIp(const std::string &ip);
   void SetTimeOut(int seconds = 5);
 
   // Default allowed methods: GET, POST, HEAD, PUT, DELETE

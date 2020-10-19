@@ -9,6 +9,7 @@
 #include <event2/util.h>
 #include <sys/socket.h>
 #include <csignal>
+#include <utility>
 namespace mindspore {
 namespace ps {
 namespace comm {
@@ -55,9 +56,9 @@ TcpServer::~TcpServer() {
 }
 
 void TcpServer::SetServerCallback(OnConnected client_conn, OnDisconnected client_disconn, OnAccepted client_accept) {
-  this->client_connection_ = client_conn;
-  this->client_disconnection_ = client_disconn;
-  this->client_accept_ = client_accept;
+  this->client_connection_ = std::move(client_conn);
+  this->client_disconnection_ = std::move(client_disconn);
+  this->client_accept_ = std::move(client_accept);
 }
 
 void TcpServer::InitServer(const unsigned short &port) {
@@ -165,8 +166,8 @@ void TcpServer::WriteCallback(struct bufferevent *bev, void *data) {
   MS_EXCEPTION_IF_NULL(bev);
   MS_EXCEPTION_IF_NULL(data);
   struct evbuffer *output = bufferevent_get_output(bev);
+  MS_EXCEPTION_IF_NULL(output);
   if (evbuffer_get_length(output) == 0) {
-    MS_LOG(WARNING) << "output from event buffer is 0!";
   }
 }
 
