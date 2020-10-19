@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <thread>
 #include "event_http_server.h"
@@ -69,7 +70,7 @@ class TestHttpServer : public ::testing::Test {
     });
     server_->RegistHandler("/handler", TestHttpServer::testGetHandler);
     std::unique_ptr<std::thread> http_server_thread_(nullptr);
-    http_server_thread_.reset(new std::thread([&]() { server_->Start(); }));
+    http_server_thread_ = std::make_unique<std::thread>([&]() { server_->Start(); });
     http_server_thread_->detach();
   }
 

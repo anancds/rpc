@@ -45,22 +45,7 @@ TcpServer::TcpServer(std::string address, std::int16_t port)
       server_address_(std::move(address)),
       server_port_(port) {}
 
-TcpServer::~TcpServer() {
-  if (signal_event_ != nullptr) {
-    event_free(signal_event_);
-    signal_event_ = nullptr;
-  }
-
-  if (listener_ != nullptr) {
-    evconnlistener_free(listener_);
-    listener_ = nullptr;
-  }
-
-  if (base_ != nullptr) {
-    event_base_free(base_);
-    base_ = nullptr;
-  }
-}
+TcpServer::~TcpServer() { Stop(); }
 
 void TcpServer::SetServerCallback(OnConnected client_conn, OnDisconnected client_disconn, OnAccepted client_accept) {
   this->client_connection_ = std::move(client_conn);
@@ -104,6 +89,23 @@ void TcpServer::Start() {
     MS_LOG(ERROR) << "Event base dispatch failed with error occurred!";
   } else {
     MS_LOG(EXCEPTION) << "Event base dispatch with unexpect error code!";
+  }
+}
+
+void TcpServer::Stop() {
+  if (signal_event_ != nullptr) {
+    event_free(signal_event_);
+    signal_event_ = nullptr;
+  }
+
+  if (listener_ != nullptr) {
+    evconnlistener_free(listener_);
+    listener_ = nullptr;
+  }
+
+  if (base_ != nullptr) {
+    event_base_free(base_);
+    base_ = nullptr;
   }
 }
 void TcpServer::SendToAllClients(const char *data, size_t len) {

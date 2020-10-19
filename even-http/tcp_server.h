@@ -55,6 +55,7 @@ class TcpServer {
   void SetServerCallback(OnConnected client_conn, OnDisconnected client_disconn, OnAccepted client_accept);
   void InitServer();
   void Start();
+  void Stop();
   void SendToAllClients(const char *data, size_t len);
   void AddConnection(evutil_socket_t fd, TcpConnection *connection);
   void RemoveConnection(evutil_socket_t fd);
