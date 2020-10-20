@@ -9,8 +9,8 @@
 
 static void StartServer() {
   mindspore::ps::comm::TcpServer *server = new mindspore::ps::comm::TcpServer("127.0.0.1", 9000);
-  server->ReceiveMessage([](mindspore::ps::comm::TcpServer &server, mindspore::ps::comm::TcpConnection &conn,
-                            const void *buffer, size_t num) {
+  server->ReceiveMessage([](const mindspore::ps::comm::TcpServer &server,
+                            const mindspore::ps::comm::TcpConnection &conn, const void *buffer, size_t num) {
     // Dump message
     std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
 

@@ -222,15 +222,15 @@ void TcpServer::EventCallback(struct bufferevent *bev, short events, void *data)
 
 void TcpServer::ReceiveMessage(OnServerReceiveMessage cb) { message_callback_ = cb; }
 
-void TcpServer::SendMessage(TcpConnection &conn, const void *data, size_t num) {
+void TcpServer::SendMessage(const TcpConnection &conn, const void *data, size_t num) {
   MS_EXCEPTION_IF_NULL(data);
-  auto &mc = dynamic_cast<TcpConnection &>(conn);
+  auto &mc = const_cast<TcpConnection &>(conn);
   mc.SendMessage(data, num);
 }
 
 void TcpServer::SendMessage(const void *data, size_t num) {
   MS_EXCEPTION_IF_NULL(data);
-  std::unique_lock<std::recursive_mutex> l(connection_mutex_);
+  std::unique_lock<std::recursive_mutex> lock(connection_mutex_);
 
   auto it = connections_.begin();
   while (it != connections_.end()) {

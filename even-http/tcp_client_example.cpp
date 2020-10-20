@@ -7,7 +7,7 @@
 const std::string test_message = "TEST_MESSAGE";
 static void StartClient(mindspore::ps::comm::TcpClient *client) {
   // Run msg server
-  client->ReceiveMessage([](mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
+  client->ReceiveMessage([](const mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
     std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
     client.SendMessage(buffer, num);
   });

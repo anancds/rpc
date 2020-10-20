@@ -164,7 +164,7 @@ void TcpClient::Start() {
 
 void TcpClient::ReceiveMessage(OnMessage cb) { message_callback_ = std::move(cb); }
 
-void TcpClient::SendMessage(const void *buf, size_t num) {
+void TcpClient::SendMessage(const void *buf, size_t num) const{
   MS_EXCEPTION_IF_NULL(buffer_event_);
   evbuffer_add(bufferevent_get_output(buffer_event_), buf, num);
 }

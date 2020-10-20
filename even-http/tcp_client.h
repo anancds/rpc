@@ -15,11 +15,11 @@ namespace comm {
 
 class TcpClient {
  public:
-  using OnMessage = std::function<void(TcpClient &, const void *, size_t)>;
-  using OnConnected = std::function<void(TcpClient &)>;
-  using OnDisconnected = std::function<void(TcpClient &, int)>;
-  using OnRead = std::function<void(TcpClient &, const void *, size_t)>;
-  using OnTimeout = std::function<void(TcpClient &)>;
+  using OnMessage = std::function<void(const TcpClient &, const void *, size_t)>;
+  using OnConnected = std::function<void(const TcpClient &)>;
+  using OnDisconnected = std::function<void(const TcpClient &, int)>;
+  using OnRead = std::function<void(const TcpClient &, const void *, size_t)>;
+  using OnTimeout = std::function<void(const TcpClient &)>;
 
   explicit TcpClient(std::string address, std::int16_t port);
   virtual ~TcpClient();
@@ -30,7 +30,7 @@ class TcpClient {
   void StartWithDelay(int seconds);
   void Stop();
   void ReceiveMessage(OnMessage cb);
-  void SendMessage(const void *buf, size_t num);
+  void SendMessage(const void *buf, size_t num) const;
   void Start();
 
  protected:

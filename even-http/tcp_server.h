@@ -44,7 +44,8 @@ class TcpServer {
   friend class TcpConnection;
 
  public:
-  using OnServerReceiveMessage = std::function<void(TcpServer &, TcpConnection &conn, const void *buffer, size_t num)>;
+  using OnServerReceiveMessage =
+    std::function<void(const TcpServer &tcp_server, const TcpConnection &conn, const void *buffer, size_t num)>;
   using OnConnected = std::function<void(TcpServer *, TcpConnection *)>;
   using OnDisconnected = std::function<void(TcpServer *, TcpConnection *)>;
   using OnAccepted = std::function<TcpConnection *(TcpServer *)>;
@@ -60,7 +61,7 @@ class TcpServer {
   void AddConnection(evutil_socket_t fd, TcpConnection *connection);
   void RemoveConnection(evutil_socket_t fd);
   void ReceiveMessage(OnServerReceiveMessage cb);
-  void SendMessage(TcpConnection &conn, const void *data, size_t num);
+  static void SendMessage(const TcpConnection &conn, const void *data, size_t num);
   void SendMessage(const void *data, size_t num);
 
  protected:
