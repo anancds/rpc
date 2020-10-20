@@ -43,7 +43,7 @@ TEST_F(TestTcpServer, ServerSendeMessage) {
   client_ = new TcpClient("127.0.0.1", 9000);
   std::unique_ptr<std::thread> http_client_thread(nullptr);
   http_client_thread = std::make_unique<std::thread>([&]() {
-    client_->ReceiveMessage([](mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
+    client_->ReceiveMessage([](const mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
       EXPECT_STREQ(std::string(reinterpret_cast<const char *>(buffer), num).c_str(), "TCP_MESSAGE");
     });
 
