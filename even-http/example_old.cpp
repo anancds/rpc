@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <regex>
 #include <thread>
 #include "event_http_server.h"
@@ -45,10 +46,12 @@ bool CheckIp(const std::string &ip) {
 }
 void StartHttpServer() {
   mindspore::ps::comm::HttpServer *server_ = new mindspore::ps::comm::HttpServer("0.0.0.0", 9999);
-  server_->RegisterRoute("/httpget", [](mindspore::ps::comm::HttpMessageHandler *resp) {
+  std::function<void(mindspore::ps::comm::HttpMessageHandler *)> f1 = std::bind([](mindspore::ps::comm::HttpMessageHandler *resp) {
     resp->QuickResponse(200, "get request success!\n");
-  });
-  server_->RegisterRoute("/handler", testGetHandler);
+  }, std::placeholders::_1);
+  server_->RegisterRoute("/httpget", &f1);
+  std::function<void(mindspore::ps::comm::HttpMessageHandler *)> f2 = std::bind(testGetHandler, std::placeholders::_1);
+  server_->RegisterRoute("/handler", &f2);
   server_->Start();
 }
 int main() {
@@ -56,7 +59,7 @@ int main() {
   std::cout << test << std::endl;
   cout << CheckIp("0.0.0.0") << endl;
   std::unique_ptr<std::thread> http_server_thread_(nullptr);
-  http_server_thread_.reset(new std::thread(&StartHttpServer));
+  http_server_thread_ = std::make_unique<std::thread>(&StartHttpServer);
   http_server_thread_->join();
 
   //  EvHttpServ Serv("0.0.0.0", 8077);

@@ -50,10 +50,6 @@ typedef enum eHttpMethod {
   HM_PATCH = 1 << 8
 } HttpMethod;
 
-typedef u_int16_t HttpMethodsSet;
-
-typedef void(handle_t)(HttpMessageHandler *);
-
 class HttpServer {
  public:
   // Server address only support IPV4 now, and should be in format of "x.x.x.x"
@@ -62,13 +58,13 @@ class HttpServer {
 
   ~HttpServer();
 
-  typedef std::function<handle_t> HandlerFunc;
+  typedef std::function<void(HttpMessageHandler *)> HandlerFunc;
 
   bool InitServer();
   void SetTimeOut(int seconds = 5);
 
   // Default allowed methods: GET, POST, HEAD, PUT, DELETE
-  void SetAllowedMethod(HttpMethodsSet methods);
+  void SetAllowedMethod(u_int16_t methods);
 
   // Default to ((((unsigned long long)0xffffffffUL) << 32) | 0xffffffffUL)
   void SetMaxHeaderSize(std::size_t num);
@@ -77,7 +73,7 @@ class HttpServer {
   void SetMaxBodySize(std::size_t num);
 
   // Return: true if success, false if failed, check log to find failure reason
-  bool RegisterRoute(const std::string &url, handle_t *func);
+  bool RegisterRoute(const std::string &url, HandlerFunc *func);
   bool UnRegisterRoute(const std::string &url);
 
   bool Start();
