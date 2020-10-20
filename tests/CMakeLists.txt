@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 enable_testing()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../even-http)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../log)
-add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/event_http_server.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/event_http_request.cpp)
+add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/http_message_handler.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/http_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/comm_util.cpp)
 add_library(tcp ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/tcp_client.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/tcp_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/tcp_message_handler.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/comm_util.cpp)
 find_package(Threads REQUIRED)
 set(protobuf_MODULE_COMPATIBLE TRUE)
@@ -18,6 +18,7 @@ add_executable(unit_tests unit_tests.cpp)
 
 target_link_libraries(unit_tests
         unittest
+        rpc-log
         GTest::GTest
         GTest::Main
         GMock::GMock
