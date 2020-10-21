@@ -28,6 +28,16 @@ static void StartServer() {
   server->Start();
 }
 int main(int /*argc*/, char ** /*argv*/) {
+  struct evbuffer *buf1 = NULL, *buf2 = NULL;
+  buf1 = evbuffer_new();
+  buf2 = evbuffer_new();
+  evbuffer_add_reference(buf1, "foo", 3, NULL, NULL);
+  evbuffer_prepend(buf1, "abc", 3);
+  int ret = evbuffer_remove_buffer(buf1, buf2, 1);
+  std::cout << ret << std::endl;
+//  evbuffer_add(buf1, "bar", 3);
+  std:: cout<< evbuffer_pullup(buf1, -1) << std::endl;
+  std::cout << static_cast<size_t>(-1) << std::endl;
   std::unique_ptr<std::thread> http_server_thread_(nullptr);
   http_server_thread_.reset(new std::thread(&StartServer));
   http_server_thread_->join();

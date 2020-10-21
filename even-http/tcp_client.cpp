@@ -6,6 +6,8 @@
 #include "comm_util.h"
 
 #include <arpa/inet.h>
+//#include <e>
+#include <event2/dns.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
@@ -127,7 +129,9 @@ void TcpClient::ReadCallback(struct bufferevent *bev, void *ctx) {
   char read_buffer[1024];
   size_t read = 0;
 
-  while ((read = static_cast<size_t>(evbuffer_remove(input, &read_buffer, sizeof(read_buffer)))) > 0) {
+  while ((read = EVBUFFER_LENGTH(input)) > 0) {
+    evbuffer_remove(input, &read_buffer, sizeof(read_buffer));
+
     tcp_client->OnReadHandler(read_buffer, read);
   }
 }
@@ -164,7 +168,7 @@ void TcpClient::Start() {
 
 void TcpClient::ReceiveMessage(OnMessage cb) { message_callback_ = std::move(cb); }
 
-void TcpClient::SendMessage(const void *buf, size_t num) const{
+void TcpClient::SendMessage(const void *buf, size_t num) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
   evbuffer_add(bufferevent_get_output(buffer_event_), buf, num);
 }

@@ -15,7 +15,7 @@
 #include <cstring>
 
 static void set_tcp_no_delay(evutil_socket_t fd) {
-  int one = 1;
+  const int one = 1;
   setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one);
 }
 
