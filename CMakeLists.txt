@@ -15,6 +15,7 @@ add_subdirectory(tests)
 add_subdirectory(incubator-brpc)
 add_subdirectory(log)
 add_subdirectory(event-tcp)
+add_subdirectory(consistent_hash)
 
 
 #FILE(GLOB_RECURSE newList *.cpp)
