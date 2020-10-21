@@ -17,20 +17,21 @@ class TestTcpServer : public UT::Common {
     server_ = new TcpServer("127.0.0.1", 9000);
     std::unique_ptr<std::thread> http_server_thread_(nullptr);
     http_server_thread_ = std::make_unique<std::thread>([&]() {
-      server_->ReceiveMessage([](mindspore::ps::comm::TcpServer &server, mindspore::ps::comm::TcpConnection &conn,
+      server_->ReceiveMessage([](const mindspore::ps::comm::TcpServer &server, const mindspore::ps::comm::TcpConnection &conn,
                                  const void *buffer, size_t num) {
         EXPECT_STREQ(std::string(reinterpret_cast<const char *>(buffer), num).c_str(), "TCP_MESSAGE");
-        server.SendMessage(conn, buffer, num);
+        TcpServer::SendMessage(conn, buffer, num);
       });
       server_->InitServer();
       server_->Start();
     });
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     http_server_thread_->detach();
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
   void TearDown() override {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     client_->Stop();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     server_->Stop();
   }
 
