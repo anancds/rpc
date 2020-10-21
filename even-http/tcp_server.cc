@@ -38,7 +38,7 @@ void TcpConnection::SendMessage(const void *buffer, size_t num) {
   }
 }
 
-TcpServer::TcpServer(std::string address, std::int16_t port)
+TcpServer::TcpServer(std::string address, std::uint16_t port)
     : base_(nullptr),
       signal_event_(nullptr),
       listener_(nullptr),

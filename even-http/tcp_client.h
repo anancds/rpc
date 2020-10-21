@@ -21,7 +21,7 @@ class TcpClient {
   using OnRead = std::function<void(const TcpClient &, const void *, size_t)>;
   using OnTimeout = std::function<void(const TcpClient &)>;
 
-  explicit TcpClient(std::string address, std::int16_t port);
+  explicit TcpClient(std::string address, std::uint16_t port);
   virtual ~TcpClient();
 
   [[nodiscard]] std::string GetServerAddress() const;
@@ -53,7 +53,7 @@ class TcpClient {
   bufferevent *buffer_event_;
 
   std::string server_address_;
-  std::int16_t server_port_;
+  std::uint16_t server_port_;
 };
 }  // namespace comm
 }  // namespace ps

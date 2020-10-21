@@ -53,8 +53,8 @@ typedef enum eHttpMethod {
 class HttpServer {
  public:
   // Server address only support IPV4 now, and should be in format of "x.x.x.x"
-  explicit HttpServer(const std::string &address, std::int16_t port)
-      : server_address_(address), server_port_(port), event_base_(nullptr), event_http_(nullptr), is_init_(false) {}
+  explicit HttpServer(std::string address, std::uint16_t port)
+      : server_address_(std::move(address)), server_port_(port), event_base_(nullptr), event_http_(nullptr), is_init_(false) {}
 
   ~HttpServer();
 
@@ -81,7 +81,7 @@ class HttpServer {
 
  private:
   std::string server_address_;
-  std::int16_t server_port_;
+  std::uint16_t server_port_;
   struct event_base *event_base_;
   struct evhttp *event_http_;
   bool is_init_;

@@ -7,6 +7,10 @@
 #include <thread>
 #include "tcp_server.h"
 
+static std::string getEnvVar(std::string const &key) {
+  char *val = getenv(key.c_str());
+  return val == NULL ? std::string("") : std::string(val);
+}
 static void StartServer() {
   mindspore::ps::comm::TcpServer *server = new mindspore::ps::comm::TcpServer("127.0.0.1", 9000);
   server->ReceiveMessage([](const mindspore::ps::comm::TcpServer &server,

@@ -21,7 +21,7 @@ namespace mindspore {
 namespace ps {
 namespace comm {
 
-TcpClient::TcpClient(std::string address, std::int16_t port)
+TcpClient::TcpClient(std::string address, std::uint16_t port)
     : event_base_(nullptr),
       event_timeout_(nullptr),
       buffer_event_(nullptr),

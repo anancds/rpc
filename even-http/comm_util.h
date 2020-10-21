@@ -26,7 +26,7 @@ namespace comm {
 class CommUtil {
  public:
   static bool CheckIp(const std::string &ip);
-  static void CheckIpAndPort(const std::string &ip, std::int16_t port);
+  static void CheckIpAndPort(const std::string &ip, std::uint16_t port);
 };
 }  // namespace comm
 }  // namespace ps

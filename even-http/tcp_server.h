@@ -50,7 +50,7 @@ class TcpServer {
   using OnDisconnected = std::function<void(TcpServer *, TcpConnection *)>;
   using OnAccepted = std::function<TcpConnection *(TcpServer *)>;
 
-  explicit TcpServer(std::string address, std::int16_t port);
+  explicit TcpServer(std::string address, std::uint16_t port);
   virtual ~TcpServer();
 
   void SetServerCallback(OnConnected client_conn, OnDisconnected client_disconn, OnAccepted client_accept);
@@ -78,7 +78,7 @@ class TcpServer {
   struct event *signal_event_;
   struct evconnlistener *listener_;
   std::string server_address_;
-  std::int16_t server_port_;
+  std::uint16_t server_port_;
 
   std::map<evutil_socket_t, TcpConnection *> connections_;
   OnConnected client_connection_;

@@ -23,7 +23,7 @@ bool CommUtil::CheckIp(const std::string &ip) {
   return false;
 }
 
-void CommUtil::CheckIpAndPort(const std::string &ip, std::int16_t port) {
+void CommUtil::CheckIpAndPort(const std::string &ip, std::uint16_t port) {
   if (!CheckIp(ip)) {
     MS_LOG(EXCEPTION) << "Server address" << ip << " illegal!";
   }
