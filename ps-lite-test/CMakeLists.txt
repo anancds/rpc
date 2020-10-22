@@ -16,6 +16,8 @@ set(STA_DEPS pslite protobuf zmq)
 add_executable(test_connection test_connection.cpp)
 target_link_libraries(test_connection ${STA_DEPS} Threads::Threads)
 
-
 add_executable(test_kv_app_benchmark test_kv_app_benchmark.cpp)
 target_link_libraries(test_kv_app_benchmark ${STA_DEPS} Threads::Threads)
+
+add_executable(test_kv_simple_app test_simple_app.cpp)
+target_link_libraries(test_kv_simple_app ${STA_DEPS} Threads::Threads)

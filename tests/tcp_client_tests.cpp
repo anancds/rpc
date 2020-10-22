@@ -13,6 +13,15 @@ class TestTcpClient : public UT::Common {
   void TearDown() override { std::cout << std::endl; }
 };
 
+TEST_F(TestTcpClient, InitClientPortErrorNoException) {
+  auto client = new TcpClient("127.0.0.1", -1);
+  client->ReceiveMessage([](const mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
+    client.SendMessage(buffer, num);
+  });
+
+  EXPECT_NO_THROW(client->InitTcpClient());
+}
+
 TEST_F(TestTcpClient, InitClientIPError) {
   TcpClient *client = new TcpClient("127.0.0.13543", 9000);
   client->ReceiveMessage([](const mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {

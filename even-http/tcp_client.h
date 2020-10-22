@@ -29,7 +29,7 @@ class TcpClient {
   void InitTcpClient();
   void StartWithDelay(int seconds);
   void Stop();
-  void ReceiveMessage(OnMessage cb);
+  void ReceiveMessage(const OnMessage &cb);
   void SendMessage(const void *buf, size_t num) const;
   void Start();
 

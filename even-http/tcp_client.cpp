@@ -6,8 +6,7 @@
 #include "comm_util.h"
 
 #include <arpa/inet.h>
-//#include <e>
-#include <event2/dns.h>
+#include <event2/buffer_compat.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
@@ -166,7 +165,7 @@ void TcpClient::Start() {
   event_base_dispatch(event_base_);
 }
 
-void TcpClient::ReceiveMessage(OnMessage cb) { message_callback_ = std::move(cb); }
+void TcpClient::ReceiveMessage(const OnMessage &cb) { message_callback_ = cb; }
 
 void TcpClient::SendMessage(const void *buf, size_t num) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);

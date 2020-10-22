@@ -11,10 +11,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <functional>
 #include <thread>
 #include "http_server.h"
 
@@ -31,10 +31,10 @@ static void testGetHandler(HttpMessageHandler *resp) {
   std::string header_param = resp->GetHeadParam("headerKey");
   std::string post_param = resp->GetPostParam("postKey");
   std::string post_message = resp->GetPostMsg();
-//    EXPECT_STREQ(path_param.c_str(), "value1");
-//    EXPECT_STREQ(header_param.c_str(), "headerValue");
-//    EXPECT_STREQ(post_param.c_str(), "postValue");
-//    EXPECT_STREQ(post_message.c_str(), "postKey=postValue");
+  //    EXPECT_STREQ(path_param.c_str(), "value1");
+  //    EXPECT_STREQ(header_param.c_str(), "headerValue");
+  //    EXPECT_STREQ(post_param.c_str(), "postValue");
+  //    EXPECT_STREQ(post_message.c_str(), "postKey=postValue");
 
   const std::string rKey("headKey");
   const std::string rVal("headValue");
@@ -47,7 +47,6 @@ static void testGetHandler(HttpMessageHandler *resp) {
 }
 class TestHttpServer : public ::testing::Test {
  protected:
-
   void SetUp() override {
     server_ = new HttpServer("0.0.0.0", 9999);
     std::function<void(HttpMessageHandler *)> http_get_func = std::bind(
@@ -60,8 +59,7 @@ class TestHttpServer : public ::testing::Test {
       },
       std::placeholders::_1);
 
-    std::function<void(HttpMessageHandler *)> http_handler_func =
-      std::bind(testGetHandler, std::placeholders::_1);
+    std::function<void(HttpMessageHandler *)> http_handler_func = std::bind(testGetHandler, std::placeholders::_1);
     server_->RegisterRoute("/httpget", &http_get_func);
     server_->RegisterRoute("/handler", &http_handler_func);
     std::unique_ptr<std::thread> http_server_thread_(nullptr);
@@ -108,20 +106,18 @@ TEST_F(TestHttpServer, messageHandlerTest) {
   pclose(file);
 }
 
-TEST_F(TestHttpServer, portException) {
+TEST_F(TestHttpServer, portErrorNoException) {
   HttpServer *server_exception = new HttpServer("0.0.0.0", -1);
-  std::function<void(HttpMessageHandler *)> http_handler_func =
-    std::bind(testGetHandler, std::placeholders::_1);
-  ASSERT_THROW(server_exception->RegisterRoute("/handler", &http_handler_func), std::exception);
+  std::function<void(HttpMessageHandler *)> http_handler_func = std::bind(testGetHandler, std::placeholders::_1);
+  EXPECT_NO_THROW(server_exception->RegisterRoute("/handler", &http_handler_func));
 }
 
 TEST_F(TestHttpServer, addressException) {
   HttpServer *server_exception = new HttpServer("12344.0.0.0", 9998);
-  std::function<void(HttpMessageHandler *)> http_handler_func =
-    std::bind(testGetHandler, std::placeholders::_1);
+  std::function<void(HttpMessageHandler *)> http_handler_func = std::bind(testGetHandler, std::placeholders::_1);
   ASSERT_THROW(server_exception->RegisterRoute("/handler", &http_handler_func), std::exception);
 }
-}
-}
+}  // namespace comm
+}  // namespace ps
 
-}  // namespace Network
+}  // namespace mindspore
