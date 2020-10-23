@@ -36,6 +36,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
+#include <memory>
 #include <regex>
 #include <utility>
 
@@ -108,15 +109,11 @@ bool HttpServer::RegisterRoute(const std::string &url, HandlerFunc *function) {
   auto TransFunc = [](struct evhttp_request *req, void *arg) {
     MS_EXCEPTION_IF_NULL(req);
     MS_EXCEPTION_IF_NULL(arg);
-    HttpMessageHandler httpReq(req);
-    httpReq.InitHttpMessage();
-    HandlerFunc *f = reinterpret_cast<HandlerFunc *>(arg);
-    (*f)(&httpReq);
+    auto httpReq = std::make_shared<HttpMessageHandler>(req);
+    httpReq->InitHttpMessage();
+    auto f = reinterpret_cast<HandlerFunc *>(arg);
+    (*f)(httpReq);
   };
-//  handle_t **pph = func.target<handle_t *>();
-//  MS_EXCEPTION_IF_NULL(pph);
-//  MS_EXCEPTION_IF_NULL(event_http_);
-
   // O SUCCESS,-1 ALREADY_EXIST,-2 FAILURE
   int ret = evhttp_set_cb(event_http_, url.c_str(), TransFunc, reinterpret_cast<void *>(function));
   if (ret == 0) {

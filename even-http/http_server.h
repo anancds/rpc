@@ -30,6 +30,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
+#include <memory>
 #include <string>
 #include <utility>
 #include "comm_util.h"
@@ -50,6 +51,7 @@ typedef enum eHttpMethod {
   HM_PATCH = 1 << 8
 } HttpMethod;
 
+using HandlerFunc = std::function<void(std::shared_ptr<HttpMessageHandler>)>;
 class HttpServer {
  public:
   // Server address only support IPV4 now, and should be in format of "x.x.x.x"
@@ -58,7 +60,7 @@ class HttpServer {
 
   ~HttpServer();
 
-  typedef std::function<void(HttpMessageHandler *)> HandlerFunc;
+//  typedef std::function<void(std::shared_ptr<HttpMessageHandler>)> HandlerFunc;
 
   bool InitServer();
   void SetTimeOut(int seconds = 5);
@@ -85,6 +87,7 @@ class HttpServer {
   struct event_base *event_base_;
   struct evhttp *event_http_;
   bool is_init_;
+//  std::mutex mutex_;
 };
 
 }  // namespace comm
