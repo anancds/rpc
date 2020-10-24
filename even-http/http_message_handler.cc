@@ -37,24 +37,7 @@
 namespace mindspore {
 namespace ps {
 namespace comm {
-HttpMessageHandler::~HttpMessageHandler() {
-  if (resp_buf_) {
-    evbuffer_free(resp_buf_);
-    resp_buf_ = nullptr;
-  }
 
-  if (event_uri_) {
-    evhttp_uri_free(const_cast<evhttp_uri *>(event_uri_));
-    event_uri_ = nullptr;
-  }
-
-  if (event_request_) {
-    evhttp_request_free(event_request_);
-    event_request_ = nullptr;
-  }
-
-
-}
 void HttpMessageHandler::InitHttpMessage() {
   MS_EXCEPTION_IF_NULL(event_request_);
   event_uri_ = evhttp_request_get_evhttp_uri(event_request_);
