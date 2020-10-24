@@ -5,8 +5,20 @@
 #ifndef RPC_NODE_MANAGER_H
 #define RPC_NODE_MANAGER_H
 
-class node_manager {
+namespace mindspore {
+namespace ps {
+namespace comm {
 
+class NodeManager {
+  static NodeManager *Get() {
+    static NodeManager e;
+    return &e;
+  }
+
+  void Start();
 };
+}  // namespace comm
+}  // namespace ps
+}  // namespace mindspore
 
 #endif  // RPC_NODE_MANAGER_H
