@@ -176,8 +176,8 @@ int TcpClient::SendKVMessage(const Message &message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
   int send_bytes = 0;
 //  int n = message.keys.size();
-  evbuffer_add(bufferevent_get_output(buffer_event_), message.keys, 80);
-//  evbuffer_add(bufferevent_get_output(buffer_event_), message.values, message.value_len);
+  evbuffer_add(bufferevent_get_output(buffer_event_), message.keys, message.key_len_);
+  evbuffer_add(bufferevent_get_output(buffer_event_), message.values, message.value_len_);
 //  send_bytes += (2 * n);
   return send_bytes;
 }

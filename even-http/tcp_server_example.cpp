@@ -18,10 +18,22 @@ static void StartServer() {
     // Dump message
 //    std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
 
+//    void* temp = const_cast<void*>(buffer);
+    void* dest = malloc(num/2);
+    memcpy(dest, buffer, num / 2);
+
+
+    void* dest1 = malloc(num/2);
+    memcpy(dest1, const_cast<void*>(buffer) + num/2, num / 2);
+//    const void* dest1 = malloc(num/2);
+//    memcpy(const_cast<void*>(buffer), dest, num/2);
+
 //    std::vector<uint64_t> *test = reinterpret_cast<std::vector<uint64_t> *>(const_cast<void *>(buffer));
 //    std::vector<float> * test1 =reinterpret_cast<std::vector<float> *>(const_cast<void *>(buffer+ num/2));
-    uint64_t *test = reinterpret_cast<uint64_t*>(const_cast<void*>(buffer));
+    uint64_t *test = reinterpret_cast<uint64_t*>(const_cast<void*>(dest));
     std::cout << test[0] << " " << test[1] << std::endl;
+    float *test1 = reinterpret_cast<float *>(const_cast<void*>(dest1));
+    std::cout << test1[0] << " " << test1[1] << std::endl;
 
     // Send echo
     server.SendMessage(conn, buffer, num);
