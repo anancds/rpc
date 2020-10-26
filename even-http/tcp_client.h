@@ -7,6 +7,7 @@
 #include <event2/event.h>
 #include <functional>
 #include "event2/bufferevent.h"
+#include "message.h"
 #include "tcp_message_handler.h"
 
 namespace mindspore {
@@ -31,6 +32,7 @@ class TcpClient {
   void Stop();
   void ReceiveMessage(const OnMessage &cb);
   void SendMessage(const void *buf, size_t num) const;
+  int SendKVMessage(const Message &message) const;
   void Start();
 
  protected:

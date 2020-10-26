@@ -16,7 +16,12 @@ static void StartServer() {
   server->ReceiveMessage([](const mindspore::ps::comm::TcpServer &server,
                             const mindspore::ps::comm::TcpConnection &conn, const void *buffer, size_t num) {
     // Dump message
-    std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
+//    std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
+
+//    std::vector<uint64_t> *test = reinterpret_cast<std::vector<uint64_t> *>(const_cast<void *>(buffer));
+//    std::vector<float> * test1 =reinterpret_cast<std::vector<float> *>(const_cast<void *>(buffer+ num/2));
+    uint64_t *test = reinterpret_cast<uint64_t*>(const_cast<void*>(buffer));
+    std::cout << test[0] << " " << test[1] << std::endl;
 
     // Send echo
     server.SendMessage(conn, buffer, num);

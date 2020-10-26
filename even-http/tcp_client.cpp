@@ -6,8 +6,8 @@
 #include "comm_util.h"
 
 #include <arpa/inet.h>
-#include <event2/buffer_compat.h>
 #include <event2/buffer.h>
+#include <event2/buffer_compat.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
 #include <netinet/in.h>
@@ -170,6 +170,16 @@ void TcpClient::ReceiveMessage(const OnMessage &cb) { message_callback_ = cb; }
 void TcpClient::SendMessage(const void *buf, size_t num) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
   evbuffer_add(bufferevent_get_output(buffer_event_), buf, num);
+}
+
+int TcpClient::SendKVMessage(const Message &message) const {
+  MS_EXCEPTION_IF_NULL(buffer_event_);
+  int send_bytes = 0;
+//  int n = message.keys.size();
+  evbuffer_add(bufferevent_get_output(buffer_event_), message.keys, 80);
+//  evbuffer_add(bufferevent_get_output(buffer_event_), message.values, message.value_len);
+//  send_bytes += (2 * n);
+  return send_bytes;
 }
 }  // namespace comm
 }  // namespace ps
