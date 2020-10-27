@@ -8,16 +8,17 @@ int main(int /*argc*/, char** /*argv*/)
 
     // Run msg server
     proto::msgclient client;
-    client.set_message_callback([](proto::msgclient&, const void* buffer, size_t num)
+    client.set_message_callback([&](proto::msgclient&, const void* buffer, size_t num)
     {
         std::cout << "Message received: " << std::string(reinterpret_cast<const char*>(buffer), num) << std::endl;
+      client.send_msg(test_message.c_str(), test_message.size());
     });
-
-
-    // Run on port 9000
+  // Run on port 9000
     client.set_target("127.0.0.1:9000");
     client.start();
 
+  client.send_msg(test_message.c_str(), test_message.size());
+//  client.send_msg(test_message.c_str(), test_message.size());
     // Run for 5 minutes
     auto start_tp = std::chrono::steady_clock::now();
 
@@ -25,8 +26,8 @@ int main(int /*argc*/, char** /*argv*/)
     {
         client.update();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        if (rand() % 100 < 10)
-            client.send_msg(test_message.c_str(), test_message.size());
+//        if (rand() % 100 < 10)
+//            client.send_msg(test_message.c_str(), test_message.size());
     }
     return EXIT_SUCCESS;
 }

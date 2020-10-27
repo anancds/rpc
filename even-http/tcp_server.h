@@ -43,7 +43,7 @@ class TcpConnection {
 };
 
 using OnServerReceiveMessage =
-  std::function<void(const TcpServer &tcp_server, const TcpConnection &conn, const void *buffer, size_t num)>;
+  std::function<void( TcpServer &tcp_server, const TcpConnection &conn, const void *buffer, size_t num)>;
 
 using OnServerReceiveKVMessage =
   std::function<void(const TcpServer &tcp_server, const TcpConnection &conn, const Message &message)>;
@@ -67,7 +67,7 @@ class TcpServer {
   void RemoveConnection(evutil_socket_t fd);
   void ReceiveMessage(OnServerReceiveMessage cb);
   void ReceiveKVMessage(const OnServerReceiveKVMessage &cb);
-  static void SendMessage(const TcpConnection &conn, const void *data, size_t num);
+   void SendMessage(const TcpConnection &conn, const void *data, size_t num);
   void SendMessage(const void *data, size_t num);
 
  protected:

@@ -16,7 +16,7 @@ void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
   // Add to buffer
   message_buffer_.append(reinterpret_cast<const char *>(buffer), num);
 
-  while (message_buffer_.size() > message_header_.mLength ||
+  while (message_buffer_.size() >= message_header_.mLength ||
          (message_header_.mLength == 0xFFFFFFFF && message_buffer_.size() >= sizeof(message_header_))) {
     if (message_header_.mLength == 0xFFFFFFFF) {
       if (message_buffer_.size() >= sizeof(message_header_)) {

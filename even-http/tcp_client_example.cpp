@@ -4,7 +4,7 @@
 #include <memory>
 #include <thread>
 #include "tcp_client.h"
-const std::string test_message(5000, 's');
+const std::string test_message(1024, 's');
 using Key = uint64_t;
 static void StartClient(mindspore::ps::comm::TcpClient *client) {
   // Run msg server
@@ -58,7 +58,6 @@ static void StartClient1(mindspore::ps::comm::TcpClient *client) {
     vals[i] = (rand() % 1000);
   }
   message.AddArrayData(keys, vals, 10, 10);
-
 //  client->SendKVMessage(message);
   client->SendMessage(test_message.c_str(), test_message.size());
   client->Start();

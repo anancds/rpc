@@ -29,7 +29,7 @@ TcpClient::TcpClient(std::string address, std::uint16_t port)
       server_address_(std::move(address)),
       server_port_(port) {
   message_handler_.SetCallback([this](const void *buf, size_t num) {
-    if (buf == nullptr) {
+    if (buf == nullptr && num == 0xFFFFFFFF) {
       if (disconnected_callback_) disconnected_callback_(*this, 200);
       Stop();
     }
@@ -128,8 +128,8 @@ void TcpClient::ReadCallback(struct bufferevent *bev, void *ctx) {
   char read_buffer[1024];
   size_t read = 0;
 
-  while ((read = EVBUFFER_LENGTH(input)) > 0) {
-    evbuffer_remove(input, &read_buffer, sizeof(read_buffer));
+  while (EVBUFFER_LENGTH(input) > 0) {
+    read = evbuffer_remove(input, &read_buffer, sizeof(read_buffer));
 
     tcp_client->OnReadHandler(read_buffer, read);
   }

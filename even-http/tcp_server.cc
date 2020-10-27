@@ -27,17 +27,18 @@ void TcpConnection::InitConnection(evutil_socket_t fd, struct bufferevent *bev, 
   MS_EXCEPTION_IF_NULL(tcp_server);
   tcp_message_handler_.SetCallback([this, tcp_server](const void *buf, size_t num) {
     if (tcp_server->message_callback_) tcp_server->message_callback_(*tcp_server, *this, buf, num);
-    if (tcp_server->kv_message_callback_) {
-      std::cout << true << std::endl;
-    } else{
-      std::cout << false << std::endl;
-    }
   });
 }
 
 void TcpConnection::OnReadHandler(const void *buffer, size_t num) { tcp_message_handler_.ReceiveMessage(buffer, num); }
 
 void TcpConnection::SendMessage(const void *buffer, size_t num) {
+  Message::MessageHeader message_header;
+  message_header.mMagic = htonl(Message::MAGIC);
+  message_header.mLength = htonl(static_cast<uint32_t>(num));
+  if (bufferevent_write(buffer_event_, &message_header, sizeof(message_header)) == -1) {
+    MS_LOG(ERROR) << "Write message to buffer event failed!";
+  }
   if (bufferevent_write(buffer_event_, buffer, num) == -1) {
     MS_LOG(ERROR) << "Write message to buffer event failed!";
   }

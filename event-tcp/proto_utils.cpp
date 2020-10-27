@@ -66,7 +66,7 @@ void msgparser::parse(const void* buffer, size_t num)
     // Add to buffer
     mBuffer.append(reinterpret_cast<const char*>(buffer), num);
 
-    while (mBuffer.size() > mHeader.mLength || (mHeader.mLength == 0xFFFFFFFF && mBuffer.size() >= sizeof(mHeader)))
+    while (mBuffer.size() >= mHeader.mLength || (mHeader.mLength == 0xFFFFFFFF && mBuffer.size() >= sizeof(mHeader)))
     {
         if (mHeader.mLength == 0xFFFFFFFF)
         {
