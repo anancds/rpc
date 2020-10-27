@@ -16,6 +16,7 @@
 #include <mutex>
 #include <string>
 #include "log_adapter.h"
+#include "message.h"
 #include "tcp_message_handler.h"
 
 namespace mindspore {
@@ -40,12 +41,16 @@ class TcpConnection {
   evutil_socket_t fd_;
   TcpServer *server_;
 };
+
+using OnServerReceiveMessage =
+  std::function<void(const TcpServer &tcp_server, const TcpConnection &conn, const void *buffer, size_t num)>;
+
+using OnServerReceiveKVMessage =
+  std::function<void(const TcpServer &tcp_server, const TcpConnection &conn, const Message &message)>;
 class TcpServer {
   friend class TcpConnection;
 
  public:
-  using OnServerReceiveMessage =
-    std::function<void(const TcpServer &tcp_server, const TcpConnection &conn, const void *buffer, size_t num)>;
   using OnConnected = std::function<void(TcpServer *, TcpConnection *)>;
   using OnDisconnected = std::function<void(TcpServer *, TcpConnection *)>;
   using OnAccepted = std::function<TcpConnection *(TcpServer *)>;
@@ -61,6 +66,7 @@ class TcpServer {
   void AddConnection(evutil_socket_t fd, TcpConnection *connection);
   void RemoveConnection(evutil_socket_t fd);
   void ReceiveMessage(OnServerReceiveMessage cb);
+  void ReceiveKVMessage(const OnServerReceiveKVMessage &cb);
   static void SendMessage(const TcpConnection &conn, const void *data, size_t num);
   void SendMessage(const void *data, size_t num);
 
@@ -86,6 +92,7 @@ class TcpServer {
   OnAccepted client_accept_;
   std::recursive_mutex connection_mutex_;
   OnServerReceiveMessage message_callback_;
+  OnServerReceiveKVMessage kv_message_callback_;
 };
 }  // namespace comm
 }  // namespace ps

@@ -8,6 +8,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include "message.h"
 
 using messageReceive = std::function<void(const void *buffer, size_t len)>;
 
@@ -21,5 +22,7 @@ class TcpMessageHandler {
 
  private:
   messageReceive message_callback_;
+  Message::MessageHeader message_header_;
+  std::string message_buffer_;
 };
 #endif  // RPC_TCP_MESSAGE_HANDLER_H

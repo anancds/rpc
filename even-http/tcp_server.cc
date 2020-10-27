@@ -27,6 +27,11 @@ void TcpConnection::InitConnection(evutil_socket_t fd, struct bufferevent *bev, 
   MS_EXCEPTION_IF_NULL(tcp_server);
   tcp_message_handler_.SetCallback([this, tcp_server](const void *buf, size_t num) {
     if (tcp_server->message_callback_) tcp_server->message_callback_(*tcp_server, *this, buf, num);
+    if (tcp_server->kv_message_callback_) {
+      std::cout << true << std::endl;
+    } else{
+      std::cout << false << std::endl;
+    }
   });
 }
 
@@ -221,6 +226,8 @@ void TcpServer::EventCallback(struct bufferevent *bev, short events, void *data)
 }
 
 void TcpServer::ReceiveMessage(OnServerReceiveMessage cb) { message_callback_ = cb; }
+
+void TcpServer::ReceiveKVMessage(const OnServerReceiveKVMessage &cb) { kv_message_callback_ = cb; }
 
 void TcpServer::SendMessage(const TcpConnection &conn, const void *data, size_t num) {
   MS_EXCEPTION_IF_NULL(data);

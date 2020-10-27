@@ -169,16 +169,18 @@ void TcpClient::ReceiveMessage(const OnMessage &cb) { message_callback_ = cb; }
 
 void TcpClient::SendMessage(const void *buf, size_t num) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
+  Message::MessageHeader message_header;
+  message_header.mMagic = htonl(Message::MAGIC);
+  message_header.mLength = htonl(static_cast<uint32_t>(num));
+  evbuffer_add(bufferevent_get_output(buffer_event_), &message_header, sizeof(message_header));
   evbuffer_add(bufferevent_get_output(buffer_event_), buf, num);
 }
 
 int TcpClient::SendKVMessage(const Message &message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
-  int send_bytes = 0;
-//  int n = message.keys.size();
-  evbuffer_add(bufferevent_get_output(buffer_event_), message.keys, message.key_len_);
+  evbuffer_add(bufferevent_get_output(buffer_event_), &message, message.key_len_);
   evbuffer_add(bufferevent_get_output(buffer_event_), message.values, message.value_len_);
-//  send_bytes += (2 * n);
+  int send_bytes = message.key_len_ + message.value_len_;
   return send_bytes;
 }
 }  // namespace comm

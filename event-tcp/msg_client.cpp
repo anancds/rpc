@@ -2,10 +2,9 @@
 #include <thread>
 #include <iostream>
 #include <stdlib.h>
-
 int main(int /*argc*/, char** /*argv*/)
 {
-    const std::string test_message = "TEST_MESSAGE";
+    const std::string test_message(5000, 's');
 
     // Run msg server
     proto::msgclient client;
