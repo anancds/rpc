@@ -10,6 +10,10 @@
 
 void TcpMessageHandler::SetCallback(messageReceive message_receive) { message_callback_ = std::move(message_receive); }
 
+void TcpMessageHandler::SetKVCallBack(messageKVReceive message_kv_receive) {
+  message_kv_callback_ = std::move(message_kv_receive);
+}
+
 void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
   MS_EXCEPTION_IF_NULL(buffer);
 

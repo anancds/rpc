@@ -16,7 +16,7 @@ namespace comm {
 
 class TcpClient {
  public:
-  using OnMessage = std::function<void(const TcpClient &, const void *, size_t)>;
+  using OnKVMessage = std::function<void(const TcpClient &, const Message &)>;
   using OnConnected = std::function<void(const TcpClient &)>;
   using OnDisconnected = std::function<void(const TcpClient &, int)>;
   using OnRead = std::function<void(const TcpClient &, const void *, size_t)>;
@@ -30,8 +30,7 @@ class TcpClient {
   void InitTcpClient();
   void StartWithDelay(int seconds);
   void Stop();
-  void ReceiveMessage(const OnMessage &cb);
-  void SendMessage(const void *buf, size_t num) const;
+  void ReceiveKVMessage(const OnKVMessage &cb);
   int SendKVMessage(const Message &message) const;
   void Start();
 
@@ -42,9 +41,7 @@ class TcpClient {
   static void EventCallback(struct bufferevent *bev, short events, void *ptr);
   virtual void OnReadHandler(const void *buf, size_t num);
 
- private:
-  TcpMessageHandler message_handler_;
-  OnMessage message_callback_;
+  OnKVMessage kv_message_callback_;
   OnConnected connected_callback_;
   OnDisconnected disconnected_callback_;
   OnRead read_callback_;
@@ -56,6 +53,22 @@ class TcpClient {
 
   std::string server_address_;
   std::uint16_t server_port_;
+};
+
+class TcpMessageClient : public TcpClient {
+ public:
+  using OnMessage = std::function<void(const TcpMessageClient &, const void *, size_t)>;
+
+  explicit TcpMessageClient(std::string address, std::uint16_t port);
+  virtual ~TcpMessageClient() = default;
+
+  void OnReadHandler(const void *buf, size_t num);
+  void ReceiveMessage(const OnMessage &cb);
+  void SendMessage(const void *buf, size_t num) const;
+
+ private:
+  OnMessage message_callback_;
+  TcpMessageHandler message_handler_;
 };
 }  // namespace comm
 }  // namespace ps

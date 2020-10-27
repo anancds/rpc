@@ -27,15 +27,7 @@ TcpClient::TcpClient(std::string address, std::uint16_t port)
       event_timeout_(nullptr),
       buffer_event_(nullptr),
       server_address_(std::move(address)),
-      server_port_(port) {
-  message_handler_.SetCallback([this](const void *buf, size_t num) {
-    if (buf == nullptr && num == 0xFFFFFFFF) {
-      if (disconnected_callback_) disconnected_callback_(*this, 200);
-      Stop();
-    }
-    if (message_callback_) message_callback_(*this, buf, num);
-  });
-}
+      server_port_(port) {}
 
 TcpClient::~TcpClient() { Stop(); }
 
@@ -138,7 +130,6 @@ void TcpClient::ReadCallback(struct bufferevent *bev, void *ctx) {
 void TcpClient::OnReadHandler(const void *buf, size_t num) {
   MS_EXCEPTION_IF_NULL(buf);
   if (read_callback_) read_callback_(*this, buf, num);
-  message_handler_.ReceiveMessage(buf, num);
 }
 
 void TcpClient::EventCallback(struct bufferevent *bev, short events, void *ptr) {
@@ -165,23 +156,45 @@ void TcpClient::Start() {
   event_base_dispatch(event_base_);
 }
 
-void TcpClient::ReceiveMessage(const OnMessage &cb) { message_callback_ = cb; }
+void TcpClient::ReceiveKVMessage(const OnKVMessage &cb) { kv_message_callback_ = cb; }
 
-void TcpClient::SendMessage(const void *buf, size_t num) const {
+int TcpClient::SendKVMessage(const Message &message) const {
+  MS_EXCEPTION_IF_NULL(buffer_event_);
+  uint64_t send_bytes = message.key_len_ + message.value_len_;
+  Message::MessageHeader message_header;
+  message_header.mMagic = htonl(Message::MAGIC);
+  message_header.mLength = htonl(static_cast<uint64_t>(send_bytes));
+  evbuffer_add(bufferevent_get_output(buffer_event_), &message_header, sizeof(message_header));
+  evbuffer_add(bufferevent_get_output(buffer_event_), &message, message.key_len_);
+  evbuffer_add(bufferevent_get_output(buffer_event_), message.values, message.value_len_);
+  return send_bytes;
+}
+
+TcpMessageClient::TcpMessageClient(std::string address, std::uint16_t port) : TcpClient(address,port) {
+  message_handler_.SetCallback([this](const void *buf, size_t num) {
+    if (buf == nullptr && num == 0xFFFFFFFF) {
+      if (disconnected_callback_) disconnected_callback_(*this, 200);
+      Stop();
+    }
+    if (message_callback_) message_callback_(*this, buf, num);
+  });
+}
+
+void TcpMessageClient::OnReadHandler(const void *buf, size_t num) {
+  MS_EXCEPTION_IF_NULL(buf);
+  if (read_callback_) read_callback_(*this, buf, num);
+  message_handler_.ReceiveMessage(buf, num);
+}
+
+void TcpMessageClient::ReceiveMessage(const OnMessage &cb) { message_callback_ = cb; }
+
+void TcpMessageClient::SendMessage(const void *buf, size_t num) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
   Message::MessageHeader message_header;
   message_header.mMagic = htonl(Message::MAGIC);
   message_header.mLength = htonl(static_cast<uint32_t>(num));
   evbuffer_add(bufferevent_get_output(buffer_event_), &message_header, sizeof(message_header));
   evbuffer_add(bufferevent_get_output(buffer_event_), buf, num);
-}
-
-int TcpClient::SendKVMessage(const Message &message) const {
-  MS_EXCEPTION_IF_NULL(buffer_event_);
-  evbuffer_add(bufferevent_get_output(buffer_event_), &message, message.key_len_);
-  evbuffer_add(bufferevent_get_output(buffer_event_), message.values, message.value_len_);
-  int send_bytes = message.key_len_ + message.value_len_;
-  return send_bytes;
 }
 }  // namespace comm
 }  // namespace ps
