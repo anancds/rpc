@@ -15,8 +15,8 @@
  */
 
 #include "http_server.h"
-#include "comm_util.h"
 #include "http_message_handler.h"
+#include "comm_util.h"
 
 #ifdef WIN32
 #include <WinSock2.h>
@@ -36,27 +36,16 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
-#include <memory>
 #include <regex>
-#include <utility>
 
 namespace mindspore {
 namespace ps {
 namespace comm {
 
-HttpServer::~HttpServer() {
-  if (event_http_) {
-    evhttp_free(event_http_);
-    event_http_ = nullptr;
-  }
-  if (event_base_) {
-    event_base_free(event_base_);
-    event_base_ = nullptr;
-  }
-}
+HttpServer::~HttpServer() { Stop(); }
 
 bool HttpServer::InitServer() {
-  CommUtil::CheckIpAndPort(server_address_, server_port_);
+  CommUtil::CheckIp(server_address_);
 
   event_base_ = event_base_new();
   MS_EXCEPTION_IF_NULL(event_base_);
@@ -99,21 +88,24 @@ void HttpServer::SetMaxBodySize(size_t num) {
   evhttp_set_max_body_size(event_http_, num);
 }
 
-bool HttpServer::RegisterRoute(const std::string &url, HandlerFunc *function) {
+bool HttpServer::RegisterRoute(const std::string &url, OnRequestReceive *function) {
   if ((!is_init_) && (!InitServer())) {
     MS_LOG(EXCEPTION) << "Init http server failed!";
   }
   if (!function) {
     return false;
   }
+
   auto TransFunc = [](struct evhttp_request *req, void *arg) {
     MS_EXCEPTION_IF_NULL(req);
     MS_EXCEPTION_IF_NULL(arg);
     auto httpReq = std::make_shared<HttpMessageHandler>(req);
     httpReq->InitHttpMessage();
-    auto f = reinterpret_cast<HandlerFunc *>(arg);
-    (*f)(httpReq);
+    OnRequestReceive *func = reinterpret_cast<OnRequestReceive *>(arg);
+    (*func)(httpReq);
   };
+  MS_EXCEPTION_IF_NULL(event_http_);
+
   // O SUCCESS,-1 ALREADY_EXIST,-2 FAILURE
   int ret = evhttp_set_cb(event_http_, url.c_str(), TransFunc, reinterpret_cast<void *>(function));
   if (ret == 0) {
@@ -133,6 +125,7 @@ bool HttpServer::UnRegisterRoute(const std::string &url) {
 }
 
 bool HttpServer::Start() {
+  MS_LOG(INFO) << "Start http server!";
   MS_EXCEPTION_IF_NULL(event_base_);
   int ret = event_base_dispatch(event_base_);
   if (ret == 0) {
@@ -150,6 +143,7 @@ bool HttpServer::Start() {
 }
 
 void HttpServer::Stop() {
+  MS_LOG(INFO) << "Stop http server!";
   if (event_http_) {
     evhttp_free(event_http_);
     event_http_ = nullptr;

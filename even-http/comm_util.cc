@@ -14,36 +14,37 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PS_COMM_COMM_UTIL_H_
-#define MINDSPORE_CCSRC_PS_COMM_COMM_UTIL_H_
+#include "comm_util.h"
 
-#include <event2/buffer.h>
-#include <event2/event.h>
-#include <event2/http.h>
-#include <event2/keyvalq_struct.h>
-#include <event2/listener.h>
-#include <event2/util.h>
-
+#include <arpa/inet.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
-#include <string>
-#include <utility>
-
-#include "log_adapter.h"
+#include <regex>
 
 namespace mindspore {
 namespace ps {
 namespace comm {
 
-class CommUtil {
- public:
-  static bool CheckIpWithRegex(const std::string &ip);
-  static void CheckIp(const std::string &ip);
-};
+bool CommUtil::CheckIpWithRegex(const std::string &ip) {
+  std::regex pattern("((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)");
+  std::smatch res;
+  if (regex_match(ip, res, pattern)) {
+    return true;
+  }
+  return false;
+}
+
+void CommUtil::CheckIp(const std::string &ip) {
+  if (!CheckIpWithRegex(ip)) {
+    MS_LOG(EXCEPTION) << "Server address" << ip << " illegal!";
+  }
+  int64_t uAddr = inet_addr(ip.c_str());
+  if (INADDR_NONE == uAddr) {
+    MS_LOG(EXCEPTION) << "Server address illegal, inet_addr converting failed!";
+  }
+}
 }  // namespace comm
 }  // namespace ps
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CCSRC_PS_COMM_COMM_UTIL_H_

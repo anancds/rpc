@@ -6,33 +6,36 @@
 #include <iostream>
 #include <thread>
 #include "tcp_server.h"
+#include "message.h"
+
+using namespace mindspore::ps::comm;
 
 static std::string getEnvVar(std::string const &key) {
   char *val = getenv(key.c_str());
   return val == NULL ? std::string("") : std::string(val);
 }
 static void StartServer() {
-  auto *server = new mindspore::ps::comm::TcpServer("127.0.0.1", 9000);
-  server->ReceiveMessage([](mindspore::ps::comm::TcpServer &server,
-                            const mindspore::ps::comm::TcpConnection &conn, const void *buffer, size_t num) {
+  auto *server = new mindspore::ps::comm::TcpMessageServer("127.0.0.1", 9000);
+  server->ReceiveMessage([](mindspore::ps::comm::TcpMessageServer &server,
+                            const mindspore::ps::comm::TcpMessageConnection &conn, const void *buffer, size_t num) {
     // Dump message
     std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
 
-//    void* temp = const_cast<void*>(buffer);
-//    void* dest = malloc(num/2);
-//    memcpy(dest, buffer, num / 2);
+    //    void* temp = const_cast<void*>(buffer);
+    //    void* dest = malloc(num/2);
+    //    memcpy(dest, buffer, num / 2);
 
+    //    void* dest1 = malloc(num/2);
+    //    memcpy(dest1, const_cast<void*>(buffer) + num/2, num / 2);
+    //    const void* dest1 = malloc(num/2);
+    //    memcpy(const_cast<void*>(buffer), dest, num/2);
 
-//    void* dest1 = malloc(num/2);
-//    memcpy(dest1, const_cast<void*>(buffer) + num/2, num / 2);
-//    const void* dest1 = malloc(num/2);
-//    memcpy(const_cast<void*>(buffer), dest, num/2);
+    //    std::vector<uint64_t> *test = reinterpret_cast<std::vector<uint64_t> *>(const_cast<void *>(buffer));
+    //    std::vector<float> * test1 =reinterpret_cast<std::vector<float> *>(const_cast<void *>(buffer+ num/2));
+    //    uint64_t *test = reinterpret_cast<uint64_t*>(const_cast<void*>(dest));
+    //    float *test1 = reinterpret_cast<float *>(const_cast<void*>(dest1));
 
-//    std::vector<uint64_t> *test = reinterpret_cast<std::vector<uint64_t> *>(const_cast<void *>(buffer));
-//    std::vector<float> * test1 =reinterpret_cast<std::vector<float> *>(const_cast<void *>(buffer+ num/2));
-//    uint64_t *test = reinterpret_cast<uint64_t*>(const_cast<void*>(dest));
-//    float *test1 = reinterpret_cast<float *>(const_cast<void*>(dest1));
-
+    const Message *message = reinterpret_cast<const Message *>(buffer);
     // Send echo
     server.SendMessage(conn, buffer, num);
   });
@@ -42,6 +45,8 @@ static void StartServer() {
 
   server->Start();
 }
+
+
 int main(int /*argc*/, char ** /*argv*/) {
   std::cout << sizeof(char) << std::endl;
   std::unique_ptr<std::thread> http_server_thread_(nullptr);

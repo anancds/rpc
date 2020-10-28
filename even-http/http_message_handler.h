@@ -28,10 +28,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
+#include <string>
 #include <list>
 #include <map>
 #include <memory>
-#include <string>
 #include "log_adapter.h"
 
 namespace mindspore {

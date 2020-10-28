@@ -14,8 +14,8 @@ class TestTcpClient : public UT::Common {
 };
 
 TEST_F(TestTcpClient, InitClientPortErrorNoException) {
-  auto client = new TcpClient("127.0.0.1", -1);
-  client->ReceiveMessage([](const mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
+  auto client = new TcpMessageClient("127.0.0.1", -1);
+  client->ReceiveMessage([](const mindspore::ps::comm::TcpMessageClient &client, const void *buffer, size_t num) {
     client.SendMessage(buffer, num);
   });
 
@@ -23,8 +23,8 @@ TEST_F(TestTcpClient, InitClientPortErrorNoException) {
 }
 
 TEST_F(TestTcpClient, InitClientIPError) {
-  TcpClient *client = new TcpClient("127.0.0.13543", 9000);
-  client->ReceiveMessage([](const mindspore::ps::comm::TcpClient &client, const void *buffer, size_t num) {
+  auto client = new TcpMessageClient("127.0.0.13543", 9000);
+  client->ReceiveMessage([](const mindspore::ps::comm::TcpMessageClient &client, const void *buffer, size_t num) {
     std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
     client.SendMessage(buffer, num);
   });

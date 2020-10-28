@@ -16,10 +16,10 @@
 
 #include "http_message_handler.h"
 
+#include <event2/event.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/bufferevent_compat.h>
-#include <event2/event.h>
 #include <event2/http.h>
 #include <event2/http_compat.h>
 #include <event2/http_struct.h>
@@ -31,8 +31,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <functional>
 #include <string>
+#include <functional>
 
 namespace mindspore {
 namespace ps {
@@ -73,10 +73,10 @@ void HttpMessageHandler::ParsePostParam() {
     MS_LOG(EXCEPTION) << "The post parameter size is: " << len;
   }
   post_param_parsed_ = true;
-  const char *post_message = reinterpret_cast<const char *>(evbuffer_pullup(event_request_->input_buffer, len));
+  const char *post_message = reinterpret_cast<const char *>(evbuffer_pullup(event_request_->input_buffer, -1));
   MS_EXCEPTION_IF_NULL(post_message);
   body_ = std::make_unique<std::string>(post_message, len);
-  int ret = evhttp_parse_query_str(reinterpret_cast<const char *>(body_->c_str()), &post_params_);
+  int ret = evhttp_parse_query_str(body_->c_str(), &post_params_);
   if (ret == -1) {
     MS_LOG(EXCEPTION) << "Parse post parameter failed!";
   }

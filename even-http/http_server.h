@@ -32,8 +32,6 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <utility>
-#include "comm_util.h"
 
 namespace mindspore {
 namespace ps {
@@ -51,16 +49,15 @@ typedef enum eHttpMethod {
   HM_PATCH = 1 << 8
 } HttpMethod;
 
-using HandlerFunc = std::function<void(std::shared_ptr<HttpMessageHandler>)>;
+using OnRequestReceive = std::function<void(std::shared_ptr<HttpMessageHandler>)>;
+
 class HttpServer {
  public:
   // Server address only support IPV4 now, and should be in format of "x.x.x.x"
-  explicit HttpServer(std::string address, std::uint16_t port)
-      : server_address_(std::move(address)), server_port_(port), event_base_(nullptr), event_http_(nullptr), is_init_(false) {}
+  explicit HttpServer(const std::string &address, std::uint16_t port)
+      : server_address_(address), server_port_(port), event_base_(nullptr), event_http_(nullptr), is_init_(false) {}
 
   ~HttpServer();
-
-//  typedef std::function<void(std::shared_ptr<HttpMessageHandler>)> HandlerFunc;
 
   bool InitServer();
   void SetTimeOut(int seconds = 5);
@@ -75,7 +72,7 @@ class HttpServer {
   void SetMaxBodySize(std::size_t num);
 
   // Return: true if success, false if failed, check log to find failure reason
-  bool RegisterRoute(const std::string &url, HandlerFunc *func);
+  bool RegisterRoute(const std::string &url, OnRequestReceive *func);
   bool UnRegisterRoute(const std::string &url);
 
   bool Start();
@@ -87,7 +84,6 @@ class HttpServer {
   struct event_base *event_base_;
   struct evhttp *event_http_;
   bool is_init_;
-//  std::mutex mutex_;
 };
 
 }  // namespace comm
