@@ -37,11 +37,11 @@ namespace ps {
 namespace comm {
 
 TcpClient::TcpClient(std::string address, std::uint16_t port)
-    : event_base_(nullptr),
-      event_timeout_(nullptr),
-      buffer_event_(nullptr),
-      server_address_(std::move(address)),
-      server_port_(port) {}
+  : event_base_(nullptr),
+    event_timeout_(nullptr),
+    buffer_event_(nullptr),
+    server_address_(std::move(address)),
+    server_port_(port) {}
 
 TcpClient::~TcpClient() { Stop(); }
 
@@ -140,10 +140,9 @@ void TcpClient::ReadCallback(struct bufferevent *bev, void *ctx) {
   MS_EXCEPTION_IF_NULL(input);
 
   char read_buffer[4096];
-  int read = 0;
 
   while (EVBUFFER_LENGTH(input) > 0) {
-    read = evbuffer_remove(input, &read_buffer, sizeof(read_buffer));
+    int read = evbuffer_remove(input, &read_buffer, sizeof(read_buffer));
     if (read == -1) {
       MS_LOG(EXCEPTION) << "Can not drain data from the event buffer!";
     }
@@ -229,10 +228,6 @@ void TcpMessageClient::SendMessage(const void *buf, size_t num) const {
 
 TcpKVClient::TcpKVClient(std::string address, std::uint16_t port) : TcpClient(address, port) {
   message_handler_.SetKVCallback([this](const Message &message) {
-    //    if (buf == nullptr && num == 0xFFFFFFFF) {
-    //      if (disconnected_callback_) disconnected_callback_(*this, 200);
-    //      Stop();
-    //    }
     if (kv_message_callback_) kv_message_callback_(*this, message);
   });
 }

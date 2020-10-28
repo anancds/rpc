@@ -119,11 +119,11 @@ void TcpKVConnection::SendKVMessage(const Message &message) const {
 }
 
 TcpServer::TcpServer(std::string address, std::uint16_t port)
-    : base_(nullptr),
-      signal_event_(nullptr),
-      listener_(nullptr),
-      server_address_(std::move(address)),
-      server_port_(port) {}
+  : base_(nullptr),
+    signal_event_(nullptr),
+    listener_(nullptr),
+    server_address_(std::move(address)),
+    server_port_(port) {}
 
 TcpServer::~TcpServer() { Stop(); }
 
@@ -141,6 +141,9 @@ void TcpServer::InitServer() {
 
   struct sockaddr_in sin {};
   memset(&sin, 0, sizeof(sin));
+//  if (memset_s(&sin, sizeof(sin), 0, sizeof(sin)) != EOK) {
+//    MS_LOG(EXCEPTION) << "Initialize sockaddr_in failed!";
+//  }
   sin.sin_family = AF_INET;
   sin.sin_port = htons(server_port_);
   sin.sin_addr.s_addr = inet_addr(server_address_.c_str());
@@ -265,9 +268,8 @@ void TcpServer::ReadCallback(struct bufferevent *bev, void *connection) {
   auto conn = static_cast<class TcpConnection *>(connection);
   struct evbuffer *buf = bufferevent_get_input(bev);
   char read_buffer[4096];
-  auto read = 0;
   while (EVBUFFER_LENGTH(buf) > 0) {
-    read = evbuffer_remove(buf, &read_buffer, sizeof(read_buffer));
+    int read = evbuffer_remove(buf, &read_buffer, sizeof(read_buffer));
     if (read == -1) {
       MS_LOG(EXCEPTION) << "Can not drain data from the event buffer!";
     }
