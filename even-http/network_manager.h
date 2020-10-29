@@ -18,6 +18,7 @@ class NetWorkManager {
   void RegisterToScheduler();
   void ConnectToServers();
   void Connect(const std::vector<std::string> &nodes);
+  void Heartbeat();
 };
 
 #endif  // RPC_NETWORK_MANAGER_H

@@ -45,7 +45,7 @@ namespace comm {
 HttpServer::~HttpServer() { Stop(); }
 
 bool HttpServer::InitServer() {
-  CommUtil::CheckIp(server_address_);
+//  CommUtil::CheckIp(server_address_);
 
   event_base_ = event_base_new();
   MS_EXCEPTION_IF_NULL(event_base_);

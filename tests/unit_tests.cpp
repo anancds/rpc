@@ -49,7 +49,7 @@ class TestHttpServer : public ::testing::Test {
  protected:
   void SetUp() override {
     server_ = new HttpServer("0.0.0.0", 9999);
-    HandlerFunc http_get_func = std::bind(
+    OnRequestReceive http_get_func = std::bind(
       [](std::shared_ptr<HttpMessageHandler> resp) {
         EXPECT_STREQ(resp->GetPathParam("key1").c_str(), "value1");
         EXPECT_STREQ(resp->GetUriQuery().c_str(), "key1=value1");
@@ -59,7 +59,7 @@ class TestHttpServer : public ::testing::Test {
       },
       std::placeholders::_1);
 
-    HandlerFunc http_handler_func = std::bind(
+    OnRequestReceive http_handler_func = std::bind(
       [](std::shared_ptr<HttpMessageHandler> resp) {
         std::string host = resp->GetRequestHost();
         EXPECT_STREQ(host.c_str(), "127.0.0.1");
@@ -134,13 +134,13 @@ TEST_F(TestHttpServer, messageHandlerTest) {
 
 TEST_F(TestHttpServer, portErrorNoException) {
   HttpServer *server_exception = new HttpServer("0.0.0.0", -1);
-  HandlerFunc http_handler_func = std::bind(testGetHandler, std::placeholders::_1);
+  OnRequestReceive http_handler_func = std::bind(testGetHandler, std::placeholders::_1);
   EXPECT_NO_THROW(server_exception->RegisterRoute("/handler", &http_handler_func));
 }
 
 TEST_F(TestHttpServer, addressException) {
   HttpServer *server_exception = new HttpServer("12344.0.0.0", 9998);
-  HandlerFunc http_handler_func = std::bind(testGetHandler, std::placeholders::_1);
+  OnRequestReceive http_handler_func = std::bind(testGetHandler, std::placeholders::_1);
   ASSERT_THROW(server_exception->RegisterRoute("/handler", &http_handler_func), std::exception);
 }
 }  // namespace comm

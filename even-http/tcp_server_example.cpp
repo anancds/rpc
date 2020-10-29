@@ -4,9 +4,10 @@
 
 #include <stdlib.h>
 #include <iostream>
+#include <memory>
 #include <thread>
-#include "tcp_server.h"
 #include "message.h"
+#include "tcp_server.h"
 
 using namespace mindspore::ps::comm;
 
@@ -46,12 +47,11 @@ static void StartServer() {
   server->Start();
 }
 
-
 int main(int /*argc*/, char ** /*argv*/) {
-  std::cout << sizeof(char) << std::endl;
-  std::unique_ptr<std::thread> http_server_thread_(nullptr);
-  http_server_thread_.reset(new std::thread(&StartServer));
-  http_server_thread_->join();
+  //  std::unique_ptr<std::thread> http_server_thread_(nullptr);
+  //  http_server_thread_ = std::make_unique<std::thread>(&StartServer);
+  //  http_server_thread_->detach();
 
+  StartServer();
   return EXIT_SUCCESS;
 }
