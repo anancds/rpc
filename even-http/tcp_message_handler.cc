@@ -42,7 +42,7 @@ void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
         message_header_.message_magic_ = *reinterpret_cast<const uint32_t *>(message_buffer_.c_str());
         message_header_.message_magic_ = ntohl(message_header_.message_magic_);
 
-        message_header_.message_length_ = *reinterpret_cast<const uint32_t *>(message_buffer_.c_str() + sizeof(uint32_t) * 3);
+        message_header_.message_length_ = *reinterpret_cast<const uint32_t *>(message_buffer_.c_str() + sizeof(uint32_t));
         message_header_.message_length_ = ntohl(message_header_.message_length_);
 
         message_buffer_.erase(0, sizeof(message_header_));
@@ -75,13 +75,7 @@ void TcpMessageHandler::ReceiveKVMessage(const void *buffer, size_t num) {
         message_header_.message_magic_ = *reinterpret_cast<const uint32_t *>(message_buffer_.c_str());
         message_header_.message_magic_ = ntohl(message_header_.message_magic_);
 
-        message_header_.message_key_length_ = *reinterpret_cast<const uint32_t *>(message_buffer_.c_str() + sizeof(uint32_t));
-        message_header_.message_key_length_ = ntohl(message_header_.message_length_);
-
-        message_header_.message_value_length_ = *reinterpret_cast<const uint32_t *>(message_buffer_.c_str() + sizeof(uint32_t) * 2);
-        message_header_.message_value_length_ = ntohl(message_header_.message_length_);
-
-        message_header_.message_length_ = *reinterpret_cast<const uint32_t *>(message_buffer_.c_str() + sizeof(uint32_t) * 3);
+        message_header_.message_length_ = *reinterpret_cast<const uint32_t *>(message_buffer_.c_str() + sizeof(uint32_t));
         message_header_.message_length_ = ntohl(message_header_.message_length_);
 
         message_buffer_.erase(0, sizeof(message_header_));
@@ -93,13 +87,10 @@ void TcpMessageHandler::ReceiveKVMessage(const void *buffer, size_t num) {
         }
       }
     } else if (message_buffer_.size() >= message_header_.message_length_) {
-      Message message{};
-      std::string key_data = message_buffer_.substr(0, message_header_.message_key_length_);
-      message.keys_ =reinterpret_cast<const void *>(key_data.c_str());
-      message_buffer_.erase(0, message_header_.message_key_length_);
-      message.values_ = reinterpret_cast<const void*>(message_buffer_.c_str());
+      PBMessage pb_message;
+      pb_message.ParseFromArray(reinterpret_cast<const void*>(message_buffer_.c_str()), message_header_.message_length_);
       if (message_kv_callback_) {
-        message_kv_callback_(message);
+        message_kv_callback_(pb_message);
       }
       message_buffer_.erase(0, message_header_.message_length_);
       message_header_.message_length_ = 0xFFFFFFFF;

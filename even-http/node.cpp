@@ -9,6 +9,10 @@ namespace mindspore {
 namespace ps {
 namespace comm {
 
+void Node::Start() {}
+
+void Node::Stop() {}
+
 void SchedulerNode::Start() {
   auto scheduler_host = common::GetEnv("MS_SCHED_HOST");
   if (scheduler_host.empty()) {
@@ -22,9 +26,15 @@ void SchedulerNode::Start() {
 
   TcpKVServer server(scheduler_host, atoi(scheduler_port.c_str()));
   server.InitServer();
+  PBMeta pbMeta;
+  PBMessage pbMessage;
+  std::vector<int> ints{1, 2};
+  *pbMessage.mutable_pb_kv_message()->mutable_keys() = {ints.begin(), ints.end()};
 
   server.Start();
 }
+
+void SchedulerNode::Stop() {}
 }  // namespace comm
 }  // namespace ps
 }  // namespace mindspore

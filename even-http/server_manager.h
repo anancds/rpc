@@ -16,11 +16,10 @@ namespace comm {
 template <typename Val>
 class Server {
  public:
-//  using ReqHandle = std::function<void(
-//    const Message &req_meta, const std::pair<std::vector<Val>, std::vector<Val>> &kvs, Server *server, void *dest)>;
+  using ReqHandle = std::function<void(
+    const Message &req_meta, const std::pair<std::vector<Val>, std::vector<Val>> &kvs, Server *server, void *dest)>;
   void SetCallBack(const ReqHandle &handle);
-  void SetCallBack
-  //  void Response();
+  void Response();
   void Process(const Message &message);
 };
 }  // namespace comm

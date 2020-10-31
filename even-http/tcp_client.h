@@ -86,14 +86,14 @@ class TcpMessageClient : public TcpClient {
 
 class TcpKVClient : public TcpClient {
  public:
-  using OnKVMessage = std::function<void(const TcpKVClient &, const Message &)>;
+  using OnKVMessage = std::function<void(const TcpKVClient &, const PBMessage &)>;
 
   explicit TcpKVClient(std::string address, std::uint16_t port);
   ~TcpKVClient() override = default;
 
   void OnReadHandler(const void *buf, size_t num) override;
   void ReceiveKVMessage(const OnKVMessage &cb);
-  void SendKVMessage(const Message &message) const;
+  void SendKVMessage(const PBMessage &message) const;
 
  private:
   OnKVMessage kv_message_callback_;

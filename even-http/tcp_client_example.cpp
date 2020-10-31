@@ -60,7 +60,7 @@ static void StartClient1(mindspore::ps::comm::TcpMessageClient *client) {
     keys[i] = (rand() % 1000);
     vals[i] = (rand() % 1000);
   }
-  message.AddArrayData(keys, vals, 10, 10);
+  message.SetArrayData(keys, vals, 10, 10);
 //  client->SendKVMessage(message);
   client->SendMessage(test_message.c_str(), test_message.size());
   client->Start();

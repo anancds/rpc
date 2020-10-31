@@ -21,16 +21,16 @@ class Node {
   virtual void Stop();
 };
 
-class ClientNode : public Node {
- public:
-  void Start() override;
-  void Stop() override;
-};
-
-class ServerNode : public Node {
-  void Start() override;
-  void Stop() override;
-};
+//class ClientNode : public Node {
+// public:
+//  void Start() override;
+//  void Stop() override;
+//};
+//
+//class ServerNode : public Node {
+//  void Start() override;
+//  void Stop() override;
+//};
 
 class SchedulerNode : public Node {
   void Start() override;

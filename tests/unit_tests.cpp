@@ -56,6 +56,7 @@ class TestHttpServer : public ::testing::Test {
         EXPECT_STREQ(resp->GetRequestUri().c_str(), "/httpget?key1=value1");
         EXPECT_STREQ(resp->GetUriPath().c_str(), "/httpget");
         resp->QuickResponse(200, "get request success!\n");
+
       },
       std::placeholders::_1);
 

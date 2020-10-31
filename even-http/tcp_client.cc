@@ -227,34 +227,31 @@ void TcpMessageClient::SendMessage(const void *buf, size_t num) const {
 }
 
 TcpKVClient::TcpKVClient(std::string address, std::uint16_t port) : TcpClient(address, port) {
-  message_handler_.SetKVCallback([this](const Message &message) {
+  message_handler_.SetKVCallback([this](const PBMessage &message) {
     if (kv_message_callback_) kv_message_callback_(*this, message);
   });
 }
 
 void TcpKVClient::OnReadHandler(const void *buf, size_t num) {
   MS_EXCEPTION_IF_NULL(buf);
-  message_handler_.ReceiveMessage(buf, num);
+  message_handler_.ReceiveKVMessage(buf, num);
 }
 
 void TcpKVClient::ReceiveKVMessage(const OnKVMessage &cb) { kv_message_callback_ = cb; }
 
-void TcpKVClient::SendKVMessage(const Message &message) const {
+void TcpKVClient::SendKVMessage(const PBMessage &message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
-  uint32_t send_bytes = message.key_len_ + message.value_len_;
+  size_t buf_size = message.ByteSizeLong();
+  std::unique_ptr<char[]> serialized(new char[buf_size]);
+  message.SerializeToArray(&serialized[0], static_cast<int>(buf_size));
   Message::MessageHeader message_header;
   message_header.message_magic_ = htonl(Message::MAGIC);
-  message_header.message_key_length_ = htonl(static_cast<uint32_t>(message.key_len_));
-  message_header.message_value_length_ = htonl(static_cast<uint32_t>(message.value_len_));
-  message_header.message_length_ = htonl(static_cast<uint32_t>(send_bytes));
+  message_header.message_length_ = htonl(static_cast<uint32_t>(buf_size));
   if (evbuffer_add(bufferevent_get_output(buffer_event_), &message_header, sizeof(message_header)) == -1) {
     MS_LOG(EXCEPTION) << "Event buffer add header failed!";
   }
-  if (evbuffer_add(bufferevent_get_output(buffer_event_), &message.keys_, message.key_len_) == -1) {
-    MS_LOG(EXCEPTION) << "Event buffer add keys failed!";
-  }
-  if (evbuffer_add(bufferevent_get_output(buffer_event_), message.values_, message.value_len_) == -1) {
-    MS_LOG(EXCEPTION) << "Event buffer add values failed!";
+  if (evbuffer_add(bufferevent_get_output(buffer_event_), serialized.get(), buf_size) == -1) {
+    MS_LOG(EXCEPTION) << "Event buffer add protobuf data failed!";
   }
 }
 

@@ -18,10 +18,10 @@
 
 #include <arpa/inet.h>
 #include <event2/buffer.h>
+#include <event2/buffer_compat.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
 #include <event2/listener.h>
-#include <event2/buffer_compat.h>
 #include <event2/util.h>
 #include <sys/socket.h>
 #include <csignal>
@@ -90,7 +90,7 @@ void TcpKVConnection::InitConnection(const evutil_socket_t &fd, const struct buf
 
   auto tcp_server = dynamic_cast<TcpKVServer *>(const_cast<TcpServer *>(server));
   MS_EXCEPTION_IF_NULL(tcp_server);
-  tcp_message_handler_.SetKVCallback([this, tcp_server](const Message &message) {
+  tcp_message_handler_.SetKVCallback([this, tcp_server](const PBMessage &message) {
     if (tcp_server->message_kv_callback_) tcp_server->message_kv_callback_(*tcp_server, *this, message);
   });
 }
@@ -99,31 +99,28 @@ void TcpKVConnection::OnReadHandler(const void *buffer, size_t num) {
   tcp_message_handler_.ReceiveKVMessage(buffer, num);
 }
 
-void TcpKVConnection::SendKVMessage(const Message &message) const {
+void TcpKVConnection::SendKVMessage(const PBMessage &message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
-  uint32_t send_bytes = message.key_len_ + message.value_len_;
+  size_t buf_size = message.ByteSizeLong();
+  std::unique_ptr<char[]> serialized(new char[buf_size]);
+  message.SerializeToArray(&serialized[0], static_cast<int>(buf_size));
   Message::MessageHeader message_header;
   message_header.message_magic_ = htonl(Message::MAGIC);
-  message_header.message_key_length_ = htonl(static_cast<uint32_t>(message.key_len_));
-  message_header.message_value_length_ = htonl(static_cast<uint32_t>(message.value_len_));
-  message_header.message_length_ = htonl(static_cast<uint32_t>(send_bytes));
+  message_header.message_length_ = htonl(static_cast<uint32_t>(buf_size));
   if (evbuffer_add(bufferevent_get_output(buffer_event_), &message_header, sizeof(message_header)) == -1) {
     MS_LOG(EXCEPTION) << "Event buffer add header failed!";
   }
-  if (evbuffer_add(bufferevent_get_output(buffer_event_), &message.keys_, message.key_len_) == -1) {
-    MS_LOG(EXCEPTION) << "Event buffer add keys failed!";
-  }
-  if (evbuffer_add(bufferevent_get_output(buffer_event_), message.values_, message.value_len_) == -1) {
-    MS_LOG(EXCEPTION) << "Event buffer add values failed!";
+  if (evbuffer_add(bufferevent_get_output(buffer_event_), serialized.get(), buf_size) == -1) {
+    MS_LOG(EXCEPTION) << "Event buffer add protobuf data failed!";
   }
 }
 
 TcpServer::TcpServer(std::string address, std::uint16_t port)
-  : base_(nullptr),
-    signal_event_(nullptr),
-    listener_(nullptr),
-    server_address_(std::move(address)),
-    server_port_(port) {}
+    : base_(nullptr),
+      signal_event_(nullptr),
+      listener_(nullptr),
+      server_address_(std::move(address)),
+      server_port_(port) {}
 
 TcpServer::~TcpServer() { Stop(); }
 
@@ -141,9 +138,9 @@ void TcpServer::InitServer() {
 
   struct sockaddr_in sin {};
   memset(&sin, 0, sizeof(sin));
-//  if (memset_s(&sin, sizeof(sin), 0, sizeof(sin)) != EOK) {
-//    MS_LOG(EXCEPTION) << "Initialize sockaddr_in failed!";
-//  }
+  //  if (memset_s(&sin, sizeof(sin), 0, sizeof(sin)) != EOK) {
+  //    MS_LOG(EXCEPTION) << "Initialize sockaddr_in failed!";
+  //  }
   sin.sin_family = AF_INET;
   sin.sin_port = htons(server_port_);
   sin.sin_addr.s_addr = inet_addr(server_address_.c_str());
@@ -327,12 +324,12 @@ TcpConnection *TcpMessageServer::onCreateConnection() {
   return const_cast<TcpConnection *>(conn);
 }
 
-void TcpKVServer::SendKVMessage(const TcpConnection &conn, const Message &message) {
+void TcpKVServer::SendKVMessage(const TcpConnection &conn, const PBMessage &message) {
   auto mc = dynamic_cast<const TcpKVConnection &>(conn);
   mc.SendKVMessage(message);
 }
 
-void TcpKVServer::SendKVMessage(const Message &message) {
+void TcpKVServer::SendKVMessage(const PBMessage &message) {
   std::unique_lock<std::recursive_mutex> lock(connection_mutex_);
 
   for (auto it = connections_.begin(); it != connections_.end(); ++it) {

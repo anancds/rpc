@@ -26,7 +26,7 @@ namespace comm {
 
 class Message {
  public:
-  Message() : keys_(nullptr), values_(nullptr), key_len_(0), value_len_(0) {}
+  Message() : keys_(nullptr), values_(nullptr) {}
   virtual ~Message() = default;
 
   // MS: the shortcut of MindSpore
@@ -34,30 +34,22 @@ class Message {
 
   struct MessageHeader {
     uint32_t message_magic_ = 0;
-    uint32_t message_key_length_ = 0;
-    uint32_t message_value_length_ = 0;
     uint32_t message_length_ = 0xFFFFFFFF;
   };
 
   const void *keys_;
   const void *values_;
-  uint32_t key_len_;
-  uint32_t value_len_;
 
   template <typename V>
   void AddVectorData(const std::vector<uint64_t> &key_data, const std::vector<V> &value_data) {
     keys_ = key_data.data();
     values_ = value_data.data();
-    key_len_ = key_data.size() * sizeof(std::vector<uint32_t>);
-    value_len_ = value_data.size() * sizeof(std::vector<V>);
   }
 
   template <typename V>
-  void AddArrayData(const uint64_t *key_data, const V *value_data, uint64_t key_len, uint64_t value_len) {
+  void SetArrayData(const uint64_t *key_data, const V *value_data, uint64_t key_len, uint64_t value_len) {
     keys_ = (void *)(key_data);
     values_ = (void *)(value_data);
-    key_len_ = key_len * sizeof(uint32_t *);
-    value_len_ = value_len * sizeof(V *);
   }
 };
 }  // namespace comm

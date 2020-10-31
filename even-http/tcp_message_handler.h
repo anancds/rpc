@@ -21,6 +21,7 @@
 #include <iostream>
 #include <memory>
 
+#include "../build/even-http/comm.pb.h"
 #include "log_adapter.h"
 #include "message.h"
 
@@ -29,7 +30,7 @@ namespace ps {
 namespace comm {
 
 using messageReceive = std::function<void(const void *buffer, size_t len)>;
-using messageKVReceive = std::function<void(const Message &message)>;
+using messageKVReceive = std::function<void(const PBMessage &message)>;
 
 class TcpMessageHandler {
  public:
