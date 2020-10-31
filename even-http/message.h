@@ -24,34 +24,14 @@ namespace mindspore {
 namespace ps {
 namespace comm {
 
-class Message {
- public:
-  Message() : keys_(nullptr), values_(nullptr) {}
-  virtual ~Message() = default;
+// MS: the shortcut of MindSpore
+static const uint32_t MAGIC = 0x4d53;
 
-  // MS: the shortcut of MindSpore
-  static const uint32_t MAGIC = 0x4d53;
-
-  struct MessageHeader {
-    uint32_t message_magic_ = 0;
-    uint32_t message_length_ = 0xFFFFFFFF;
-  };
-
-  const void *keys_;
-  const void *values_;
-
-  template <typename V>
-  void AddVectorData(const std::vector<uint64_t> &key_data, const std::vector<V> &value_data) {
-    keys_ = key_data.data();
-    values_ = value_data.data();
-  }
-
-  template <typename V>
-  void SetArrayData(const uint64_t *key_data, const V *value_data, uint64_t key_len, uint64_t value_len) {
-    keys_ = (void *)(key_data);
-    values_ = (void *)(value_data);
-  }
+struct MessageHeader {
+  uint32_t message_magic_ = 0;
+  uint32_t message_length_ = 0xFFFFFFFF;
 };
+
 }  // namespace comm
 }  // namespace ps
 }  // namespace mindspore

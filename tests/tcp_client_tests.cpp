@@ -1,5 +1,4 @@
-
-
+#include <memory>
 #include "common_test.h"
 #include "tcp_client.h"
 
@@ -14,22 +13,22 @@ class TestTcpClient : public UT::Common {
 };
 
 TEST_F(TestTcpClient, InitClientPortErrorNoException) {
-  auto client = new TcpMessageClient("127.0.0.1", -1);
-  client->ReceiveMessage([](const mindspore::ps::comm::TcpMessageClient &client, const void *buffer, size_t num) {
+  auto client = std::make_unique<TcpMessageClient *>(new TcpMessageClient("127.0.0.1", -1));
+  (*client)->ReceiveMessage([](const mindspore::ps::comm::TcpMessageClient &client, const void *buffer, size_t num) {
     client.SendMessage(buffer, num);
   });
 
-  EXPECT_NO_THROW(client->InitTcpClient());
+  EXPECT_NO_THROW((*client)->InitTcpClient());
 }
 
 TEST_F(TestTcpClient, InitClientIPError) {
-  auto client = new TcpMessageClient("127.0.0.13543", 9000);
-  client->ReceiveMessage([](const mindspore::ps::comm::TcpMessageClient &client, const void *buffer, size_t num) {
+  auto client = std::make_unique<TcpMessageClient *>(new TcpMessageClient("127.0.0.13543", 9000));
+  (*client)->ReceiveMessage([](const mindspore::ps::comm::TcpMessageClient &client, const void *buffer, size_t num) {
     std::cout << "Message received: " << std::string(reinterpret_cast<const char *>(buffer), num) << std::endl;
     client.SendMessage(buffer, num);
   });
 
-  ASSERT_THROW(client->InitTcpClient(), std::exception);
+  ASSERT_THROW((*client)->InitTcpClient(), std::exception);
 }
 }  // namespace comm
 }  // namespace ps

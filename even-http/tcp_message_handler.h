@@ -45,7 +45,7 @@ class TcpMessageHandler {
  private:
   messageReceive message_callback_;
   messageKVReceive message_kv_callback_;
-  Message::MessageHeader message_header_;
+  MessageHeader message_header_;
   std::string message_buffer_;
 };
 }  // namespace comm

@@ -215,8 +215,8 @@ void TcpMessageClient::ReceiveMessage(const OnMessage &cb) { message_callback_ =
 
 void TcpMessageClient::SendMessage(const void *buf, size_t num) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
-  Message::MessageHeader message_header;
-  message_header.message_magic_ = htonl(Message::MAGIC);
+  MessageHeader message_header;
+  message_header.message_magic_ = htonl(MAGIC);
   message_header.message_length_ = htonl(static_cast<uint32_t>(num));
   if (evbuffer_add(bufferevent_get_output(buffer_event_), &message_header, sizeof(message_header)) == -1) {
     MS_LOG(EXCEPTION) << "Event buffer add header failed!";
@@ -244,8 +244,8 @@ void TcpKVClient::SendKVMessage(const PBMessage &message) const {
   size_t buf_size = message.ByteSizeLong();
   std::unique_ptr<char[]> serialized(new char[buf_size]);
   message.SerializeToArray(&serialized[0], static_cast<int>(buf_size));
-  Message::MessageHeader message_header;
-  message_header.message_magic_ = htonl(Message::MAGIC);
+  MessageHeader message_header;
+  message_header.message_magic_ = htonl(MAGIC);
   message_header.message_length_ = htonl(static_cast<uint32_t>(buf_size));
   if (evbuffer_add(bufferevent_get_output(buffer_event_), &message_header, sizeof(message_header)) == -1) {
     MS_LOG(EXCEPTION) << "Event buffer add header failed!";

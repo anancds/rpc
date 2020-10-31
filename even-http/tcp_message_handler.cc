@@ -47,7 +47,7 @@ void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
 
         message_buffer_.erase(0, sizeof(message_header_));
 
-        if (message_header_.message_magic_ != Message::MAGIC) {
+        if (message_header_.message_magic_ != MAGIC) {
           // Send error
           if (message_callback_) message_callback_(nullptr, 0xFFFFFFFF);
         }
@@ -81,7 +81,7 @@ void TcpMessageHandler::ReceiveKVMessage(const void *buffer, size_t num) {
         message_buffer_.erase(0, sizeof(message_header_));
 
 
-        if (message_header_.message_magic_ != Message::MAGIC) {
+        if (message_header_.message_magic_ != MAGIC) {
           // Send error
           if (message_callback_) message_callback_(nullptr, 0xFFFFFFFF);
         }
