@@ -87,7 +87,7 @@ void TcpMessageHandler::ReceiveKVMessage(const void *buffer, size_t num) {
         }
       }
     } else if (message_buffer_.size() >= message_header_.message_length_) {
-      PBMessage pb_message;
+      CommMessage pb_message;
       pb_message.ParseFromArray(reinterpret_cast<const void*>(message_buffer_.c_str()), message_header_.message_length_);
       if (message_kv_callback_) {
         message_kv_callback_(pb_message);

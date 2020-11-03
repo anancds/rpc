@@ -59,14 +59,21 @@ TEST_F(TestTcpKVServer, KVServerSendMessage) {
   std::unique_ptr<std::thread> http_client_thread(nullptr);
   http_client_thread = std::make_unique<std::thread>([&]() {
     (*client_)->ReceiveKVMessage(
-      [](const TcpKVClient &client, const PBMessage &message) { EXPECT_EQ(2, message.pb_kv_message().keys_size()); });
+      [](const TcpKVClient &client, const CommMessage &message) {
+        KVMessage kv_message;
+        kv_message.ParseFromString(message.data());
+        EXPECT_EQ(2, kv_message.keys_size());
+      });
 
     (*client_)->InitTcpClient();
-    PBMessage message;
+    CommMessage comm_message;
+    KVMessage kv_message;
     std::vector<int> keys{1, 2};
     std::vector<int> values{3, 4};
-    *message.mutable_pb_kv_message()->mutable_keys() = {keys.begin(), keys.end()};
-    *message.mutable_pb_kv_message()->mutable_values() = {values.begin(), values.end()};
+    *kv_message.mutable_keys() = {keys.begin(), keys.end()};
+    *kv_message.mutable_values() = {values.begin(), values.end()};
+
+    comm_message.set_data(kv_message.SerializeAsString());
     //  int num = 10;
     //  uint64_t keys[num];
     //  float vals[num];
@@ -76,7 +83,7 @@ TEST_F(TestTcpKVServer, KVServerSendMessage) {
     //    vals[i] = (rand() % 1000);
     //  }
     //  message.SetArrayData(keys, vals, 10, 10);
-    (*client_)->SendKVMessage(message);
+    (*client_)->SendKVMessage(comm_message);
     (*client_)->Start();
   });
   http_client_thread->detach();

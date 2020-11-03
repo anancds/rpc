@@ -9,6 +9,7 @@
 #include <iostream>
 #include <vector>
 #include "message.h"
+#include "../build/even-http/comm.pb.h"
 
 namespace mindspore {
 namespace ps {
@@ -36,7 +37,7 @@ class Client {
   template <typename Val>
   void Send(int timestamp, bool push, bool pull, int cmd, const std::pair<std::vector<Val>, std::vector<Val>> &kvs);
 
-  void Process(const Message &msg);
+  void Process(const CommMessage &msg);
 };
 }  // namespace comm
 }  // namespace ps

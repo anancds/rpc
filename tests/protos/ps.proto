@@ -14,29 +14,12 @@
  * limitations under the License.
  */
 
-syntax = "proto3";
-import "google/protobuf/any.proto";
-package mindspore.ps;
-option optimize_for = LITE_RUNTIME;
-
-message MessageMeta {
-  // hostname or ip
-  string hostname = 1;
-  // the port of this node
-  int32 port = 2;
-  // the command of this message,for example: register、heartbeat、data
-  int32 cmd = 3;
-  // the timestamp of this message
-  int32 timestamp = 4;
-  // data type of message
-  repeated int32 data_type = 5 [packed = true];
-  // message.data_size
-  int32 data_size = 6;
+message KVMessage {
+  repeated int32 keys = 2;
+  repeated int32 values = 3;
 }
 
-
-message CommMessage {
-  MessageMeta pb_meta = 1;
-  bytes data = 2;
+message PBHeartBeatMessage {
+  // *.*.*.*:port
+  repeated string host_and_port = 2;
 }
-

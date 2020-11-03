@@ -19,10 +19,10 @@
 
 #include <stdarg.h>
 #include <stdint.h>
-#include <string>
-#include <sstream>
-#include <memory>
 #include <functional>
+#include <memory>
+#include <sstream>
+#include <string>
 #include "overload.h"
 #include "securec.h"
 #define USE_GLOG

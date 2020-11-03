@@ -59,7 +59,7 @@ class TcpKVConnection : public TcpConnection {
   ~TcpKVConnection() override = default;
 
   void InitConnection(const evutil_socket_t &fd, const struct bufferevent *bev, const TcpServer *server) override;
-  void SendKVMessage(const PBMessage &message) const;
+  void SendKVMessage(const CommMessage &message) const;
   void OnReadHandler(const void *buffer, size_t numBytes) override;
 
  protected:
@@ -95,6 +95,7 @@ class TcpServer {
                          const OnAccepted &client_accept);
   void InitServer();
   void Start();
+  void StartWithNoBlock();
   void Stop();
   void SendToAllClients(const char *data, size_t len);
   void AddConnection(const evutil_socket_t &fd, const TcpConnection *connection);
@@ -115,7 +116,7 @@ class TcpServer {
   std::string server_address_;
   std::uint16_t server_port_;
 
-  std::map<evutil_socket_t, const TcpConnection *> connections_;
+  std::map<evutil_socket_t, std::unique_ptr<TcpConnection>> connections_;
   OnConnected client_connection_;
   OnDisconnected client_disconnection_;
   OnAccepted client_accept_;
@@ -141,14 +142,14 @@ class TcpMessageServer : public TcpServer {
 class TcpKVServer : public TcpServer {
  public:
   using OnServerReceiveKVMessage =
-    std::function<void(TcpKVServer &tcp_server, const TcpKVConnection &conn, const PBMessage &)>;
+    std::function<void(TcpKVServer &tcp_server, const TcpKVConnection &conn, const CommMessage &)>;
 
   explicit TcpKVServer(std::string address, std::uint16_t port) : TcpServer(address, port) {}
   ~TcpKVServer() override = default;
 
   void ReceiveKVMessage(const OnServerReceiveKVMessage &cb);
-  static void SendKVMessage(const TcpConnection &conn, const PBMessage &message);
-  void SendKVMessage(const PBMessage &message);
+  static void SendKVMessage(const TcpConnection &conn, const CommMessage &message);
+  void SendKVMessage(const CommMessage &message);
   TcpConnection *onCreateConnection() override;
   OnServerReceiveKVMessage message_kv_callback_;
 };

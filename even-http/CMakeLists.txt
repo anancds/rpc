@@ -12,7 +12,7 @@ message(STATUS "Using protobuf ${protobuf_VERSION}")
 
 set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
 
-file(GLOB_RECURSE PROTO_FILES "protos/comm.proto")
+file(GLOB_RECURSE PROTO_FILES "protos/*.proto")
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
 
 set(HTTP_SRC comm_util.cc network_manager.cpp node.cpp node_manager.cpp scheduler_manager.cpp server_manager.cpp tcp_client.cc tcp_message_handler.cc tcp_server.cc worker_manager.cpp)

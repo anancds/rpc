@@ -90,7 +90,7 @@ void TcpKVConnection::InitConnection(const evutil_socket_t &fd, const struct buf
 
   auto tcp_server = dynamic_cast<TcpKVServer *>(const_cast<TcpServer *>(server));
   MS_EXCEPTION_IF_NULL(tcp_server);
-  tcp_message_handler_.SetKVCallback([this, tcp_server](const PBMessage &message) {
+  tcp_message_handler_.SetKVCallback([this, tcp_server](const CommMessage &message) {
     if (tcp_server->message_kv_callback_) tcp_server->message_kv_callback_(*tcp_server, *this, message);
   });
 }
@@ -99,7 +99,7 @@ void TcpKVConnection::OnReadHandler(const void *buffer, size_t num) {
   tcp_message_handler_.ReceiveKVMessage(buffer, num);
 }
 
-void TcpKVConnection::SendKVMessage(const PBMessage &message) const {
+void TcpKVConnection::SendKVMessage(const CommMessage &message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
   size_t buf_size = message.ByteSizeLong();
   std::unique_ptr<char[]> serialized(new char[buf_size]);
@@ -174,6 +174,22 @@ void TcpServer::Start() {
   }
 }
 
+void TcpServer::StartWithNoBlock() {
+  std::unique_lock<std::recursive_mutex> l(connection_mutex_);
+  MS_LOG(INFO) << "Start tcp server with no block!";
+  MS_EXCEPTION_IF_NULL(base_);
+  int ret = event_base_loop(base_, EVLOOP_NONBLOCK);
+  if (ret == 0) {
+    MS_LOG(INFO) << "Event base loop success!";
+  } else if (ret == 1) {
+    MS_LOG(ERROR) << "Event base loop failed with no events pending or active!";
+  } else if (ret == -1) {
+    MS_LOG(ERROR) << "Event base loop failed with error occurred!";
+  } else {
+    MS_LOG(EXCEPTION) << "Event base loop with unexpect error code!";
+  }
+}
+
 void TcpServer::Stop() {
   MS_LOG(INFO) << "Stop tcp server!";
   if (signal_event_ != nullptr) {
@@ -235,14 +251,14 @@ void TcpServer::ListenerCallback(struct evconnlistener *, evutil_socket_t fd, st
   }
 }
 
-TcpConnection *TcpServer::onCreateConnection() {
-  TcpConnection *conn = nullptr;
+std::unique_ptr<TcpConnection> TcpServer::onCreateConnection() {
+  std::unique_ptr<TcpConnection> conn = nullptr;
   if (client_accept_)
-    conn = const_cast<TcpConnection *>(client_accept_(this));
+    conn = std::make_unique<TcpConnection>(*client_accept_(this));
   else
-    conn = new TcpConnection();
+    conn = std::make_unique<TcpConnection>();
 
-  return conn;
+  return std::move(conn);
 }
 
 OnServerReceive TcpServer::GetServerReceive() const { return message_callback_; }
@@ -324,12 +340,12 @@ TcpConnection *TcpMessageServer::onCreateConnection() {
   return const_cast<TcpConnection *>(conn);
 }
 
-void TcpKVServer::SendKVMessage(const TcpConnection &conn, const PBMessage &message) {
+void TcpKVServer::SendKVMessage(const TcpConnection &conn, const CommMessage &message) {
   auto mc = dynamic_cast<const TcpKVConnection &>(conn);
   mc.SendKVMessage(message);
 }
 
-void TcpKVServer::SendKVMessage(const PBMessage &message) {
+void TcpKVServer::SendKVMessage(const CommMessage &message) {
   std::unique_lock<std::recursive_mutex> lock(connection_mutex_);
 
   for (auto it = connections_.begin(); it != connections_.end(); ++it) {

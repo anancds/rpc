@@ -47,6 +47,7 @@ class TcpClient {
   void StartWithDelay(int seconds);
   void Stop();
   void Start();
+  void StartWithNoBlock();
 
  protected:
   static void SetTcpNoDelay(const evutil_socket_t &fd);
@@ -86,14 +87,14 @@ class TcpMessageClient : public TcpClient {
 
 class TcpKVClient : public TcpClient {
  public:
-  using OnKVMessage = std::function<void(const TcpKVClient &, const PBMessage &)>;
+  using OnKVMessage = std::function<void(const TcpKVClient &, const CommMessage &)>;
 
   explicit TcpKVClient(std::string address, std::uint16_t port);
   ~TcpKVClient() override = default;
 
   void OnReadHandler(const void *buf, size_t num) override;
   void ReceiveKVMessage(const OnKVMessage &cb);
-  void SendKVMessage(const PBMessage &message) const;
+  void SendKVMessage(const CommMessage &message) const;
 
  private:
   OnKVMessage kv_message_callback_;

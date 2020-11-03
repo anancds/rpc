@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <iostream>
+#include "../build/even-http/comm.pb.h"
 #include "message.h"
 
 namespace mindspore {
@@ -17,10 +18,10 @@ template <typename Val>
 class Server {
  public:
   using ReqHandle = std::function<void(
-    const Message &req_meta, const std::pair<std::vector<Val>, std::vector<Val>> &kvs, Server *server, void *dest)>;
+    const CommMessage &req_meta, const std::pair<std::vector<Val>, std::vector<Val>> &kvs, Server *server, void *dest)>;
   void SetCallBack(const ReqHandle &handle);
   void Response();
-  void Process(const Message &message);
+  void Process(const CommMessage &message);
 };
 }  // namespace comm
 }  // namespace ps

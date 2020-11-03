@@ -16,48 +16,27 @@
 
 syntax = "proto3";
 import "google/protobuf/any.proto";
-package mindspore;
+package mindspore.ps;
 option optimize_for = LITE_RUNTIME;
 
-// mete information about a message
-message PBMeta {
+message MessageMeta {
   // hostname or ip
   string hostname = 1;
-  // the port this node is binding
+  // the port of this node
   int32 port = 2;
-
+  // the command of this message,for example: register、heartbeat、data
   int32 cmd = 3;
-  // true: a request task
-  // false: the response task to the request task with the same *time*
-  bool request = 4;
-  // the unique id of an application
-  int32 app_id = 5;
   // the timestamp of this message
-  int32 timestamp = 6;
-  // data type of message.data[i]
-  repeated int32 data_type = 7 [packed = true];
-  // whether or not a push message
-  bool push = 8;
-  // whether or not a pull message
-  bool pull = 9;
+  int32 timestamp = 4;
+  // data type of message
+  repeated int32 data_type = 5 [packed = true];
   // message.data_size
-  int32 data_size = 10;
+  int32 data_size = 6;
 }
 
-message PBKVMessage {
-  PBMeta pb_meta = 1;
-  repeated int32 keys = 2;
-  repeated int32 values = 3;
-}
 
-message PBStringMessage {
-  PBMeta pb_meta = 1;
-  repeated int32 keys = 2;
-  repeated google.protobuf.Any values = 3;
-}
-
-message PBMessage {
-  PBKVMessage pb_kv_message = 1;
-  PBStringMessage pb_string_message = 2;
+message CommMessage {
+  MessageMeta pb_meta = 1;
+  bytes data = 2;
 }
 

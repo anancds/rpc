@@ -51,16 +51,16 @@ static void StartClient1(mindspore::ps::comm::TcpMessageClient *client) {
 //  }
 //  message.AddVectorData(keys, vals);
 
-  Message message{};
-  int num = 10;
-  uint64_t keys[num];
-  float vals[num];
-
-  for (int i = 0; i < num; ++i) {
-    keys[i] = (rand() % 1000);
-    vals[i] = (rand() % 1000);
-  }
-  message.SetArrayData(keys, vals, 10, 10);
+//  Message message{};
+//  int num = 10;
+//  uint64_t keys[num];
+//  float vals[num];
+//
+//  for (int i = 0; i < num; ++i) {
+//    keys[i] = (rand() % 1000);
+//    vals[i] = (rand() % 1000);
+//  }
+//  message.SetArrayData(keys, vals, 10, 10);
 //  client->SendKVMessage(message);
   client->SendMessage(test_message.c_str(), test_message.size());
   client->Start();

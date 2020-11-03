@@ -36,7 +36,6 @@ static void StartServer() {
     //    uint64_t *test = reinterpret_cast<uint64_t*>(const_cast<void*>(dest));
     //    float *test1 = reinterpret_cast<float *>(const_cast<void*>(dest1));
 
-    const Message *message = reinterpret_cast<const Message *>(buffer);
     // Send echo
     server.SendMessage(conn, buffer, num);
   });
@@ -48,6 +47,8 @@ static void StartServer() {
 }
 
 int main(int /*argc*/, char ** /*argv*/) {
+
+  MSLOG_IF(mindspore::EXCEPTION, true, mindspore::UnavailableError)<< "test";
   //  std::unique_ptr<std::thread> http_server_thread_(nullptr);
   //  http_server_thread_ = std::make_unique<std::thread>(&StartServer);
   //  http_server_thread_->detach();

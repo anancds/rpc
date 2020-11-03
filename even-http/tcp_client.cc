@@ -196,6 +196,21 @@ void TcpClient::Start() {
   }
 }
 
+void TcpClient::StartWithNoBlock() {
+  MS_LOG(INFO) << "Start tcp server with no block!";
+  MS_EXCEPTION_IF_NULL(event_base_);
+  int ret = event_base_loop(event_base_, EVLOOP_NONBLOCK);
+  if (ret == 0) {
+    MS_LOG(INFO) << "Event base loop success!";
+  } else if (ret == 1) {
+    MS_LOG(ERROR) << "Event base loop failed with no events pending or active!";
+  } else if (ret == -1) {
+    MS_LOG(ERROR) << "Event base loop failed with error occurred!";
+  } else {
+    MS_LOG(EXCEPTION) << "Event base loop with unexpect error code!";
+  }
+}
+
 TcpMessageClient::TcpMessageClient(std::string address, std::uint16_t port) : TcpClient(address, port) {
   message_handler_.SetCallback([this](const void *buf, size_t num) {
     if (buf == nullptr && num == 0xFFFFFFFF) {
@@ -227,7 +242,7 @@ void TcpMessageClient::SendMessage(const void *buf, size_t num) const {
 }
 
 TcpKVClient::TcpKVClient(std::string address, std::uint16_t port) : TcpClient(address, port) {
-  message_handler_.SetKVCallback([this](const PBMessage &message) {
+  message_handler_.SetKVCallback([this](const CommMessage &message) {
     if (kv_message_callback_) kv_message_callback_(*this, message);
   });
 }
@@ -239,10 +254,10 @@ void TcpKVClient::OnReadHandler(const void *buf, size_t num) {
 
 void TcpKVClient::ReceiveKVMessage(const OnKVMessage &cb) { kv_message_callback_ = cb; }
 
-void TcpKVClient::SendKVMessage(const PBMessage &message) const {
+void TcpKVClient::SendKVMessage(const CommMessage &message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
-  size_t buf_size = message.ByteSizeLong();
-  std::unique_ptr<char[]> serialized(new char[buf_size]);
+  const size_t buf_size = message.ByteSizeLong();
+  char serialized[buf_size];
   message.SerializeToArray(&serialized[0], static_cast<int>(buf_size));
   MessageHeader message_header;
   message_header.message_magic_ = htonl(MAGIC);
@@ -250,7 +265,7 @@ void TcpKVClient::SendKVMessage(const PBMessage &message) const {
   if (evbuffer_add(bufferevent_get_output(buffer_event_), &message_header, sizeof(message_header)) == -1) {
     MS_LOG(EXCEPTION) << "Event buffer add header failed!";
   }
-  if (evbuffer_add(bufferevent_get_output(buffer_event_), serialized.get(), buf_size) == -1) {
+  if (evbuffer_add(bufferevent_get_output(buffer_event_), serialized, buf_size) == -1) {
     MS_LOG(EXCEPTION) << "Event buffer add protobuf data failed!";
   }
 }
