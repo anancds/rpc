@@ -18,7 +18,7 @@ message(STATUS "Using protobuf ${protobuf_VERSION}")
 
 set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
 
-file(GLOB_RECURSE PROTO_FILES "protos/comm.proto")
+file(GLOB_RECURSE PROTO_FILES "protos/*.proto")
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
 
 

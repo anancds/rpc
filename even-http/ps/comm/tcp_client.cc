@@ -29,6 +29,12 @@
 #include <iostream>
 #include <utility>
 #include <string>
+#include "securec.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "ps/comm/comm_util.h"
 

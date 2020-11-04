@@ -19,6 +19,11 @@
 #include <arpa/inet.h>
 #include <iostream>
 #include <utility>
+#include <stdio.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <string.h>
+#include <stdlib.h>
 
 namespace mindspore {
 namespace ps {

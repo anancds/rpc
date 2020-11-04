@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "comm/tcp_client.h"
-#include "comm/tcp_server.h"
+#include "ps/comm/tcp_client.h"
+#include "ps/comm/tcp_server.h"
 #include "common_test.h"
 
 #include <memory>
@@ -24,48 +24,50 @@
 namespace mindspore {
 namespace ps {
 namespace comm {
-class TestTcpKVServer : public UT::Common {
+class TestTcpServer : public UT::Common {
  public:
-  TestTcpKVServer() : client_(nullptr), server_(nullptr) {}
-  virtual ~TestTcpKVServer() = default;
+  TestTcpServer() : client_(nullptr), server_(nullptr) {}
+  virtual ~TestTcpServer() = default;
 
   void SetUp() override {
-    server_ = std::make_unique<TcpKVServer *>(new TcpKVServer("127.0.0.1", 9998));
+    server_ = std::make_unique<TcpServer>("127.0.0.1", 9998);
     std::unique_ptr<std::thread> http_server_thread_(nullptr);
     http_server_thread_ = std::make_unique<std::thread>([&]() {
-      (*server_)->ReceiveKVMessage([](const TcpKVServer &server, const TcpKVConnection &conn, const PBMessage &message) {
-        MS_LOG(INFO) << "The server message size is:" << message.pb_kv_message().keys_size();
-        server.SendKVMessage(conn, message);
+      server_->SetMessageCallback([](const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+        KVMessage kv_message;
+        kv_message.ParseFromString(message.data());
+        EXPECT_EQ(2, kv_message.keys_size());
+        server.SendMessage(conn, message);
       });
-      (*server_)->InitServer();
-      (*server_)->Start();
+      server_->Init();
+      server_->Start();
     });
     http_server_thread_->detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   }
   void TearDown() override {
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-    (*client_)->Stop();
+    client_->Stop();
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-    (*server_)->Stop();
+    server_->Stop();
   }
 
-  std::unique_ptr<TcpKVClient*> client_;
-  std::unique_ptr<TcpKVServer*> server_;
+  std::unique_ptr<TcpClient> client_;
+  std::unique_ptr<TcpServer> server_;
 };
 
-TEST_F(TestTcpKVServer, KVServerSendMessage) {
-  client_ = std::make_unique<TcpKVClient*>(new TcpKVClient("127.0.0.1", 9998));
+TEST_F(TestTcpServer, ServerSendMessage) {
+  client_ = std::make_unique<TcpClient>("127.0.0.1", 9998);
   std::unique_ptr<std::thread> http_client_thread(nullptr);
   http_client_thread = std::make_unique<std::thread>([&]() {
-    (*client_)->ReceiveKVMessage(
-      [](const TcpKVClient &client, const CommMessage &message) {
-        KVMessage kv_message;
-        kv_message.ParseFromString(message.data());
-        EXPECT_EQ(2, kv_message.keys_size());
-      });
+    client_->SetMessageCallback([](const TcpClient &client, const CommMessage &message) {
+      KVMessage kv_message;
+      kv_message.ParseFromString(message.data());
+      EXPECT_EQ(2, kv_message.keys_size());
+    });
 
-    (*client_)->InitTcpClient();
+    client_->Init();
+
     CommMessage comm_message;
     KVMessage kv_message;
     std::vector<int> keys{1, 2};
@@ -74,17 +76,9 @@ TEST_F(TestTcpKVServer, KVServerSendMessage) {
     *kv_message.mutable_values() = {values.begin(), values.end()};
 
     comm_message.set_data(kv_message.SerializeAsString());
-    //  int num = 10;
-    //  uint64_t keys[num];
-    //  float vals[num];
-    //
-    //  for (int i = 0; i < num; ++i) {
-    //    keys[i] = (rand() % 1000);
-    //    vals[i] = (rand() % 1000);
-    //  }
-    //  message.SetArrayData(keys, vals, 10, 10);
-    (*client_)->SendKVMessage(comm_message);
-    (*client_)->Start();
+    client_->SendMessage(comm_message);
+
+    client_->Start();
   });
   http_client_thread->detach();
 }

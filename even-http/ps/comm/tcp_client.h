@@ -27,7 +27,7 @@
 #include <vector>
 
 #include "ps/comm/message.h"
-#include "proto/comm.pb.h"
+#include "../../../build/even-http/comm.pb.h"
 
 namespace mindspore {
 namespace ps {
