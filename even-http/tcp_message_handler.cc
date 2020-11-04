@@ -19,6 +19,7 @@
 #include <arpa/inet.h>
 #include <iostream>
 #include <utility>
+#include <vector>
 
 namespace mindspore {
 namespace ps {

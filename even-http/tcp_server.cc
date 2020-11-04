@@ -251,14 +251,14 @@ void TcpServer::ListenerCallback(struct evconnlistener *, evutil_socket_t fd, st
   }
 }
 
-std::unique_ptr<TcpConnection> TcpServer::onCreateConnection() {
-  std::unique_ptr<TcpConnection> conn = nullptr;
+TcpConnection *TcpServer::onCreateConnection() {
+  const TcpConnection *conn = nullptr;
   if (client_accept_)
-    conn = std::make_unique<TcpConnection>(*client_accept_(this));
+    conn = client_accept_(this);
   else
-    conn = std::make_unique<TcpConnection>();
+    conn = new TcpConnection();
 
-  return std::move(conn);
+  return const_cast<TcpConnection *>(conn);
 }
 
 OnServerReceive TcpServer::GetServerReceive() const { return message_callback_; }

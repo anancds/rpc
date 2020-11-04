@@ -47,6 +47,7 @@ static void StartServer() {
 }
 
 int main(int /*argc*/, char ** /*argv*/) {
+  std::cout << sizeof(unsigned char) << std::endl;
 
   MSLOG_IF(mindspore::EXCEPTION, true, mindspore::UnavailableError)<< "test";
   //  std::unique_ptr<std::thread> http_server_thread_(nullptr);

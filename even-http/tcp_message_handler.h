@@ -48,6 +48,7 @@ class TcpMessageHandler {
   messageKVReceive message_kv_callback_;
   MessageHeader message_header_;
   std::string message_buffer_;
+  bool is_parsed_;
 };
 }  // namespace comm
 }  // namespace ps

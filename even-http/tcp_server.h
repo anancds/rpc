@@ -116,7 +116,7 @@ class TcpServer {
   std::string server_address_;
   std::uint16_t server_port_;
 
-  std::map<evutil_socket_t, std::unique_ptr<TcpConnection>> connections_;
+  std::map<evutil_socket_t, const TcpConnection *> connections_;
   OnConnected client_connection_;
   OnDisconnected client_disconnection_;
   OnAccepted client_accept_;
