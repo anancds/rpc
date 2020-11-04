@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "http_server.h"
-#include "http_message_handler.h"
-#include "comm_util.h"
+#include "ps/comm/http_server.h"
+#include "ps/comm/http_message_handler.h"
+#include "ps/comm/comm_util.h"
 
 #ifdef WIN32
 #include <WinSock2.h>
@@ -45,7 +45,7 @@ namespace comm {
 HttpServer::~HttpServer() { Stop(); }
 
 bool HttpServer::InitServer() {
-//  CommUtil::CheckIp(server_address_);
+  CommUtil::CheckIp(server_address_);
 
   event_base_ = event_base_new();
   MS_EXCEPTION_IF_NULL(event_base_);

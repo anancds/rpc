@@ -16,7 +16,7 @@
 #include <memory>
 #include <string>
 #include <thread>
-#include "http_server.h"
+#include "comm/http_server.h"
 
 using namespace std;
 

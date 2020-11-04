@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include "comm/tcp_client.h"
+#include "comm/tcp_server.h"
 #include "common_test.h"
-#include "tcp_client.h"
-#include "tcp_server.h"
 
 #include <memory>
 #include <thread>

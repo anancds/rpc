@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "tcp_client.h"
+#include "ps/comm/tcp_client.h"
 
 #include <arpa/inet.h>
 #include <event2/buffer.h>
@@ -30,18 +30,24 @@
 #include <utility>
 #include <string>
 
-#include "comm_util.h"
+#include "ps/comm/comm_util.h"
 
 namespace mindspore {
 namespace ps {
 namespace comm {
 
-TcpClient::TcpClient(std::string address, std::uint16_t port)
-  : event_base_(nullptr),
-    event_timeout_(nullptr),
-    buffer_event_(nullptr),
-    server_address_(std::move(address)),
-    server_port_(port) {}
+TcpClient::TcpClient(const std::string &address, std::uint16_t port)
+    : event_base_(nullptr),
+      event_timeout_(nullptr),
+      buffer_event_(nullptr),
+      server_address_(std::move(address)),
+      server_port_(port) {
+  message_handler_.SetCallback([this](const CommMessage &message) {
+    if (message_callback_) {
+      message_callback_(*this, message);
+    }
+  });
+}
 
 TcpClient::~TcpClient() { Stop(); }
 
@@ -55,7 +61,7 @@ void TcpClient::SetCallback(const OnConnected &conn, const OnDisconnected &disco
   timeout_callback_ = timeout;
 }
 
-void TcpClient::InitTcpClient() {
+void TcpClient::Init() {
   if (buffer_event_) {
     return;
   }
@@ -65,7 +71,9 @@ void TcpClient::InitTcpClient() {
   MS_EXCEPTION_IF_NULL(event_base_);
 
   sockaddr_in sin{};
-  memset(&sin, 0, sizeof(sin));
+  if (memset_s(&sin, sizeof(sin), 0, sizeof(sin)) != EOK) {
+    MS_LOG(EXCEPTION) << "Initialize sockaddr_in failed!";
+  }
   sin.sin_family = AF_INET;
   sin.sin_addr.s_addr = inet_addr(server_address_.c_str());
   sin.sin_port = htons(server_port_);
@@ -129,7 +137,7 @@ void TcpClient::SetTcpNoDelay(const evutil_socket_t &fd) {
 void TcpClient::TimeoutCallback(evutil_socket_t, std::int16_t, void *arg) {
   MS_EXCEPTION_IF_NULL(arg);
   auto tcp_client = reinterpret_cast<TcpClient *>(arg);
-  tcp_client->InitTcpClient();
+  tcp_client->Init();
 }
 
 void TcpClient::ReadCallback(struct bufferevent *bev, void *ctx) {
@@ -155,6 +163,7 @@ void TcpClient::OnReadHandler(const void *buf, size_t num) {
   if (read_callback_) {
     read_callback_(*this, buf, num);
   }
+  message_handler_.ReceiveMessage(buf, num);
 }
 
 void TcpClient::EventCallback(struct bufferevent *bev, std::int16_t events, void *ptr) {
@@ -185,87 +194,37 @@ void TcpClient::EventCallback(struct bufferevent *bev, std::int16_t events, void
 void TcpClient::Start() {
   MS_EXCEPTION_IF_NULL(event_base_);
   int ret = event_base_dispatch(event_base_);
-  if (ret == 0) {
-    MS_LOG(INFO) << "Event base dispatch success!";
-  } else if (ret == 1) {
-    MS_LOG(ERROR) << "Event base dispatch failed with no events pending or active!";
-  } else if (ret == -1) {
-    MS_LOG(ERROR) << "Event base dispatch failed with error occurred!";
-  } else {
-    MS_LOG(EXCEPTION) << "Event base dispatch with unexpect error code!";
-  }
+  MSLOG_IF(INFO, ret == 0, NoExceptionType) << "Event base dispatch success!";
+  MSLOG_IF(mindspore::ERROR, ret == 1, NoExceptionType)
+    << "Event base dispatch failed with no events pending or active!";
+  MSLOG_IF(mindspore::ERROR, ret == -1, NoExceptionType) << "Event base dispatch failed with error occurred!";
+  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base dispatch with unexpect error code!";
 }
 
 void TcpClient::StartWithNoBlock() {
-  MS_LOG(INFO) << "Start tcp server with no block!";
+  MS_LOG(INFO) << "Start tcp client with no block!";
   MS_EXCEPTION_IF_NULL(event_base_);
   int ret = event_base_loop(event_base_, EVLOOP_NONBLOCK);
-  if (ret == 0) {
-    MS_LOG(INFO) << "Event base loop success!";
-  } else if (ret == 1) {
-    MS_LOG(ERROR) << "Event base loop failed with no events pending or active!";
-  } else if (ret == -1) {
-    MS_LOG(ERROR) << "Event base loop failed with error occurred!";
-  } else {
-    MS_LOG(EXCEPTION) << "Event base loop with unexpect error code!";
-  }
+  MSLOG_IF(INFO, ret == 0, NoExceptionType) << "Event base loop success!";
+  MSLOG_IF(mindspore::ERROR, ret == 1, NoExceptionType) << "Event base loop failed with no events pending or active!";
+  MSLOG_IF(mindspore::ERROR, ret == -1, NoExceptionType) << "Event base loop failed with error occurred!";
+  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base loop with unexpect error code!";
 }
 
-TcpMessageClient::TcpMessageClient(std::string address, std::uint16_t port) : TcpClient(address, port) {
-  message_handler_.SetCallback([this](const void *buf, size_t num) {
-    if (buf == nullptr && num == 0xFFFFFFFF) {
-      if (disconnected_callback_) disconnected_callback_(*this, 200);
-      Stop();
-    }
-    if (message_callback_) message_callback_(*this, buf, num);
-  });
-}
+void TcpClient::SetMessageCallback(const OnMessage &cb) { message_callback_ = cb; }
 
-void TcpMessageClient::OnReadHandler(const void *buf, size_t num) {
-  MS_EXCEPTION_IF_NULL(buf);
-  message_handler_.ReceiveMessage(buf, num);
-}
-
-void TcpMessageClient::ReceiveMessage(const OnMessage &cb) { message_callback_ = cb; }
-
-void TcpMessageClient::SendMessage(const void *buf, size_t num) const {
+void TcpClient::SendMessage(const CommMessage &message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
-  MessageHeader message_header;
-  message_header.message_magic_ = htonl(MAGIC);
-  message_header.message_length_ = htonl(static_cast<uint32_t>(num));
-  if (evbuffer_add(bufferevent_get_output(buffer_event_), &message_header, sizeof(message_header)) == -1) {
-    MS_LOG(EXCEPTION) << "Event buffer add header failed!";
-  }
-  if (evbuffer_add(bufferevent_get_output(buffer_event_), buf, num) == -1) {
-    MS_LOG(EXCEPTION) << "Event buffer add data failed!";
-  }
-}
-
-TcpKVClient::TcpKVClient(std::string address, std::uint16_t port) : TcpClient(address, port) {
-  message_handler_.SetKVCallback([this](const CommMessage &message) {
-    if (kv_message_callback_) kv_message_callback_(*this, message);
-  });
-}
-
-void TcpKVClient::OnReadHandler(const void *buf, size_t num) {
-  MS_EXCEPTION_IF_NULL(buf);
-  message_handler_.ReceiveKVMessage(buf, num);
-}
-
-void TcpKVClient::ReceiveKVMessage(const OnKVMessage &cb) { kv_message_callback_ = cb; }
-
-void TcpKVClient::SendKVMessage(const CommMessage &message) const {
-  MS_EXCEPTION_IF_NULL(buffer_event_);
-  const size_t buf_size = message.ByteSizeLong();
-  char serialized[buf_size];
-  message.SerializeToArray(&serialized[0], static_cast<int>(buf_size));
+  size_t buf_size = message.ByteSizeLong();
+  std::vector<unsigned char> serialized(buf_size);
+  message.SerializeToArray(serialized.data(), static_cast<int>(buf_size));
   MessageHeader message_header;
   message_header.message_magic_ = htonl(MAGIC);
   message_header.message_length_ = htonl(static_cast<uint32_t>(buf_size));
   if (evbuffer_add(bufferevent_get_output(buffer_event_), &message_header, sizeof(message_header)) == -1) {
     MS_LOG(EXCEPTION) << "Event buffer add header failed!";
   }
-  if (evbuffer_add(bufferevent_get_output(buffer_event_), serialized, buf_size) == -1) {
+  if (evbuffer_add(bufferevent_get_output(buffer_event_), serialized.data(), buf_size) == -1) {
     MS_LOG(EXCEPTION) << "Event buffer add protobuf data failed!";
   }
 }

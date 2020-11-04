@@ -8,8 +8,8 @@
 #include <functional>
 #include <iostream>
 #include <vector>
+#include "../../../build/even-http/comm.pb.h"
 #include "message.h"
-#include "../build/even-http/comm.pb.h"
 
 namespace mindspore {
 namespace ps {

@@ -6,9 +6,9 @@ enable_testing()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../even-http)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../log)
 
-set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/tcp_client.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/tcp_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/tcp_message_handler.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/comm_util.cc)
+set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/tcp_client.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/tcp_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/tcp_message_handler.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/comm_util.cc)
 
-add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/http_message_handler.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/http_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/comm_util.cc)
+add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/http_message_handler.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/http_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/comm_util.cc)
 add_library(tcp ${TEST_SRC})
 
 find_package(Threads REQUIRED)
@@ -36,21 +36,6 @@ target_link_libraries(unit_tests
         GMock::GMock
         GMock::Main
         event event_core Threads::Threads
-        )
-
-add_executable(tcp_server tcp_server_tests.cpp ${PROTO_SRCS} ${PROTO_HDRS})
-
-
-target_link_libraries(tcp_server
-        unittest
-        tcp
-        rpc-log
-        GTest::GTest
-        GTest::Main
-        GMock::GMock
-        GMock::Main
-        event event_core Threads::Threads
-        ${_PROTOBUF_LIBPROTOBUF}
         )
 
 add_executable(tcp_kv_server tcp_kv_server_test.cc ${PROTO_SRCS} ${PROTO_HDRS})

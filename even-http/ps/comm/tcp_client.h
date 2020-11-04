@@ -17,14 +17,17 @@
 #ifndef MINDSPORE_CCSRC_PS_COMM_TCP_CLIENT_H_
 #define MINDSPORE_CCSRC_PS_COMM_TCP_CLIENT_H_
 
-#include "tcp_message_handler.h"
+#include "ps/comm/tcp_message_handler.h"
 
 #include <event2/event.h>
 #include <event2/bufferevent.h>
 #include <functional>
 #include <string>
+#include <memory>
+#include <vector>
 
-#include "message.h"
+#include "ps/comm/message.h"
+#include "proto/comm.pb.h"
 
 namespace mindspore {
 namespace ps {
@@ -36,18 +39,21 @@ class TcpClient {
   using OnDisconnected = std::function<void(const TcpClient &, int)>;
   using OnRead = std::function<void(const TcpClient &, const void *, size_t)>;
   using OnTimeout = std::function<void(const TcpClient &)>;
+  using OnMessage = std::function<void(const TcpClient &, const CommMessage &)>;
 
-  explicit TcpClient(std::string address, std::uint16_t port);
+  explicit TcpClient(const std::string &address, std::uint16_t port);
   virtual ~TcpClient();
 
   std::string GetServerAddress() const;
   void SetCallback(const OnConnected &conn, const OnDisconnected &disconn, const OnRead &read,
                    const OnTimeout &timeout);
-  void InitTcpClient();
+  void Init();
   void StartWithDelay(int seconds);
   void Stop();
   void Start();
   void StartWithNoBlock();
+  void SetMessageCallback(const OnMessage &cb);
+  void SendMessage(const CommMessage &message) const;
 
  protected:
   static void SetTcpNoDelay(const evutil_socket_t &fd);
@@ -55,6 +61,10 @@ class TcpClient {
   static void ReadCallback(struct bufferevent *bev, void *ctx);
   static void EventCallback(struct bufferevent *bev, std::int16_t events, void *ptr);
   virtual void OnReadHandler(const void *buf, size_t num);
+
+ private:
+  OnMessage message_callback_;
+  TcpMessageHandler message_handler_;
 
   OnConnected connected_callback_;
   OnDisconnected disconnected_callback_;
@@ -67,38 +77,6 @@ class TcpClient {
 
   std::string server_address_;
   std::uint16_t server_port_;
-};
-
-class TcpMessageClient : public TcpClient {
- public:
-  using OnMessage = std::function<void(const TcpMessageClient &, const void *, size_t)>;
-
-  explicit TcpMessageClient(std::string address, std::uint16_t port);
-  ~TcpMessageClient() override = default;
-
-  void OnReadHandler(const void *buf, size_t num) override;
-  void ReceiveMessage(const OnMessage &cb);
-  void SendMessage(const void *buf, size_t num) const;
-
- private:
-  OnMessage message_callback_;
-  TcpMessageHandler message_handler_;
-};
-
-class TcpKVClient : public TcpClient {
- public:
-  using OnKVMessage = std::function<void(const TcpKVClient &, const CommMessage &)>;
-
-  explicit TcpKVClient(std::string address, std::uint16_t port);
-  ~TcpKVClient() override = default;
-
-  void OnReadHandler(const void *buf, size_t num) override;
-  void ReceiveKVMessage(const OnKVMessage &cb);
-  void SendKVMessage(const CommMessage &message) const;
-
- private:
-  OnKVMessage kv_message_callback_;
-  TcpMessageHandler message_handler_;
 };
 
 }  // namespace comm

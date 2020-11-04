@@ -26,12 +26,11 @@ namespace comm {
 
 // MS: the shortcut of MindSpore
 static const uint32_t MAGIC = 0x4d53;
-
-enum Command { EMPTY, TERMINATE, ADD_NODE, BARRIER, ACK, HEARTBEAT };
+static const uint32_t MAX_LENGTH = 0xFFFFFFFF;
 
 struct MessageHeader {
   uint32_t message_magic_ = 0;
-  uint32_t message_length_ = 0xFFFFFFFF;
+  uint32_t message_length_ = MAX_LENGTH;
 };
 
 }  // namespace comm

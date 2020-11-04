@@ -10,10 +10,9 @@
 #include <iostream>
 #include <string>
 
+#include "../../../build/even-http/comm.pb.h"
 #include "log_adapter.h"
 #include "tcp_server.h"
-#include "../build/even-http/comm.pb.h"
-
 
 namespace mindspore {
 namespace ps {
