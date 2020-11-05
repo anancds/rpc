@@ -32,6 +32,8 @@ message MessageMeta {
   repeated int32 data_type = 5 [packed = true];
   // message.data_size
   int32 data_size = 6;
+
+  int32 role = 7;
 }
 
 

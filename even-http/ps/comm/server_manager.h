@@ -7,7 +7,7 @@
 
 #include <functional>
 #include <iostream>
-#include "../../../build/even-http/comm.pb.h"
+#include "../../../build/even-http/ps/comm/comm.pb.h"
 #include "message.h"
 
 namespace mindspore {

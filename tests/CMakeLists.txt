@@ -67,6 +67,18 @@ target_link_libraries(tcp_client
         ${_PROTOBUF_LIBPROTOBUF}
         )
 
-#target_include_directories(unit_tests ${CMAKE_CURRENT_SOURCE_DIR}/../even-http)
+add_executable(comm_util common_util_test.cpp ${PROTO_SRCS} ${PROTO_HDRS})
 
-add_test(test_all unit_tests tcp_client tcp_server tcp_kv_server)
+target_link_libraries(comm_util
+        unittest
+        tcp
+        rpc-log
+        GTest::GTest
+        GTest::Main
+        GMock::GMock
+        GMock::Main
+        event event_core Threads::Threads
+        ${_PROTOBUF_LIBPROTOBUF}
+        )
+
+add_test(test_all unit_tests tcp_client tcp_server tcp_kv_server comm_util)

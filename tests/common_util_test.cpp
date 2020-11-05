@@ -14,30 +14,33 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PS_COMM_MESSAGE_H_
-#define MINDSPORE_CCSRC_PS_COMM_MESSAGE_H_
+#include "common_test.h"
+#include "ps/comm/comm_util.h"
 
-#include <iostream>
-#include <vector>
+#include <memory>
+#include <thread>
 
 namespace mindspore {
 namespace ps {
 namespace comm {
+class TestCommUtil : public UT::Common {
+ public:
+  TestCommUtil() = default;
+  virtual ~TestCommUtil() = default;
 
-enum Command { EMPTY, TERMINATE, REGISTER, BARRIER, ACK, HEARTBEAT };
-
-enum Role {SERVER, WORKER, SCHEDULER};
-
-// MS: the shortcut of MindSpore
-static const uint32_t MAGIC = 0x4d53;
-static const uint32_t MAX_LENGTH = 0xFFFFFFFF;
-
-struct MessageHeader {
-  uint32_t message_magic_ = 0;
-  uint32_t message_length_ = MAX_LENGTH;
+  void SetUp() override {}
+  void TearDown() override {}
 };
 
+TEST_F(TestCommUtil, GetAvailablePort) { EXPECT_TRUE(CommUtil::GetAvailablePort() > 0); }
+
+TEST_F(TestCommUtil, GetAvailableInterfaceAndIP) {
+  std::string interface;
+  std::string ip;
+  CommUtil::GetAvailableInterfaceAndIP(interface, ip);
+  EXPECT_TRUE(!interface.empty());
+  EXPECT_TRUE(!ip.empty());
+}
 }  // namespace comm
 }  // namespace ps
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_PS_COMM_MESSAGE_H_

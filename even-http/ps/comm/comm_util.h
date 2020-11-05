@@ -24,6 +24,11 @@
 #include <event2/listener.h>
 #include <event2/util.h>
 
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netinet/in.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -41,6 +46,8 @@ class CommUtil {
  public:
   static bool CheckIpWithRegex(const std::string &ip);
   static void CheckIp(const std::string &ip);
+  static int GetAvailablePort();
+  static void GetAvailableInterfaceAndIP(std::string &interface, std::string &ip);
 };
 }  // namespace comm
 }  // namespace ps

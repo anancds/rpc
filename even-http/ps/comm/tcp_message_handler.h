@@ -22,8 +22,8 @@
 #include <memory>
 #include <string>
 
-#include "../../../build/even-http/comm.pb.h"
-#include "../../../build/even-http/ps.pb.h"
+#include "../../../build/even-http/ps/comm/comm.pb.h"
+#include "../../../build/even-http/ps/comm/ps.pb.h"
 #include "log_adapter.h"
 #include "ps/comm/message.h"
 

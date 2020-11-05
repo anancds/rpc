@@ -5,14 +5,17 @@
 #ifndef RPC_NODE_H
 #define RPC_NODE_H
 
-#include <stdlib.h>
-#include <vector>
+#include <cstdlib>
 #include <iostream>
+#include <set>
 #include <string>
+#include <vector>
 
-#include "../../../build/even-http/comm.pb.h"
+#include "../../../build/even-http/ps/comm/comm.pb.h"
+#include "../../../build/even-http/ps/comm/ps.pb.h"
 #include "log_adapter.h"
-#include "tcp_server.h"
+#include "ps/comm/message.h"
+#include "ps/comm/tcp_server.h"
 
 namespace mindspore {
 namespace ps {
@@ -41,8 +44,8 @@ class SchedulerNode : public Node {
   void Stop() override;
 
  private:
-  std::vector<std::string> worker_ips_;
-  std::vector<std::string> server_ips_;
+  std::set<std::string> workers_;
+  std::set<std::string> servers_;
 };
 }  // namespace comm
 }  // namespace ps
