@@ -81,4 +81,18 @@ target_link_libraries(comm_util
         ${_PROTOBUF_LIBPROTOBUF}
         )
 
-add_test(test_all unit_tests tcp_client tcp_server tcp_kv_server comm_util)
+add_executable(message_handler tcp_message_handler_test.cc ${PROTO_SRCS} ${PROTO_HDRS})
+
+target_link_libraries(message_handler
+        unittest
+        tcp
+        rpc-log
+        GTest::GTest
+        GTest::Main
+        GMock::GMock
+        GMock::Main
+        event event_core Threads::Threads
+        ${_PROTOBUF_LIBPROTOBUF}
+        )
+
+add_test(test_all unit_tests tcp_client tcp_server tcp_kv_server comm_util message_handler)

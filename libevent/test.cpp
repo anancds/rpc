@@ -1,43 +1,49 @@
-//
-// Created by cds on 2020/9/21.
-//
-
-#include <event.h>
-#include <event2/buffer.h>
-#include <event2/bufferevent.h>
-#include <event2/event.h>
-#include <event2/listener.h>
-#include <event2/util.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
-// 定时事件回调函数
-void onTime(int sock, short event, void *arg) {
-  printf("Hello,World!\n");
+#include <unistd.h>
+#include <event2/event.h>
+#include <time.h>
 
-  struct timeval tv;
-  tv.tv_sec = 1;
-  tv.tv_usec = 0;
-  // 重新添加定时事件（定时事件触发后默认自动删除）
-  event_add((struct event *)arg, &tv);
+void do_timeout(evutil_socket_t fd, short event, void *arg)
+{
+  printf("do timeout (time: %ld)!\n", time(NULL));
+  struct event_base *base = reinterpret_cast<struct event_base*>(arg);
+  struct event* ev;
+  struct timeval timeout;
+  timeout.tv_sec = 3;
+  timeout.tv_usec = 0;
+  ev = evtimer_new(base, do_timeout, base);
+  evtimer_add(ev, &timeout);
 }
 
-int main() {
-  // 初始化
-  event_init();
+void create_timeout_event(struct event_base *base)
+{
+  struct event *ev;
+  struct timeval timeout{};
 
-  struct event ev_time;
-  // 设置定时事件
-  evtimer_set(&ev_time, onTime, &ev_time);
+  ev = evtimer_new(base, do_timeout, base);
+//  ev = event_new(base, -1, EV_PERSIST, do_timeout, base);
+  if (ev) {
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+    event_add(ev, &timeout);
+  }
+}
 
-  struct timeval tv;
-  tv.tv_sec = 1;
-  tv.tv_usec = 0;
-  // 添加定时事件
-  event_add(&ev_time, &tv);
 
-  // 事件循环
-  event_dispatch();
+int main(int argc, char *argv[])
+{
+  struct event_base *base;
+
+  base = event_base_new();
+
+  if (!base) {
+    printf("Error: Create an event base error!\n");
+    return -1;
+  }
+
+  create_timeout_event(base);
+  event_base_dispatch(base);
 
   return 0;
 }
