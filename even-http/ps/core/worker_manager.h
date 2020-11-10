@@ -39,7 +39,7 @@ class Client {
 
   void Process(const CommMessage &msg);
 };
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore
 

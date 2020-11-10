@@ -160,6 +160,6 @@ TEST_F(TestTcpMessageHandler, 4_Header_4088_Data_4_Header_4088_data) {
   handler.ReceiveMessage(result, 4088);
 }
 
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore

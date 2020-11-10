@@ -24,20 +24,11 @@ namespace mindspore {
 namespace ps {
 namespace comm {
 
-enum Command { EMPTY, TERMINATE, REGISTER, BARRIER, ACK, HEARTBEAT };
+enum Command { EMPTY, TERMINATE, REGISTER, BARRIER, ACK, HEARTBEAT, NODE };
 
-enum Role {SERVER, WORKER, SCHEDULER};
+enum Role { SERVER, WORKER, SCHEDULER };
 
-// MS: the shortcut of MindSpore
-static const uint32_t MAGIC = 0x4d53;
-static const uint32_t MAX_LENGTH = 0xFFFFFFFF;
-
-struct MessageHeader {
-  uint32_t message_magic_ = 0;
-  uint32_t message_length_ = MAX_LENGTH;
-};
-
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PS_COMM_MESSAGE_H_

@@ -17,17 +17,25 @@
 #ifndef MINDSPORE_CCSRC_PS_COMM_COMM_UTIL_H_
 #define MINDSPORE_CCSRC_PS_COMM_COMM_UTIL_H_
 
+#include <unistd.h>
+#ifdef _MSC_VER
+#include <tchar.h>
+#include <winsock2.h>
+#include <windows.h>
+#include <iphlpapi.h>
+#else
+#include <net/if.h>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#endif
+
 #include <event2/buffer.h>
 #include <event2/event.h>
 #include <event2/http.h>
 #include <event2/keyvalq_struct.h>
 #include <event2/listener.h>
 #include <event2/util.h>
-
-#include <arpa/inet.h>
-#include <ifaddrs.h>
-#include <net/if.h>
-#include <netinet/in.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -36,20 +44,19 @@
 #include <string>
 #include <utility>
 
-#include "log_adapter.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 
 class CommUtil {
  public:
   static bool CheckIpWithRegex(const std::string &ip);
-  static void CheckIp(const std::string &ip);
-  static int GetAvailablePort();
-  static void GetAvailableInterfaceAndIP(std::string &interface, std::string &ip);
+  static bool CheckIp(const std::string &ip);
+  static void GetAvailableInterfaceAndIP(std::string *interface, std::string *ip);
 };
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore
 

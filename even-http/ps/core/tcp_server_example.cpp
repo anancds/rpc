@@ -32,7 +32,7 @@ int main(int /*argc*/, char ** /*argv*/) {
   std::cout << sizeof(a) << std::endl;
   std::cout << sizeof(uint32_t) << std::endl;
 
-  MSLOG_IF(mindspore::EXCEPTION, true, mindspore::UnavailableError)<< "test";
+  MSLOG_IF(mindspore::EXCEPTION, true, mindspore::AbortedError)<< "test";
   std::unique_ptr<unsigned char> message_buffer_(nullptr);
   message_buffer_.reset(new unsigned char [1]);
   //  std::unique_ptr<std::thread> http_server_thread_(nullptr);

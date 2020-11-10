@@ -144,7 +144,7 @@ TEST_F(TestHttpServer, addressException) {
   OnRequestReceive http_handler_func = std::bind(testGetHandler, std::placeholders::_1);
   ASSERT_THROW(server_exception->RegisterRoute("/handler", &http_handler_func), std::exception);
 }
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 
 }  // namespace mindspore

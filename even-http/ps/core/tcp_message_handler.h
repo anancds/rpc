@@ -19,23 +19,29 @@
 
 #include <functional>
 #include <iostream>
-#include <memory>
 #include <string>
+#include <memory>
+#include <vector>
 
 #include "../../../build/even-http/ps/comm/comm.pb.h"
 #include "../../../build/even-http/ps/comm/ps.pb.h"
-#include "log_adapter.h"
-#include "ps/comm/message.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 
 using messageReceive = std::function<void(const CommMessage &message)>;
 
 class TcpMessageHandler {
  public:
-  TcpMessageHandler() : is_parsed_(false) {}
+  TcpMessageHandler()
+      : is_parsed_(false),
+        message_buffer_(nullptr),
+        message_length_(0),
+        remaining_length_(0),
+        header_index_(-1),
+        last_copy_len_(0) {}
   virtual ~TcpMessageHandler() = default;
 
   void SetCallback(const messageReceive &cb);
@@ -43,11 +49,15 @@ class TcpMessageHandler {
 
  private:
   messageReceive message_callback_;
-  MessageHeader message_header_;
-  std::vector<unsigned char> message_buffer_;
   bool is_parsed_;
+  std::unique_ptr<unsigned char> message_buffer_;
+  size_t message_length_;
+  uint32_t remaining_length_;
+  char header_[4];
+  int header_index_;
+  uint32_t last_copy_len_;
 };
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore
 

@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <iostream>
 #include <thread>
-#include "log_adapter.h"
 #include "proto_server.h"
+#include "utils/log_adapter.h"
 
 static void StartServer() {
   proto::msgserver server;

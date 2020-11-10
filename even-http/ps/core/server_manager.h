@@ -23,7 +23,7 @@ class Server {
   void Response();
   void Process(const CommMessage &message);
 };
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore
 

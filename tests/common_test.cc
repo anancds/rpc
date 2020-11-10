@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "common_test.h"
-#include "log_adapter.h"
+#include "utils/log_adapter.h"
 
 #ifdef __cplusplus
 #if __cplusplus

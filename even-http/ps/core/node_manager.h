@@ -5,7 +5,11 @@
 #ifndef RPC_NODE_MANAGER_H
 #define RPC_NODE_MANAGER_H
 
+#include <string>
+
 #include "network_manager.h"
+#include "utils/log_adapter.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace ps {
@@ -19,14 +23,18 @@ class NodeManager {
     return &e;
   }
 
-  void Start();
+  void Init();
 
-  void Stop();
+  uint32_t num_workers() const;
+  uint32_t num_servers() const;
+  std::string node_role() const;
 
  private:
-  NetWorkManager *network_manager_;
+  uint32_t num_servers_;
+  uint32_t num_workers_;
+  std::string role_;
 };
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore
 

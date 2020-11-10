@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_PS_COMM_HTTP_SERVER_H_
 #define MINDSPORE_CCSRC_PS_COMM_HTTP_SERVER_H_
 
-#include "http_message_handler.h"
+#include "ps/core/http_message_handler.h"
 
 #include <event2/buffer.h>
 #include <event2/event.h>
@@ -35,7 +35,7 @@
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 
 typedef enum eHttpMethod {
   HM_GET = 1 << 0,
@@ -86,7 +86,7 @@ class HttpServer {
   bool is_init_;
 };
 
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore
 

@@ -1,8 +1,8 @@
-#include "proto_server.h"
-#include <thread>
-#include <iostream>
 #include <stdlib.h>
-#include "log_adapter.h"
+#include <iostream>
+#include <thread>
+#include "proto_server.h"
+#include "utils/log_adapter.h"
 
 int main(int /*argc*/, char** /*argv*/)
 {

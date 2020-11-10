@@ -6,9 +6,9 @@ enable_testing()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../even-http)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../log)
 
-set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/tcp_client.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/tcp_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/tcp_message_handler.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/comm_util.cc)
+set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_client.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_message_handler.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/comm_util.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/cluster_config.cc)
 
-add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/http_message_handler.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/http_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/comm/comm_util.cc)
+add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_message_handler.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/comm_util.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/cluster_config.cc)
 add_library(tcp ${TEST_SRC})
 
 find_package(Threads REQUIRED)

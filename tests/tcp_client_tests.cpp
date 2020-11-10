@@ -26,6 +26,6 @@ TEST_F(TestTcpClient, InitClientPortErrorNoException) {
   EXPECT_NO_THROW(client->Init());
 }
 
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore

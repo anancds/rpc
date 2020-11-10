@@ -30,17 +30,17 @@
 #include <memory>
 #include <vector>
 
-#include "log_adapter.h"
-#include "ps/comm/tcp_message_handler.h"
+#include "utils/log_adapter.h"
+#include "ps/core/tcp_message_handler.h"
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 
 class TcpServer;
 class TcpConnection {
  public:
-  explicit TcpConnection(struct bufferevent *bev, const evutil_socket_t &fd,  const TcpServer *server)
+  explicit TcpConnection(struct bufferevent *bev, const evutil_socket_t &fd, const TcpServer *server)
       : buffer_event_(bev), fd_(0), server_(server) {}
   virtual ~TcpConnection() = default;
 
@@ -83,6 +83,7 @@ class TcpServer {
   void SetMessageCallback(const OnServerReceiveMessage &cb);
   static void SendMessage(const TcpConnection &conn, const CommMessage &message);
   void SendMessage(const CommMessage &message);
+  uint16_t BoundPort() const;
 
  protected:
   static void ListenerCallback(struct evconnlistener *listener, evutil_socket_t socket, struct sockaddr *saddr,
@@ -106,7 +107,7 @@ class TcpServer {
   OnServerReceiveMessage message_callback_;
 };
 
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PS_COMM_TCP_SERVER_H_

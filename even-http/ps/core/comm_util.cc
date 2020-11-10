@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "comm_util.h"
+#include "ps/core/comm_util.h"
 
 #include <arpa/inet.h>
 #include <cstdio>
@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 
 bool CommUtil::CheckIpWithRegex(const std::string &ip) {
   std::regex pattern("((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)");
@@ -36,45 +36,25 @@ bool CommUtil::CheckIpWithRegex(const std::string &ip) {
   return false;
 }
 
-void CommUtil::CheckIp(const std::string &ip) {
+bool CommUtil::CheckIp(const std::string &ip) {
   if (!CheckIpWithRegex(ip)) {
-    MS_LOG(EXCEPTION) << "Server address" << ip << " illegal!";
+    return false;
   }
   int64_t uAddr = inet_addr(ip.c_str());
   if (INADDR_NONE == uAddr) {
-    MS_LOG(EXCEPTION) << "Server address illegal, inet_addr converting failed!";
+    return false;
   }
+  return true;
 }
 
-int CommUtil::GetAvailablePort() {
-  struct sockaddr_in addr {};
-  addr.sin_port = htons(0);
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-  int sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_in)) != 0) {
-    MS_LOG(EXCEPTION) << "Bind socket failed!";
-  }
-
-  socklen_t addr_len = sizeof(struct sockaddr_in);
-
-  if (getsockname(sock, (struct sockaddr *)&addr, &addr_len) != 0) {
-    MS_LOG(EXCEPTION) << "Get sock name failed!";
-  }
-
-  int ret_port = ntohs(addr.sin_port);
-  close(sock);
-
-  return ret_port;
-}
-
-void CommUtil::GetAvailableInterfaceAndIP(std::string &interface, std::string &ip) {
+void CommUtil::GetAvailableInterfaceAndIP(std::string *interface, std::string *ip) {
+  MS_EXCEPTION_IF_NULL(interface);
+  MS_EXCEPTION_IF_NULL(ip);
   struct ifaddrs *if_address = nullptr;
   struct ifaddrs *ifa = nullptr;
 
-  interface.clear();
-  ip.clear();
+  interface->clear();
+  ip->clear();
   getifaddrs(&if_address);
   for (ifa = if_address; ifa != nullptr; ifa = ifa->ifa_next) {
     if (ifa->ifa_addr == nullptr) {
@@ -82,20 +62,20 @@ void CommUtil::GetAvailableInterfaceAndIP(std::string &interface, std::string &i
     }
 
     if (ifa->ifa_addr->sa_family == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) == 0) {
-      char address_buffer[INET_ADDRSTRLEN];
+      char address_buffer[INET_ADDRSTRLEN] = {0};
       void *sin_addr_ptr = &(reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr))->sin_addr;
+      MS_EXCEPTION_IF_NULL(sin_addr_ptr);
       inet_ntop(AF_INET, sin_addr_ptr, address_buffer, INET_ADDRSTRLEN);
 
-      ip = address_buffer;
-      interface = ifa->ifa_name;
+      *ip = address_buffer;
+      *interface = ifa->ifa_name;
       break;
     }
   }
-  if (nullptr != if_address) {
-    freeifaddrs(if_address);
-  }
+  MS_EXCEPTION_IF_NULL(if_address);
+  freeifaddrs(if_address);
 }
 
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore

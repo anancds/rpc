@@ -32,11 +32,11 @@
 #include <list>
 #include <map>
 #include <memory>
-#include "log_adapter.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 
 using HttpHeaders = std::map<std::string, std::list<std::string>>;
 
@@ -101,7 +101,7 @@ class HttpMessageHandler {
   void ParsePostParam();
 };
 
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PS_COMM_HTTP_MESSAGE_HANDLER_H_

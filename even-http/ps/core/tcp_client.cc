@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ps/comm/tcp_client.h"
+#include "ps/core/tcp_client.h"
 
 #include <arpa/inet.h>
 #include <event2/buffer.h>
@@ -29,18 +29,12 @@
 #include <iostream>
 #include <utility>
 #include <string>
-#include "securec.h"
-#include <stdio.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <string.h>
-#include <stdlib.h>
 
-#include "ps/comm/comm_util.h"
+#include "ps/core/comm_util.h"
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 
 TcpClient::TcpClient(const std::string &address, std::uint16_t port)
     : event_base_(nullptr),
@@ -71,7 +65,9 @@ void TcpClient::Init() {
   if (buffer_event_) {
     return;
   }
-  CommUtil::CheckIp(server_address_);
+  if (!CommUtil::CheckIp(server_address_)) {
+    MS_LOG(EXCEPTION) << "The tcp client ip:" << server_address_ << " is illegal!";
+  }
 
   event_base_ = event_base_new();
   MS_EXCEPTION_IF_NULL(event_base_);
@@ -172,6 +168,23 @@ void TcpClient::OnReadHandler(const void *buf, size_t num) {
   message_handler_.ReceiveMessage(buf, num);
 }
 
+void TcpClient::SendHeartBeatCallback(evutil_socket_t, int16_t, void *arg) {
+  MS_EXCEPTION_IF_NULL(arg);
+  auto tcp_client = reinterpret_cast<TcpClient *>(arg);
+  MessageMeta meta;
+  meta.set_cmd(Command::HEARTBEAT);
+  CommMessage message;
+  message.set_allocated_pb_meta(&meta);
+  tcp_client->SendMessage(message);
+
+  struct event *ev;
+  struct timeval timeout {};
+  timeout.tv_sec = ClusterConfig::heartbeat_interval();
+  timeout.tv_usec = 0;
+  ev = evtimer_new(tcp_client->event_base_, SendHeartBeatCallback, arg);
+  evtimer_add(ev, &timeout);
+}
+
 void TcpClient::EventCallback(struct bufferevent *bev, std::int16_t events, void *ptr) {
   MS_EXCEPTION_IF_NULL(bev);
   MS_EXCEPTION_IF_NULL(ptr);
@@ -221,13 +234,10 @@ void TcpClient::SetMessageCallback(const OnMessage &cb) { message_callback_ = cb
 
 void TcpClient::SendMessage(const CommMessage &message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
-  size_t buf_size = message.ByteSizeLong();
+  uint32_t buf_size = message.ByteSizeLong();
   std::vector<unsigned char> serialized(buf_size);
   message.SerializeToArray(serialized.data(), static_cast<int>(buf_size));
-  MessageHeader message_header;
-  message_header.message_magic_ = htonl(MAGIC);
-  message_header.message_length_ = htonl(static_cast<uint32_t>(buf_size));
-  if (evbuffer_add(bufferevent_get_output(buffer_event_), &message_header, sizeof(message_header)) == -1) {
+  if (evbuffer_add(bufferevent_get_output(buffer_event_), &buf_size, sizeof(buf_size)) == -1) {
     MS_LOG(EXCEPTION) << "Event buffer add header failed!";
   }
   if (evbuffer_add(bufferevent_get_output(buffer_event_), serialized.data(), buf_size) == -1) {
@@ -235,6 +245,16 @@ void TcpClient::SendMessage(const CommMessage &message) const {
   }
 }
 
-}  // namespace comm
+void TcpClient::SendMessageWithTimer() {
+  MS_EXCEPTION_IF_NULL(buffer_event_);
+  struct event *ev;
+  struct timeval timeout {};
+  timeout.tv_sec = 0;
+  timeout.tv_usec = 0;
+  ev = evtimer_new(event_base_, SendHeartBeatCallback, this);
+  evtimer_add(ev, &timeout);
+}
+
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore
