@@ -16,13 +16,13 @@
 #include <memory>
 #include <string>
 #include <thread>
-#include "ps/comm/http_server.h"
+#include "ps/core/http_server.h"
 
 using namespace std;
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 static void testGetHandler(std::shared_ptr<HttpMessageHandler> resp) {
   std::string host = resp->GetRequestHost();
   EXPECT_STREQ(host.c_str(), "127.0.0.1");

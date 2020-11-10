@@ -17,7 +17,7 @@
 using namespace std;
 using namespace mindspore;
 
-static void testGetHandler(std::shared_ptr<mindspore::ps::comm::HttpMessageHandler> resp) {
+static void testGetHandler(std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) {
   std::string host = resp->GetRequestHost();
 
   std::string path_param = resp->GetPathParam("key1");
@@ -44,12 +44,12 @@ bool CheckIp(const std::string &ip) {
   return false;
 }
 void StartHttpServer() {
-  mindspore::ps::comm::HttpServer *server_ = new mindspore::ps::comm::HttpServer("0.0.0.0", 9999);
-  mindspore::ps::comm::OnRequestReceive f1 = std::bind([](std::shared_ptr<mindspore::ps::comm::HttpMessageHandler> resp) {
+  mindspore::ps::core::HttpServer *server_ = new mindspore::ps::core::HttpServer("0.0.0.0", 9999);
+  mindspore::ps::core::OnRequestReceive f1 = std::bind([](std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) {
     resp->QuickResponse(200, "get request success!\n");
   }, std::placeholders::_1);
   server_->RegisterRoute("/httpget", &f1);
-  mindspore::ps::comm::OnRequestReceive f2 = std::bind(testGetHandler, std::placeholders::_1);
+  mindspore::ps::core::OnRequestReceive f2 = std::bind(testGetHandler, std::placeholders::_1);
   server_->RegisterRoute("/handler", &f2);
   server_->Start();
 }

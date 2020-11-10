@@ -8,9 +8,9 @@
 #include <thread>
 #include "message.h"
 #include "tcp_server.h"
-#include "../../../build/even-http/ps/comm/comm.pb.h"
+#include "../../../build/even-http/ps/core/comm.pb.h"
 
-using namespace mindspore::ps::comm;
+using namespace mindspore::ps::core;
 
 static std::string getEnvVar(std::string const &key) {
   char *val = getenv(key.c_str());

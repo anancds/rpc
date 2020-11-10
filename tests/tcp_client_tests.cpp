@@ -1,10 +1,10 @@
 #include <memory>
-#include "ps/comm/tcp_client.h"
+#include "ps/core/tcp_client.h"
 #include "common_test.h"
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 class TestTcpClient : public UT::Common {
  public:
   TestTcpClient() = default;

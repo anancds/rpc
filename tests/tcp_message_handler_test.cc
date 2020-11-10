@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ps/comm/tcp_message_handler.h"
+#include "ps/core/tcp_message_handler.h"
 #include "common_test.h"
 
 #include <memory>
@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 class TestTcpMessageHandler : public UT::Common {
  public:
   using messageReceive = std::function<void(const CommMessage &message)>;

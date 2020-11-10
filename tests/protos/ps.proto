@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+syntax = "proto3";
 
 message KVMessage {
   repeated int32 keys = 2;
@@ -20,6 +21,15 @@ message KVMessage {
 }
 
 message PBHeartBeatMessage {
-  // *.*.*.*:port
-  repeated string host_and_port = 2;
+  // the schema is: *.*.*.*:port
+  repeated string worker_host = 1;
+  // the schema is: *.*.*.*:port
+  repeated string server_host = 2;
+}
+
+message NodeMessage {
+  // the schema is: *.*.*.*:port
+  repeated string worker_host = 1;
+  // the schema is: *.*.*.*:port
+  repeated string server_host = 2;
 }

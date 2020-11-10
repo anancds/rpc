@@ -27,7 +27,7 @@
 #include <vector>
 
 #include "ps/core/cluster_config.h"
-#include "../../../build/even-http/ps/comm/comm.pb.h"
+#include "../../../build/even-http/ps/core/comm.pb.h"
 
 namespace mindspore {
 namespace ps {

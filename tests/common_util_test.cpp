@@ -15,14 +15,14 @@
  */
 
 #include "common_test.h"
-#include "ps/comm/comm_util.h"
+#include "ps/core/comm_util.h"
 
 #include <memory>
 #include <thread>
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 class TestCommUtil : public UT::Common {
  public:
   TestCommUtil() = default;
@@ -31,8 +31,6 @@ class TestCommUtil : public UT::Common {
   void SetUp() override {}
   void TearDown() override {}
 };
-
-TEST_F(TestCommUtil, GetAvailablePort) { EXPECT_TRUE(CommUtil::GetAvailablePort() > 0); }
 
 TEST_F(TestCommUtil, GetAvailableInterfaceAndIP) {
   std::string interface;

@@ -172,7 +172,7 @@ void TcpClient::SendHeartBeatCallback(evutil_socket_t, int16_t, void *arg) {
   MS_EXCEPTION_IF_NULL(arg);
   auto tcp_client = reinterpret_cast<TcpClient *>(arg);
   MessageMeta meta;
-  meta.set_cmd(Command::HEARTBEAT);
+  meta.set_cmd(ClusterCommand::HEARTBEAT);
   CommMessage message;
   message.set_allocated_pb_meta(&meta);
   tcp_client->SendMessage(message);

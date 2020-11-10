@@ -16,15 +16,16 @@
 
 syntax = "proto3";
 import "google/protobuf/any.proto";
-package mindspore.ps;
+package mindspore.ps.core;
 option optimize_for = LITE_RUNTIME;
 
-enum Command {
+enum ClusterCommand {
   TERMINATE = 0;
   REGISTER = 1;
   ACK = 2;
   HEARTBEAT = 3;
-  NODE = 4;
+  FETCH_WORKERS = 4;
+  FETCH_SERVERS = 5;
 }
 
 enum Role {

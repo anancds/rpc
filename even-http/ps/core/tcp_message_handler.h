@@ -23,8 +23,8 @@
 #include <memory>
 #include <vector>
 
-#include "../../../build/even-http/ps/comm/comm.pb.h"
-#include "../../../build/even-http/ps/comm/ps.pb.h"
+#include "../../../build/even-http/ps/core/comm.pb.h"
+#include "../../../build/even-http/ps/core/ps.pb.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

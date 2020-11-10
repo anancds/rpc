@@ -16,8 +16,23 @@
 
 syntax = "proto3";
 import "google/protobuf/any.proto";
-package mindspore.ps;
+package mindspore.ps.core;
 option optimize_for = LITE_RUNTIME;
+
+enum ClusterCommand {
+  TERMINATE = 0;
+  REGISTER = 1;
+  ACK = 2;
+  HEARTBEAT = 3;
+  FETCH_WORKERS = 4;
+  FETCH_SERVERS = 5;
+}
+
+enum Role {
+  SERVER = 0;
+  WORKER = 1;
+  SCHEDULER = 2;
+}
 
 message MessageMeta {
   // hostname or ip
@@ -30,10 +45,13 @@ message MessageMeta {
   int32 timestamp = 4;
   // data type of message
   repeated int32 data_type = 5 [packed = true];
-  // message.data_size
-  int32 data_size = 6;
-
+  // Is the entire system available
+  bool is_system_ready = 6;
+  // the role of the node: worker,server,scheduler
   int32 role = 7;
+  // Node unique id
+  int32 node_id = 8;
+  bool is_system_synchronized = 9;
 }
 
 

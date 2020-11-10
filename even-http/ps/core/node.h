@@ -12,8 +12,8 @@
 #include <string>
 #include <vector>
 
-#include "../../../build/even-http/ps/comm/comm.pb.h"
-#include "../../../build/even-http/ps/comm/ps.pb.h"
+#include "../../../build/even-http/ps/core/comm.pb.h"
+#include "../../../build/even-http/ps/core/ps.pb.h"
 #include "ps/core/cluster_config.h"
 #include "ps/core/tcp_client.h"
 #include "ps/core/tcp_server.h"
@@ -28,7 +28,7 @@ class Node {
  public:
   virtual void Start();
   virtual void Stop();
-  void StartHeartBeatTimer(TcpClient &client);
+  void StartHeartBeatTimer(const std::shared_ptr<TcpClient> &client);
   void ProcessAck(const TcpClient &client, const CommMessage &message);
   void ProcessNode(const CommMessage &message);
 
@@ -47,19 +47,22 @@ class Node {
 class ClientNode : public Node {
  public:
   void Start() override;
-  void RegisterClient(const TcpClient &client, const Role &role);
+  void RegisterClient(const std::shared_ptr<TcpClient> &client, const Role &role);
   void Stop() override;
+
+ private:
+  std::shared_ptr<TcpClient> client_;
 };
 
 class ServerNode : public Node {
  public:
   void Start() override;
-  void RegisterServer(const TcpClient &client, const std::string &host, const uint32_t &port, const Role &role);
+  void RegisterServer(const std::shared_ptr<TcpClient> &client, const std::string &host, const uint32_t &port, const Role &role);
   void Stop() override;
 
  private:
-  std::unique_ptr<TcpClient> client_;
-  std::unique_ptr<TcpServer> server_;
+  std::shared_ptr<TcpClient> client_;
+  std::shared_ptr<TcpServer> server_;
 };
 
 class SchedulerNode : public Node {

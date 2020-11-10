@@ -4,15 +4,15 @@
 #include <memory>
 #include <thread>
 #include "tcp_client.h"
-#include "../../../build/even-http/ps/comm/comm.pb.h"
-#include "../../../build/even-http/ps/comm/ps.pb.h"
+#include "../../../build/even-http/ps/core/comm.pb.h"
+#include "../../../build/even-http/ps/core/ps.pb.h"
 
-using namespace mindspore::ps::comm;
+using namespace mindspore::ps::core;
 using namespace mindspore::ps;
 
 const std::string test_message(1024, 's');
 using Key = uint64_t;
-static void StartClient(mindspore::ps::comm::TcpClient *client) {
+static void StartClient(mindspore::ps::core::TcpClient *client) {
   // Run msg server
   std::unique_ptr<std::thread> http_client_thread(nullptr);
   http_client_thread = std::make_unique<std::thread>([&]() {
