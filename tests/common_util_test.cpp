@@ -37,10 +37,10 @@ TEST_F(TestCommUtil, GetAvailablePort) { EXPECT_TRUE(CommUtil::GetAvailablePort(
 TEST_F(TestCommUtil, GetAvailableInterfaceAndIP) {
   std::string interface;
   std::string ip;
-  CommUtil::GetAvailableInterfaceAndIP(interface, ip);
+  CommUtil::GetAvailableInterfaceAndIP(&interface, &ip);
   EXPECT_TRUE(!interface.empty());
   EXPECT_TRUE(!ip.empty());
 }
-}  // namespace comm
+}  // namespace core
 }  // namespace ps
 }  // namespace mindspore
