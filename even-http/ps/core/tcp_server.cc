@@ -18,10 +18,10 @@
 
 #include <arpa/inet.h>
 #include <event2/buffer.h>
-#include <event2/buffer_compat.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
 #include <event2/listener.h>
+#include <event2/buffer_compat.h>
 #include <event2/util.h>
 #include <sys/socket.h>
 #include <csignal>
@@ -104,6 +104,8 @@ void TcpServer::Init() {
                                       LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, -1,
                                       reinterpret_cast<struct sockaddr *>(&sin), sizeof(sin));
 
+  MS_EXCEPTION_IF_NULL(listener_);
+
   if (server_port_ == 0) {
     struct sockaddr_in sin_bound {};
     if (memset_s(&sin, sizeof(sin_bound), 0, sizeof(sin_bound)) != EOK) {
@@ -115,8 +117,6 @@ void TcpServer::Init() {
     }
     server_port_ = htons(sin_bound.sin_port);
   }
-
-  MS_EXCEPTION_IF_NULL(listener_);
 
   signal_event_ = evsignal_new(base_, SIGINT, SignalCallback, reinterpret_cast<void *>(this));
   MS_EXCEPTION_IF_NULL(signal_event_);
@@ -187,11 +187,13 @@ void TcpServer::RemoveConnection(const evutil_socket_t &fd) {
   connections_.erase(fd);
 }
 
-void TcpServer::ListenerCallback(struct evconnlistener *, evutil_socket_t fd, struct sockaddr *, int, void *data) {
+void TcpServer::ListenerCallback(struct evconnlistener *, evutil_socket_t fd, struct sockaddr *sockaddr, int,
+                                 void *data) {
   auto server = reinterpret_cast<class TcpServer *>(data);
   auto base = reinterpret_cast<struct event_base *>(server->base_);
   MS_EXCEPTION_IF_NULL(server);
   MS_EXCEPTION_IF_NULL(base);
+  MS_EXCEPTION_IF_NULL(sockaddr);
 
   struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
   if (!bev) {

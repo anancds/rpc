@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PS_COMM_COMM_CONFIG_H_
-#define MINDSPORE_CCSRC_PS_COMM_COMM_CONFIG_H_
+#ifndef MINDSPORE_CCSRC_PS_CORE_CLUSTER_CONFIG_H_
+#define MINDSPORE_CCSRC_PS_CORE_CLUSTER_CONFIG_H_
 
 #include <string>
 #include <iostream>
@@ -53,4 +53,4 @@ class ClusterConfig {
 }  // namespace ps
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PS_COMM_COMM_CONFIG_H_
+#endif  // MINDSPORE_CCSRC_PS_CORE_CLUSTER_CONFIG_H_

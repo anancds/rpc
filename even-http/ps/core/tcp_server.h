@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PS_COMM_TCP_SERVER_H_
-#define MINDSPORE_CCSRC_PS_COMM_TCP_SERVER_H_
+#ifndef MINDSPORE_CCSRC_PS_CORE_TCP_SERVER_H_
+#define MINDSPORE_CCSRC_PS_CORE_TCP_SERVER_H_
 
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
@@ -110,4 +110,4 @@ class TcpServer {
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_PS_COMM_TCP_SERVER_H_
+#endif  // MINDSPORE_CCSRC_PS_CORE_TCP_SERVER_H_

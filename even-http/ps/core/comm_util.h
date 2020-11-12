@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PS_COMM_COMM_UTIL_H_
-#define MINDSPORE_CCSRC_PS_COMM_COMM_UTIL_H_
+#ifndef MINDSPORE_CCSRC_PS_CORE_COMM_UTIL_H_
+#define MINDSPORE_CCSRC_PS_CORE_COMM_UTIL_H_
 
 #include <unistd.h>
 #ifdef _MSC_VER
@@ -60,4 +60,4 @@ class CommUtil {
 }  // namespace ps
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PS_COMM_COMM_UTIL_H_
+#endif  // MINDSPORE_CCSRC_PS_CORE_COMM_UTIL_H_

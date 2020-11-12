@@ -65,7 +65,8 @@ void CommUtil::GetAvailableInterfaceAndIP(std::string *interface, std::string *i
       char address_buffer[INET_ADDRSTRLEN] = {0};
       void *sin_addr_ptr = &(reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr))->sin_addr;
       MS_EXCEPTION_IF_NULL(sin_addr_ptr);
-      inet_ntop(AF_INET, sin_addr_ptr, address_buffer, INET_ADDRSTRLEN);
+      const char *net_ptr = inet_ntop(AF_INET, sin_addr_ptr, address_buffer, INET_ADDRSTRLEN);
+      MS_EXCEPTION_IF_NULL(net_ptr);
 
       *ip = address_buffer;
       *interface = ifa->ifa_name;

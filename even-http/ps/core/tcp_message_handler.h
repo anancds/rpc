@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PS_COMM_TCP_MESSAGE_HANDLER_H_
-#define MINDSPORE_CCSRC_PS_COMM_TCP_MESSAGE_HANDLER_H_
+#ifndef MINDSPORE_CCSRC_PS_CORE_TCP_MESSAGE_HANDLER_H_
+#define MINDSPORE_CCSRC_PS_CORE_TCP_MESSAGE_HANDLER_H_
 
 #include <functional>
 #include <iostream>
@@ -61,4 +61,4 @@ class TcpMessageHandler {
 }  // namespace ps
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PS_COMM_TCP_MESSAGE_HANDLER_H_
+#endif  // MINDSPORE_CCSRC_PS_CORE_TCP_MESSAGE_HANDLER_H_

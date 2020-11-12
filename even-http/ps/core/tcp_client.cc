@@ -247,7 +247,7 @@ void TcpClient::SendMessage(const CommMessage &message) const {
 
 void TcpClient::SendMessageWithTimer() {
   MS_EXCEPTION_IF_NULL(buffer_event_);
-  struct event *ev;
+  struct event *ev = nullptr;
   struct timeval timeout {};
   timeout.tv_sec = 0;
   timeout.tv_usec = 0;
