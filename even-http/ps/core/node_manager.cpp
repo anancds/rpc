@@ -8,7 +8,6 @@ namespace mindspore {
 namespace ps {
 namespace core {
 
-
 void NodeManager::StartScheduler() {
   node_ = std::make_unique<SchedulerNode>();
   node_->Start();
@@ -20,7 +19,10 @@ void NodeManager::StartServer() { node_ = std::make_unique<ServerNode>(); }
 
 void NodeManager::StopServer() { node_->Stop(); }
 
-void NodeManager::StartClient() { node_ = std::make_unique<ClientNode>(); }
+void NodeManager::StartClient() {
+  node_ = std::make_unique<ClientNode>();
+  node_->Start();
+}
 
 void NodeManager::StopClient() { node_->Stop(); }
 

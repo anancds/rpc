@@ -41,8 +41,8 @@ uint32_t Node::NodeId() { return node_id_; }
 void ClientNode::Start() {
   std::string scheduler_host = ClusterConfig::scheduler_host();
   uint32_t scheduler_port = ClusterConfig::scheduler_port();
-  client_ = std::make_unique<TcpClient>(scheduler_host, scheduler_port);
-  client_->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
+  client_to_scheduler_ = std::make_shared<TcpClient>(scheduler_host, scheduler_port);
+  client_to_scheduler_->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
     if (message.pb_meta().cmd() == ClusterCommand::HEARTBEAT) {
       ProcessHeartbeat(client, message);
     } else if (message.pb_meta().cmd() == ClusterCommand::FETCH_SERVERS) {
@@ -51,11 +51,11 @@ void ClientNode::Start() {
       ProcessRegister(message);
     }
   });
-  client_->Init();
-  client_->StartWithNoBlock();
-  RegisterClient(client_, Role::WORKER);
+  client_to_scheduler_->Init();
+  client_to_scheduler_->StartWithNoBlock();
+  RegisterClient(client_to_scheduler_, Role::WORKER);
 
-  StartHeartBeatTimer(client_);
+  StartHeartBeatTimer(client_to_scheduler_);
 }
 
 void ClientNode::RegisterClient(const std::shared_ptr<TcpClient> &client, const Role &role) {
@@ -68,7 +68,7 @@ void ClientNode::RegisterClient(const std::shared_ptr<TcpClient> &client, const 
   client->SendMessage(comm_message);
 }
 
-void ClientNode::Stop() { client_->Stop(); }
+void ClientNode::Stop() { client_to_scheduler_->Stop(); }
 
 void ServerNode::Start() {
   std::string interface;
@@ -81,16 +81,16 @@ void ServerNode::Start() {
 
   std::string scheduler_host = ClusterConfig::scheduler_host();
   uint32_t scheduler_port = ClusterConfig::scheduler_port();
-  client_ = std::make_unique<TcpClient>(scheduler_host, scheduler_port);
-  client_->SetMessageCallback([](const TcpClient &client, const CommMessage &message) {
+  client_to_scheduler_ = std::make_unique<TcpClient>(scheduler_host, scheduler_port);
+  client_to_scheduler_->SetMessageCallback([](const TcpClient &client, const CommMessage &message) {
     if (message.pb_meta().cmd() == ClusterCommand::HEARTBEAT) {
     }
   });
-  client_->Init();
-  client_->StartWithNoBlock();
+  client_to_scheduler_->Init();
+  client_to_scheduler_->StartWithNoBlock();
 
-  RegisterServer(client_, server_ip, server_->BoundPort(), Role::SERVER);
-  StartHeartBeatTimer(client_);
+  RegisterServer(client_to_scheduler_, server_ip, server_->BoundPort(), Role::SERVER);
+  StartHeartBeatTimer(client_to_scheduler_);
 }
 
 void ServerNode::RegisterServer(const std::shared_ptr<TcpClient> &client, const std::string &host, const uint32_t &port,
@@ -106,7 +106,7 @@ void ServerNode::RegisterServer(const std::shared_ptr<TcpClient> &client, const 
 }
 
 void ServerNode::Stop() {
-  client_->Stop();
+  client_to_scheduler_->Stop();
   server_->Stop();
 }
 

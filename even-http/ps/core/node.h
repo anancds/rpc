@@ -36,14 +36,15 @@ class Node {
 
   virtual void Start();
   virtual void Stop();
+
+  uint32_t NodeId();
+
+ protected:
   void StartHeartBeatTimer(const std::shared_ptr<TcpClient> &client);
   void ProcessHeartbeat(const TcpClient &client, const CommMessage &message);
   void ProcessFetchServers(const CommMessage &message);
   void ProcessRegister(const CommMessage &message);
 
-  uint32_t NodeId();
-
- protected:
   std::set<std::string> workers_;
   std::set<std::string> servers_;
   std::set<std::string> connected_nodes;
@@ -59,34 +60,44 @@ class Node {
 
 class ClientNode : public Node {
  public:
+  ClientNode() : client_to_scheduler_(nullptr) {}
+  ~ClientNode() override = default;
   void Start() override;
-  void RegisterClient(const std::shared_ptr<TcpClient> &client, const Role &role);
   void Stop() override;
 
  private:
-  std::shared_ptr<TcpClient> client_;
+  void RegisterClient(const std::shared_ptr<TcpClient> &client, const Role &role);
+
+  std::shared_ptr<TcpClient> client_to_scheduler_;
+  std::unordered_map<int, TcpClient> clients_to_servers_;
 };
 
 class ServerNode : public Node {
  public:
+  ServerNode() : client_to_scheduler_(nullptr), server_(nullptr) {}
+  ~ServerNode() override = default;
+
   void Start() override;
-  void RegisterServer(const std::shared_ptr<TcpClient> &client, const std::string &host, const uint32_t &port,
-                      const Role &role);
   void Stop() override;
 
  private:
-  std::shared_ptr<TcpClient> client_;
+  void RegisterServer(const std::shared_ptr<TcpClient> &client, const std::string &host, const uint32_t &port,
+                      const Role &role);
+  std::shared_ptr<TcpClient> client_to_scheduler_;
   std::shared_ptr<TcpServer> server_;
 };
 
 class SchedulerNode : public Node {
  public:
+  SchedulerNode() : server_(nullptr) {}
+  ~SchedulerNode() override = default;
+
   void Start() override;
   void Stop() override;
-  void ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
-  void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
 
  private:
+  void ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   std::unique_ptr<TcpServer> server_;
 };
 }  // namespace core

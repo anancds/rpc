@@ -3,7 +3,8 @@
 #include <iostream>
 #include <memory>
 #include <thread>
-#include "tcp_client.h"
+#include "ps/core/node_manager.h"
+
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
 
@@ -37,11 +38,14 @@ static void StartClient(mindspore::ps::core::TcpClient *client) {
   });
 }
 
+static void Start() {
+  ClusterConfig::Init(1, 1, std::make_unique<std::string>("127.0.0.1"), 9999);
+  NodeManager::Get()->StartClient();
+}
+
 int main(int /*argc*/, char ** /*argv*/) {
-  auto client = new TcpClient("127.0.0.1", 9000);
   std::unique_ptr<std::thread> http_server_thread_(nullptr);
-  http_server_thread_ = std::make_unique<std::thread>(&StartClient, client);
-  //  client.send_msg(test_message.c_str(), test_message.size());
+  http_server_thread_ = std::make_unique<std::thread>(&Start);
   http_server_thread_->join();
 
   return EXIT_SUCCESS;
