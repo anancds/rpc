@@ -6,32 +6,36 @@
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 
-void NodeManager::Init() {
-  std::string num_workers = common::GetEnv("MS_WORKER_NUM");
-  if (num_workers.empty()) {
-    MS_LOG(EXCEPTION) << "The MS_WORKER_NUM should not be null!";
-  }
-  num_workers_ = strtol(num_workers.c_str(), nullptr, 10);
 
-  std::string num_servers = common::GetEnv("MS_SERVER_NUM");
-  if (num_servers.empty()) {
-    MS_LOG(EXCEPTION) << "The MS_SERVER_NUM should not be null!";
-  }
-  num_servers_ = strtol(num_servers.c_str(), nullptr, 10);
-
-  std::string role = common::GetEnv("MS_ROLE");
-  if (role.empty()) {
-    MS_LOG(EXCEPTION) << "The MS_ROLE should not be null!";
-  }
+void NodeManager::StartScheduler() {
+  node_ = std::make_unique<SchedulerNode>();
+  node_->Start();
 }
 
-uint32_t NodeManager::num_workers() const { return num_workers_; }
+void NodeManager::StopScheduler() { node_->Stop(); }
 
-uint32_t NodeManager::num_servers() const { return num_servers_; }
+void NodeManager::StartServer() { node_ = std::make_unique<ServerNode>(); }
 
-std::string NodeManager::node_role() const { return role_; }
+void NodeManager::StopServer() { node_->Stop(); }
+
+void NodeManager::StartClient() { node_ = std::make_unique<ClientNode>(); }
+
+void NodeManager::StopClient() { node_->Stop(); }
+
+int NodeManager::WorkerRankToID(int rank) { return rank * 2 + 9; }
+
+int NodeManager::ServerRankToID(int rank) { return rank * 2 + 8; }
+
+const std::vector<int> &NodeManager::GetNodeIDs(int node_id) const {
+  const auto it = node_ids_.find(node_id);
+  return it->second;
+}
+
+int NodeManager::IDtoRank(int id) { return std::max((id - 8) / 2, 0); }
+
+int NodeManager::my_rank() const { return IDtoRank(node_->NodeId()); }
 
 }  // namespace core
 }  // namespace ps

@@ -5,15 +5,21 @@
 #ifndef RPC_NODE_MANAGER_H
 #define RPC_NODE_MANAGER_H
 
+#include <algorithm>
+#include <memory>
+#include <mutex>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "network_manager.h"
+#include "ps/core/node.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace ps {
-namespace comm {
+namespace core {
 //相当于postoffice
 
 class NodeManager {
@@ -23,16 +29,29 @@ class NodeManager {
     return &e;
   }
 
-  void Init();
+  NodeManager(const NodeManager &) = delete;
+  NodeManager &operator=(const NodeManager &) = delete;
+  virtual ~NodeManager() = default;
 
-  uint32_t num_workers() const;
-  uint32_t num_servers() const;
-  std::string node_role() const;
+  void StartScheduler();
+  void StopScheduler();
+  void StartServer();
+  void StopServer();
+  void StartClient();
+  void StopClient();
+
+  static int WorkerRankToID(int rank);
+  static int ServerRankToID(int rank);
+  const std::vector<int> &GetNodeIDs(int node_id) const;
+  static int IDtoRank(int id);
+  int my_rank() const;
+
+ protected:
+  NodeManager() = default;
 
  private:
-  uint32_t num_servers_;
-  uint32_t num_workers_;
-  std::string role_;
+  std::unordered_map<int, std::vector<int>> node_ids_;
+  std::unique_ptr<Node> node_{nullptr};
 };
 }  // namespace core
 }  // namespace ps

@@ -51,6 +51,7 @@ message MessageMeta {
   int32 role = 7;
   // Node unique id
   int32 node_id = 8;
+  // The ip and port is synchronized between scheduler and server、worker
   bool is_system_synchronized = 9;
 }
 

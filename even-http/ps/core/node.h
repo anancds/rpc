@@ -26,11 +26,22 @@ namespace core {
 // postoffice
 class Node {
  public:
+  Node()
+      : node_id_(0),
+        is_system_ready_(false),
+        is_system_synchronized_(false),
+        current_worker_num_(0),
+        current_server_num_(0) {}
+  virtual ~Node() = default;
+
   virtual void Start();
   virtual void Stop();
   void StartHeartBeatTimer(const std::shared_ptr<TcpClient> &client);
-  void ProcessAck(const TcpClient &client, const CommMessage &message);
-  void ProcessNode(const CommMessage &message);
+  void ProcessHeartbeat(const TcpClient &client, const CommMessage &message);
+  void ProcessFetchServers(const CommMessage &message);
+  void ProcessRegister(const CommMessage &message);
+
+  uint32_t NodeId();
 
  protected:
   std::set<std::string> workers_;
@@ -38,10 +49,12 @@ class Node {
   std::set<std::string> connected_nodes;
   std::set<std::string> recovery_nodes;
 
- private:
-  bool node_id_;
+  uint32_t node_id_;
   bool is_system_ready_;
   bool is_system_synchronized_;
+  int current_worker_num_;
+  int current_server_num_;
+  std::unordered_map<std::string, int> connected_nodes_;
 };
 
 class ClientNode : public Node {
@@ -57,7 +70,8 @@ class ClientNode : public Node {
 class ServerNode : public Node {
  public:
   void Start() override;
-  void RegisterServer(const std::shared_ptr<TcpClient> &client, const std::string &host, const uint32_t &port, const Role &role);
+  void RegisterServer(const std::shared_ptr<TcpClient> &client, const std::string &host, const uint32_t &port,
+                      const Role &role);
   void Stop() override;
 
  private:
