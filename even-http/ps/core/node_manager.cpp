@@ -15,7 +15,10 @@ void NodeManager::StartScheduler() {
 
 void NodeManager::StopScheduler() { node_->Stop(); }
 
-void NodeManager::StartServer() { node_ = std::make_unique<ServerNode>(); }
+void NodeManager::StartServer() {
+  node_ = std::make_unique<ServerNode>();
+  node_->Start();
+}
 
 void NodeManager::StopServer() { node_->Stop(); }
 

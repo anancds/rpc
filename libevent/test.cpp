@@ -12,8 +12,8 @@ void do_timeout(evutil_socket_t fd, short event, void *arg)
   struct timeval timeout;
   timeout.tv_sec = 3;
   timeout.tv_usec = 0;
-  ev = evtimer_new(base, do_timeout, base);
-  evtimer_add(ev, &timeout);
+//  ev = evtimer_new(base, do_timeout, base);
+//  evtimer_add(ev, &timeout);
 }
 
 void create_timeout_event(struct event_base *base)
@@ -21,10 +21,10 @@ void create_timeout_event(struct event_base *base)
   struct event *ev;
   struct timeval timeout{};
 
-  ev = evtimer_new(base, do_timeout, base);
-//  ev = event_new(base, -1, EV_PERSIST, do_timeout, base);
+//  ev = evtimer_new(base, do_timeout, base);
+  ev = event_new(base, -1, EV_PERSIST, do_timeout, base);
   if (ev) {
-    timeout.tv_sec = 0;
+    timeout.tv_sec = 1;
     timeout.tv_usec = 0;
     event_add(ev, &timeout);
   }

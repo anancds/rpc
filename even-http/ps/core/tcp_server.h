@@ -25,13 +25,15 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
-#include <memory>
 #include <vector>
+#include <thread>
 
-#include "utils/log_adapter.h"
+#include "../../../build/even-http/ps/core/comm.pb.h"
 #include "ps/core/tcp_message_handler.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ps {
@@ -41,7 +43,7 @@ class TcpServer;
 class TcpConnection {
  public:
   explicit TcpConnection(struct bufferevent *bev, const evutil_socket_t &fd, const TcpServer *server)
-      : buffer_event_(bev), fd_(0), server_(server) {}
+      : buffer_event_(bev), fd_(fd), server_(server), node_id_(0) {}
   virtual ~TcpConnection() = default;
 
   virtual void InitConnection();
@@ -50,12 +52,21 @@ class TcpConnection {
   virtual void OnReadHandler(const void *buffer, size_t numBytes);
   TcpServer *GetServer() const;
   const evutil_socket_t &GetFd() const;
+  void SetRole(const enum NodeRole &role);
+  const NodeRole &Role() const;
+  void SetNodeHost(const std::string &node_host);
+  const std::string &NodeHost() const;
+  void SetNodeId(const uint32_t &node_id);
+  const uint32_t &NodeId() const;
 
  protected:
   struct bufferevent *buffer_event_;
   evutil_socket_t fd_;
   const TcpServer *server_;
   TcpMessageHandler tcp_message_handler_;
+  enum NodeRole role_;
+  std::string node_host_;
+  uint32_t node_id_;
 };
 
 using OnServerReceiveMessage =
@@ -84,6 +95,8 @@ class TcpServer {
   static void SendMessage(const TcpConnection &conn, const CommMessage &message);
   void SendMessage(const CommMessage &message);
   uint16_t BoundPort() const;
+  int ConnectionNum() const;
+  const std::map<evutil_socket_t, const TcpConnection *> &Connections() const;
 
  protected:
   static void ListenerCallback(struct evconnlistener *listener, evutil_socket_t socket, struct sockaddr *saddr,

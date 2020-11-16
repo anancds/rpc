@@ -15,6 +15,10 @@
  */
 syntax = "proto3";
 
+enum PSCommand {
+  PUSH = 0;
+}
+
 message KVMessage {
   repeated int32 keys = 2;
   repeated int32 values = 3;
@@ -27,9 +31,14 @@ message PBHeartBeatMessage {
   repeated string server_host = 2;
 }
 
-message NodeMessage {
+message RegisterMessage {
+  int32 node_id = 1;
+  repeated RegisterMessageMeta register_message_meta = 2;
+}
+
+message RegisterMessageMeta {
+  // the server node id
+  int32 node_id = 1;
   // the schema is: *.*.*.*:port
-  repeated string worker_host = 1;
-  // the schema is: *.*.*.*:port
-  repeated string server_host = 2;
+  string server_host = 2;
 }

@@ -28,7 +28,7 @@ enum ClusterCommand {
   FETCH_SERVERS = 5;
 }
 
-enum Role {
+enum NodeRole {
   SERVER = 0;
   WORKER = 1;
   SCHEDULER = 2;
@@ -49,9 +49,8 @@ message MessageMeta {
   bool is_system_ready = 6;
   // the role of the node: worker,server,scheduler
   int32 role = 7;
-  // Node unique id
+  // the current Node unique id
   int32 node_id = 8;
-  bool is_system_synchronized = 9;
 }
 
 

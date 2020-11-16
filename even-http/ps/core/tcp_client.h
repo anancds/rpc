@@ -25,6 +25,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <thread>
 
 #include "ps/core/cluster_config.h"
 #include "../../../build/even-http/ps/core/comm.pb.h"
@@ -50,11 +51,15 @@ class TcpClient {
   void Init();
   void StartWithDelay(int seconds);
   void Stop();
+  static void StopEventBase();
   void Start();
   void StartWithNoBlock();
   void SetMessageCallback(const OnMessage &cb);
   void SendMessage(const CommMessage &message) const;
   void SendMessageWithTimer();
+  const event_base& EventBase();
+  void SetNodeId(const uint32_t &node_id);
+  const uint32_t &NodeId() const;
 
  protected:
   static void SetTcpNoDelay(const evutil_socket_t &fd);
@@ -73,12 +78,14 @@ class TcpClient {
   OnRead read_callback_;
   OnTimeout timeout_callback_;
 
-  event_base *event_base_;
+  static event_base *event_base_;
+  std::mutex connection_mutex_;
   event *event_timeout_;
   bufferevent *buffer_event_;
 
   std::string server_address_;
   std::uint16_t server_port_;
+  uint32_t node_id_;
 };
 
 }  // namespace core

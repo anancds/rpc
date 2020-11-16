@@ -77,6 +77,14 @@ void CommUtil::GetAvailableInterfaceAndIP(std::string *interface, std::string *i
   freeifaddrs(if_address);
 }
 
+int CommUtil::WorkerRankToID(int rank) { return rank * 2 + 2; }
+
+int CommUtil::ServerRankToID(int rank) { return rank * 2 + 1; }
+
+int CommUtil::IDtoRank(int id) {
+  return std::max((id - 1) / 2, 0);
+}
+
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore

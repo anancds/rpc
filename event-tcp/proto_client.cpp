@@ -46,7 +46,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace proto {
 
 client::client()
-    :mBase(nullptr), mTimeoutEvent(nullptr), mBufferEvent(nullptr)
+    :mBase(nullptr), mTimeoutEvent(nullptr), mBufferEvent(nullptr), mBufferEvent1(nullptr)
 {
 }
 
@@ -109,6 +109,40 @@ void client::start()
     retcode = bufferevent_socket_connect(mBufferEvent, reinterpret_cast<struct sockaddr *>(&sin), sizeof(sin));
     if (retcode < 0)
         throw error(retcode);
+}
+
+void client::start1()
+{
+  if (mBufferEvent1)
+    return;
+
+  int retcode = 0;
+
+  // Find IP address
+  uint16_t port = static_cast<uint16_t>(DEFAULT_PORT);
+  std::string::size_type p = mTarget.find(':');
+  if (p != std::string::npos)
+    port = static_cast<uint16_t>(std::atoi(mTarget.c_str() + p + 1));
+
+  sockaddr_in sin;
+  memset(&sin, 0, sizeof(sin));
+  sin.sin_family = AF_INET;
+  if (evutil_inet_pton(AF_INET, mTarget.c_str(), &sin.sin_addr.s_addr) != 0)
+    throw error(errno);
+  sin.sin_port = htons(port);
+
+  // Prepare bufferevent
+  mBufferEvent1 = bufferevent_socket_new(mBase, -1, BEV_OPT_CLOSE_ON_FREE);
+
+  // No write callback for now
+  bufferevent_setcb(mBufferEvent1, readcb, nullptr, eventcb, this);
+  bufferevent_enable(mBufferEvent1, EV_READ | EV_WRITE);
+
+  // evbuffer_add(bufferevent_get_output(bev), message, block_size);
+
+  retcode = bufferevent_socket_connect(mBufferEvent1, reinterpret_cast<struct sockaddr *>(&sin), sizeof(sin));
+  if (retcode < 0)
+    throw error(retcode);
 }
 
 void client::start_with_delay(int seconds)
@@ -226,7 +260,7 @@ void client::eventcb(struct bufferevent *bev, short events, void *ptr)
 void client::update()
 {
     if (mBase)
-        event_base_loop(mBase, EVLOOP_NONBLOCK);
+      event_base_dispatch(mBase);
 }
 
 // ------------ msgclient --------------

@@ -17,15 +17,23 @@ int main(int /*argc*/, char** /*argv*/)
     client.set_target("127.0.0.1:9000");
     client.start();
 
-  client.send_msg(test_message.c_str(), test_message.size());
 //  client.send_msg(test_message.c_str(), test_message.size());
     // Run for 5 minutes
     auto start_tp = std::chrono::steady_clock::now();
 
-    while (std::chrono::steady_clock::now() - start_tp < std::chrono::minutes(5))
+  client.send_msg(test_message.c_str(), test_message.size());
+
+  std::unique_ptr<std::thread> http_server_thread_(nullptr);
+  http_server_thread_ = std::make_unique<std::thread>([&](){
+
+    client.update();
+  });
+  http_server_thread_->detach();
+  client.start1();
+  while (std::chrono::steady_clock::now() - start_tp < std::chrono::minutes(5))
     {
-        client.update();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+//      client.send_msg(test_message.c_str(), test_message.size());
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 //        if (rand() % 100 < 10)
 //            client.send_msg(test_message.c_str(), test_message.size());
     }

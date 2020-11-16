@@ -18,8 +18,8 @@
 
 #include <arpa/inet.h>
 #include <event2/buffer.h>
-#include <event2/bufferevent.h>
 #include <event2/buffer_compat.h>
+#include <event2/bufferevent.h>
 #include <event2/event.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -27,8 +27,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <utility>
 #include <string>
+#include <utility>
 
 #include "ps/core/comm_util.h"
 
@@ -36,12 +36,14 @@ namespace mindspore {
 namespace ps {
 namespace core {
 
+event_base *TcpClient::event_base_ = nullptr;
+
 TcpClient::TcpClient(const std::string &address, std::uint16_t port)
-    : event_base_(nullptr),
-      event_timeout_(nullptr),
+    : event_timeout_(nullptr),
       buffer_event_(nullptr),
       server_address_(std::move(address)),
-      server_port_(port) {
+      server_port_(port),
+      node_id_(0) {
   message_handler_.SetCallback([this](const CommMessage &message) {
     if (message_callback_) {
       message_callback_(*this, message);
@@ -62,6 +64,7 @@ void TcpClient::SetCallback(const OnConnected &conn, const OnDisconnected &disco
 }
 
 void TcpClient::Init() {
+  std::lock_guard<std::mutex> lock(connection_mutex_);
   if (buffer_event_) {
     return;
   }
@@ -69,7 +72,9 @@ void TcpClient::Init() {
     MS_LOG(EXCEPTION) << "The tcp client ip:" << server_address_ << " is illegal!";
   }
 
-  event_base_ = event_base_new();
+  if (event_base_ == nullptr) {
+    event_base_ = event_base_new();
+  }
   MS_EXCEPTION_IF_NULL(event_base_);
 
   sockaddr_in sin{};
@@ -95,6 +100,7 @@ void TcpClient::Init() {
 }
 
 void TcpClient::StartWithDelay(int seconds) {
+  std::lock_guard<std::mutex> lock(connection_mutex_);
   if (buffer_event_) {
     return;
   }
@@ -112,6 +118,8 @@ void TcpClient::StartWithDelay(int seconds) {
 }
 
 void TcpClient::Stop() {
+  std::lock_guard<std::mutex> lock(connection_mutex_);
+  MS_LOG(INFO) << "Stop tcp client event buffer!";
   if (buffer_event_) {
     bufferevent_free(buffer_event_);
     buffer_event_ = nullptr;
@@ -121,7 +129,10 @@ void TcpClient::Stop() {
     event_free(event_timeout_);
     event_timeout_ = nullptr;
   }
+}
 
+void TcpClient::StopEventBase() {
+  MS_LOG(INFO) << "Stop tcp client event base!";
   if (event_base_) {
     event_base_free(event_base_);
     event_base_ = nullptr;
@@ -173,8 +184,9 @@ void TcpClient::SendHeartBeatCallback(evutil_socket_t, int16_t, void *arg) {
   auto tcp_client = reinterpret_cast<TcpClient *>(arg);
   MessageMeta meta;
   meta.set_cmd(ClusterCommand::HEARTBEAT);
+  meta.set_node_id(tcp_client->NodeId());
   CommMessage message;
-  message.set_allocated_pb_meta(&meta);
+  *message.mutable_pb_meta() = {meta};
   tcp_client->SendMessage(message);
 
   struct event *ev;
@@ -211,16 +223,20 @@ void TcpClient::EventCallback(struct bufferevent *bev, std::int16_t events, void
 }
 
 void TcpClient::Start() {
-  MS_EXCEPTION_IF_NULL(event_base_);
-  int ret = event_base_dispatch(event_base_);
-  MSLOG_IF(INFO, ret == 0, NoExceptionType) << "Event base dispatch success!";
-  MSLOG_IF(mindspore::ERROR, ret == 1, NoExceptionType)
-    << "Event base dispatch failed with no events pending or active!";
-  MSLOG_IF(mindspore::ERROR, ret == -1, NoExceptionType) << "Event base dispatch failed with error occurred!";
-  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base dispatch with unexpect error code!";
+  std::thread event_base_thread([]() {
+    MS_EXCEPTION_IF_NULL(event_base_);
+    int ret = event_base_dispatch(event_base_);
+    MSLOG_IF(INFO, ret == 0, NoExceptionType) << "Event base dispatch success!";
+    MSLOG_IF(mindspore::ERROR, ret == 1, NoExceptionType)
+      << "Event base dispatch failed with no events pending or active!";
+    MSLOG_IF(mindspore::ERROR, ret == -1, NoExceptionType) << "Event base dispatch failed with error occurred!";
+    MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base dispatch with unexpect error code!";
+  });
+  event_base_thread.detach();
 }
 
 void TcpClient::StartWithNoBlock() {
+  std::lock_guard<std::mutex> lock(connection_mutex_);
   MS_LOG(INFO) << "Start tcp client with no block!";
   MS_EXCEPTION_IF_NULL(event_base_);
   int ret = event_base_loop(event_base_, EVLOOP_NONBLOCK);
@@ -249,11 +265,18 @@ void TcpClient::SendMessageWithTimer() {
   MS_EXCEPTION_IF_NULL(buffer_event_);
   struct event *ev = nullptr;
   struct timeval timeout {};
-  timeout.tv_sec = 0;
+  timeout.tv_sec = 1;
   timeout.tv_usec = 0;
   ev = evtimer_new(event_base_, SendHeartBeatCallback, this);
+  MS_EXCEPTION_IF_NULL(ev);
   evtimer_add(ev, &timeout);
 }
+
+const event_base &TcpClient::EventBase() { return *event_base_; }
+
+void TcpClient::SetNodeId(const uint32_t &node_id) { node_id_ = node_id; }
+
+const uint32_t &TcpClient::NodeId() const { return node_id_; }
 
 }  // namespace core
 }  // namespace ps

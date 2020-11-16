@@ -20,7 +20,7 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-//相当于postoffice
+//这个作为node的成员变量，或者工具类,去掉start和stop
 
 class NodeManager {
  public:
@@ -40,6 +40,7 @@ class NodeManager {
   void StartClient();
   void StopClient();
 
+  // 下面的函数是不是应该放到commutil，否则和node.h相互依赖了
   static int WorkerRankToID(int rank);
   static int ServerRankToID(int rank);
   const std::vector<int> &GetNodeIDs(int node_id) const;

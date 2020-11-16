@@ -55,6 +55,9 @@ class CommUtil {
   static bool CheckIpWithRegex(const std::string &ip);
   static bool CheckIp(const std::string &ip);
   static void GetAvailableInterfaceAndIP(std::string *interface, std::string *ip);
+  static int WorkerRankToID(int rank);
+  static int ServerRankToID(int rank);
+  static int IDtoRank(int id);
 };
 }  // namespace core
 }  // namespace ps

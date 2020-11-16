@@ -18,10 +18,10 @@
 
 #include <arpa/inet.h>
 #include <event2/buffer.h>
+#include <event2/buffer_compat.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
 #include <event2/listener.h>
-#include <event2/buffer_compat.h>
 #include <event2/util.h>
 #include <sys/socket.h>
 #include <csignal>
@@ -53,6 +53,18 @@ void TcpConnection::SendMessage(const void *buffer, size_t num) const {
 TcpServer *TcpConnection::GetServer() const { return const_cast<TcpServer *>(server_); }
 
 const evutil_socket_t &TcpConnection::GetFd() const { return fd_; }
+
+void TcpConnection::SetRole(const enum NodeRole &role) { role_ = role; }
+
+const enum NodeRole &TcpConnection::Role() const { return role_; }
+
+void TcpConnection::SetNodeHost(const std::string &node_host) { node_host_ = node_host; }
+
+const std::string &TcpConnection::NodeHost() const { return node_host_; }
+
+void TcpConnection::SetNodeId(const uint32_t &node_id) { node_id_ = node_id; }
+
+const uint32_t &TcpConnection::NodeId() const { return node_id_; }
 
 void TcpConnection::SendMessage(const CommMessage &message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
@@ -126,15 +138,18 @@ void TcpServer::Init() {
 }
 
 void TcpServer::Start() {
-  std::unique_lock<std::recursive_mutex> lock(connection_mutex_);
-  MS_LOG(INFO) << "Start tcp server!";
-  MS_EXCEPTION_IF_NULL(base_);
-  int ret = event_base_dispatch(base_);
-  MSLOG_IF(INFO, ret == 0, NoExceptionType) << "Event base dispatch success!";
-  MSLOG_IF(mindspore::ERROR, ret == 1, NoExceptionType)
-    << "Event base dispatch failed with no events pending or active!";
-  MSLOG_IF(mindspore::ERROR, ret == -1, NoExceptionType) << "Event base dispatch failed with error occurred!";
-  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base dispatch with unexpect error code!";
+  std::thread event_base_thread([&]() {
+    std::unique_lock<std::recursive_mutex> lock(connection_mutex_);
+    MS_LOG(INFO) << "Start tcp server!";
+    MS_EXCEPTION_IF_NULL(base_);
+    int ret = event_base_dispatch(base_);
+    MSLOG_IF(INFO, ret == 0, NoExceptionType) << "Event base dispatch success!";
+    MSLOG_IF(mindspore::ERROR, ret == 1, NoExceptionType)
+      << "Event base dispatch failed with no events pending or active!";
+    MSLOG_IF(mindspore::ERROR, ret == -1, NoExceptionType) << "Event base dispatch failed with error occurred!";
+    MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base dispatch with unexpect error code!";
+  });
+  event_base_thread.detach();
 }
 
 void TcpServer::StartWithNoBlock() {
@@ -296,6 +311,10 @@ void TcpServer::SendMessage(const CommMessage &message) {
 }
 
 uint16_t TcpServer::BoundPort() const { return server_port_; }
+
+int TcpServer::ConnectionNum() const { return connections_.size(); }
+
+const std::map<evutil_socket_t, const TcpConnection *> &TcpServer::Connections() const { return connections_; }
 
 void TcpServer::SetMessageCallback(const OnServerReceiveMessage &cb) { message_callback_ = cb; }
 

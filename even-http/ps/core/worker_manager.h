@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <iostream>
+#include <tuple>
 #include <vector>
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "message.h"
@@ -21,8 +22,11 @@ class Client {
   //发送接受的是pb的数据
 
   template <typename Val>
-  int Send(const std::vector<uint64_t> &keys, const std::vector<Val> &vals, const std::vector<int> &lens = {},
-           int cmd = 0, const Callback &cb = nullptr);
+  int Send(std::string role, const std::vector<uint64_t> &keys, const std::vector<Val> &vals,
+           const std::vector<int> &lens = {}, int cmd = 0, const Callback &cb = nullptr);
+
+  // role-rand_id-message
+  int Send(std::vector<std::tuple<std::string, int, std::string>> data);
 
   template <typename Val>
   int Receive(const std::vector<uint64_t> &keys, std::vector<Val> *vals, std::vector<int> *lens = nullptr, int cmd = 0,

@@ -22,8 +22,12 @@ add_executable(exampleold example_old.cpp http_message_handler.cc http_server.cc
 add_executable(exampletcp scheduler_example.cpp ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})
 add_executable(exampletcpclient client_example.cpp ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})
 add_executable(exampletcpserver server_example.cpp ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})
+add_executable(client_test client.cpp ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})
+add_executable(server_test server.cpp ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})
 
 target_link_libraries(exampleold event event_core Threads::Threads rpc-log)
 target_link_libraries(exampletcp event event_core Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF})
 target_link_libraries(exampletcpclient event event_core Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF})
 target_link_libraries(exampletcpserver event event_core Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF})
+target_link_libraries(client_test event event_core Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF})
+target_link_libraries(server_test event event_core Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF})

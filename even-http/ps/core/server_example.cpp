@@ -40,7 +40,7 @@ static void StartClient(mindspore::ps::core::TcpClient *client) {
 
 static void Start() {
   ClusterConfig::Init(1, 1, std::make_unique<std::string>("127.0.0.1"), 9999);
-  NodeManager::Get()->StartClient();
+  NodeManager::Get()->StartServer();
 }
 
 int main(int /*argc*/, char ** /*argv*/) {

@@ -6,7 +6,8 @@ enable_testing()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../even-http)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../log)
 
-set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_client.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_message_handler.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/comm_util.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/cluster_config.cc)
+set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_client.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_message_handler.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/comm_util.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/cluster_config.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node_manager.cpp)
 
 add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_message_handler.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_server.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/comm_util.cc ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/cluster_config.cc)
 add_library(tcp ${TEST_SRC})
@@ -95,4 +96,33 @@ target_link_libraries(message_handler
         ${_PROTOBUF_LIBPROTOBUF}
         )
 
-add_test(test_all unit_tests tcp_client tcp_server tcp_kv_server comm_util message_handler)
+add_executable(cluster_connection cluster_connection_test.cc ${PROTO_SRCS} ${PROTO_HDRS})
+
+target_link_libraries(cluster_connection
+        unittest
+        tcp
+        rpc-log
+        GTest::GTest
+        GTest::Main
+        GMock::GMock
+        GMock::Main
+        event event_core Threads::Threads
+        ${_PROTOBUF_LIBPROTOBUF}
+        )
+
+
+add_executable(cluster_connection_fail cluster_connection_failed_test.cc ${PROTO_SRCS} ${PROTO_HDRS})
+
+target_link_libraries(cluster_connection_fail
+        unittest
+        tcp
+        rpc-log
+        GTest::GTest
+        GTest::Main
+        GMock::GMock
+        GMock::Main
+        event event_core Threads::Threads
+        ${_PROTOBUF_LIBPROTOBUF}
+        )
+
+add_test(test_all unit_tests tcp_client tcp_server tcp_kv_server comm_util message_handler cluster_connection cluster_connection_fail )

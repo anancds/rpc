@@ -54,6 +54,7 @@ public:
     void set_callbacks(on_connected conn, on_disconnected disconn,
                        on_read read, on_timeout timeout);
     void start();
+    void start1();
     void start_with_delay(int seconds);
 
     void stop();
@@ -74,7 +75,8 @@ protected:
     event_base* mBase;
     event* mTimeoutEvent;
     bufferevent* mBufferEvent;
-    std::string mTarget;
+  bufferevent* mBufferEvent1;
+  std::string mTarget;
 
     virtual void on_read_handler(const void* buf, size_t num);
 };

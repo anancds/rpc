@@ -1,10 +1,23 @@
-//
-// Created by cds on 2020/10/29.
-//
+/**
+ * Copyright 2020 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef RPC_NODE_H
 #define RPC_NODE_H
 
+#include <atomic>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
@@ -23,27 +36,23 @@ namespace mindspore {
 namespace ps {
 namespace core {
 
-// postoffice
+constexpr uint32_t kSchedulerNodeId = 0;
+
 class Node {
  public:
-  Node()
-      : node_id_(0),
-        is_system_ready_(false),
-        is_system_synchronized_(false),
-        current_worker_num_(0),
-        current_server_num_(0) {}
+  Node() : node_id_(0), is_system_ready_(false), current_worker_rank_id_(-1), current_server_rank_id_(-1), {}
   virtual ~Node() = default;
 
-  virtual void Start();
-  virtual void Stop();
+  virtual void Start() = 0;
+  virtual void Stop() = 0;
 
-  uint32_t NodeId();
+  uint32_t NodeId() const;
+  int RankId() const;
 
  protected:
-  void StartHeartBeatTimer(const std::shared_ptr<TcpClient> &client);
-  void ProcessHeartbeat(const TcpClient &client, const CommMessage &message);
-  void ProcessFetchServers(const CommMessage &message);
-  void ProcessRegister(const CommMessage &message);
+  void Heartbeat(const std::shared_ptr<TcpClient> &client);
+  void ProcessHeartbeat();
+  void UpdateHeartbeat(const uint32_t &node_id, const timeval &time);
 
   std::set<std::string> workers_;
   std::set<std::string> servers_;
@@ -52,10 +61,12 @@ class Node {
 
   uint32_t node_id_;
   bool is_system_ready_;
-  bool is_system_synchronized_;
-  int current_worker_num_;
-  int current_server_num_;
-  std::unordered_map<std::string, int> connected_nodes_;
+  std::atomic<int> current_worker_rank_id_;
+  std::atomic<int> current_server_rank_id_;
+  std::unordered_map<uint32_t, std::shared_ptr<TcpClient>> connected_nodes_;
+  std::unordered_map<uint32_t, std::string> server_node_ids_;
+  std::unordered_map<uint32_t, timeval> heartbeats_;
+  std::mutex heartbeat_mutex_;
 };
 
 class ClientNode : public Node {
@@ -66,10 +77,12 @@ class ClientNode : public Node {
   void Stop() override;
 
  private:
-  void RegisterClient(const std::shared_ptr<TcpClient> &client, const Role &role);
+  void Register(const std::shared_ptr<TcpClient> &client, const NodeRole &role);
+  void ProcessRegister(const CommMessage &message);
+  void ProcessTerminal(const CommMessage &message);
 
   std::shared_ptr<TcpClient> client_to_scheduler_;
-  std::unordered_map<int, TcpClient> clients_to_servers_;
+  std::unordered_map<int, const TcpClient &> clients_to_servers_;
 };
 
 class ServerNode : public Node {
@@ -81,8 +94,10 @@ class ServerNode : public Node {
   void Stop() override;
 
  private:
-  void RegisterServer(const std::shared_ptr<TcpClient> &client, const std::string &host, const uint32_t &port,
-                      const Role &role);
+  void Register(const std::shared_ptr<TcpClient> &client, const std::string &host, const uint32_t &port,
+                const NodeRole &role);
+  void ProcessRegister(const CommMessage &message);
+  void ProcessTerminal(const CommMessage &message);
   std::shared_ptr<TcpClient> client_to_scheduler_;
   std::shared_ptr<TcpServer> server_;
 };
@@ -96,8 +111,10 @@ class SchedulerNode : public Node {
   void Stop() override;
 
  private:
+  void HeartBeat(const TcpServer &server, const TcpConnection &conn);
   void ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void Terminal(const TcpServer &server);
   std::unique_ptr<TcpServer> server_;
 };
 }  // namespace core
