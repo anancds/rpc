@@ -37,6 +37,7 @@ target_link_libraries(unit_tests
         GMock::GMock
         GMock::Main
         event event_core Threads::Threads
+        event_pthreads
         )
 
 add_executable(tcp_kv_server tcp_kv_server_test.cc ${PROTO_SRCS} ${PROTO_HDRS})
@@ -52,6 +53,7 @@ target_link_libraries(tcp_kv_server
         GMock::Main
         event event_core Threads::Threads
         ${_PROTOBUF_LIBPROTOBUF}
+        event_pthreads
         )
 
 add_executable(tcp_client tcp_client_tests.cpp ${PROTO_SRCS} ${PROTO_HDRS})
@@ -66,6 +68,7 @@ target_link_libraries(tcp_client
         GMock::Main
         event event_core Threads::Threads
         ${_PROTOBUF_LIBPROTOBUF}
+        event_pthreads
         )
 
 add_executable(comm_util common_util_test.cpp ${PROTO_SRCS} ${PROTO_HDRS})
@@ -80,6 +83,7 @@ target_link_libraries(comm_util
         GMock::Main
         event event_core Threads::Threads
         ${_PROTOBUF_LIBPROTOBUF}
+        event_pthreads
         )
 
 add_executable(message_handler tcp_message_handler_test.cc ${PROTO_SRCS} ${PROTO_HDRS})
@@ -93,6 +97,7 @@ target_link_libraries(message_handler
         GMock::GMock
         GMock::Main
         event event_core Threads::Threads
+        event_pthreads
         ${_PROTOBUF_LIBPROTOBUF}
         )
 
@@ -107,6 +112,7 @@ target_link_libraries(cluster_connection
         GMock::GMock
         GMock::Main
         event event_core Threads::Threads
+        event_pthreads
         ${_PROTOBUF_LIBPROTOBUF}
         )
 
@@ -122,6 +128,7 @@ target_link_libraries(cluster_connection_fail
         GMock::GMock
         GMock::Main
         event event_core Threads::Threads
+        event_pthreads
         ${_PROTOBUF_LIBPROTOBUF}
         )
 

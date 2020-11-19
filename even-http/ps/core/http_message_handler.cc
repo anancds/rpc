@@ -16,10 +16,10 @@
 
 #include "ps/core/http_message_handler.h"
 
-#include <event2/event.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/bufferevent_compat.h>
+#include <event2/event.h>
 #include <event2/http.h>
 #include <event2/http_compat.h>
 #include <event2/http_struct.h>
@@ -31,8 +31,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <string>
 #include <functional>
+#include <string>
 
 namespace mindspore {
 namespace ps {
@@ -132,19 +132,18 @@ std::string HttpMessageHandler::GetUriFragment() {
   return std::string(fragment);
 }
 
-std::string HttpMessageHandler::GetPostMsg() {
+uint64_t HttpMessageHandler::GetPostMsg(unsigned char **buffer) {
   MS_EXCEPTION_IF_NULL(event_request_);
-  if (body_ != nullptr) {
-    return *body_;
-  }
-  size_t len = evbuffer_get_length(event_request_->input_buffer);
+
+  uint64_t len = evbuffer_get_length(event_request_->input_buffer);
   if (len == 0) {
     MS_LOG(EXCEPTION) << "The post message is empty!";
   }
-  const char *post_message = reinterpret_cast<const char *>(evbuffer_pullup(event_request_->input_buffer, -1));
-  MS_EXCEPTION_IF_NULL(post_message);
-  body_ = std::make_unique<std::string>(post_message, len);
-  return *body_;
+  //  buffer.reset(new unsigned char[len]);
+  *buffer = evbuffer_pullup(event_request_->input_buffer, -1);
+
+  MS_EXCEPTION_IF_NULL(*buffer);
+  return len;
 }
 
 void HttpMessageHandler::AddRespHeadParam(const std::string &key, const std::string &val) {

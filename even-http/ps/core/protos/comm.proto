@@ -28,6 +28,8 @@ enum ClusterCommand {
   FETCH_SERVERS = 5;
 }
 
+
+
 enum NodeRole {
   SERVER = 0;
   WORKER = 1;

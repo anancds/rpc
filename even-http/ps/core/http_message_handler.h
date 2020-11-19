@@ -28,10 +28,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
-#include <string>
 #include <list>
 #include <map>
 #include <memory>
+#include <string>
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -62,7 +62,7 @@ class HttpMessageHandler {
   std::string GetHeadParam(const std::string &key);
   std::string GetPathParam(const std::string &key);
   std::string GetPostParam(const std::string &key);
-  std::string GetPostMsg();
+  uint64_t GetPostMsg(unsigned char **buffer);
   std::string GetUriPath();
   std::string GetUriQuery();
 

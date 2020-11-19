@@ -16,6 +16,7 @@
 
 using namespace std;
 using namespace mindspore;
+using namespace mindspore::ps::core;
 
 static void testGetHandler(std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) {
   std::string host = resp->GetRequestHost();
@@ -23,7 +24,14 @@ static void testGetHandler(std::shared_ptr<mindspore::ps::core::HttpMessageHandl
   std::string path_param = resp->GetPathParam("key1");
   std::string header_param = resp->GetHeadParam("headerKey");
   std::string post_param = resp->GetPostParam("postKey");
-  std::string post_message = resp->GetPostMsg();
+
+  const unsigned char *data = nullptr;
+  const uint64_t len = resp->GetPostMsg(data);
+  char post_message[len + 1];
+  memset_s(post_message, len + 1, 0, len + 1);
+  if (memcpy_s(post_message, len, data, len) != 0) {
+  }
+  std::cout << post_message << std::endl;
 
   const std::string rKey("headKey");
   const std::string rVal("headValue");
@@ -43,11 +51,12 @@ bool CheckIp(const std::string &ip) {
   }
   return false;
 }
-void StartHttpServer() {
-  mindspore::ps::core::HttpServer *server_ = new mindspore::ps::core::HttpServer("0.0.0.0", 9999);
-  mindspore::ps::core::OnRequestReceive f1 = std::bind([](std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) {
-    resp->QuickResponse(200, "get request success!\n");
-  }, std::placeholders::_1);
+void StartHttpServer(HttpServer *server_) {
+  mindspore::ps::core::OnRequestReceive f1 = std::bind(
+    [](std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) {
+      resp->QuickResponse(200, "get request success!\n");
+    },
+    std::placeholders::_1);
   server_->RegisterRoute("/httpget", &f1);
   mindspore::ps::core::OnRequestReceive f2 = std::bind(testGetHandler, std::placeholders::_1);
   server_->RegisterRoute("/handler", &f2);
@@ -57,8 +66,11 @@ int main() {
   std::int16_t test = -1;
   std::cout << test << std::endl;
   cout << CheckIp("0.0.0.0") << endl;
-  std::unique_ptr<std::thread> http_server_thread_(nullptr);
-  http_server_thread_ = std::make_unique<std::thread>(&StartHttpServer);
-  http_server_thread_->join();
+  HttpServer *server_ = new HttpServer("0.0.0.0", 9999);
+  std::thread http_server_thread_([&]() { StartHttpServer(server_); });
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  http_server_thread_.join();
+
   return 0;
 }

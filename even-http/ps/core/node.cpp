@@ -15,7 +15,6 @@
  */
 
 #include "ps/core/node.h"
-#include "comm_util.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
@@ -124,6 +123,30 @@ void ClientNode::Stop() {
   client_to_scheduler_->StopEventBase();
 }
 
+void ClientNode::Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message) {
+  int node_id_dest;
+  if (node_role == NodeRole::WORKER) {
+    if (rank_id > ClusterConfig::worker_num() - 1) {
+      MS_LOG(EXCEPTION) << "The rank id:" << rank_id << " should not be greater than "
+                        << ClusterConfig::worker_num() - 1;
+    }
+    node_id_dest = CommUtil::WorkerRankToID(static_cast<int>(rank_id));
+  } else if (node_role == NodeRole::SERVER) {
+    if (rank_id > ClusterConfig::server_num() - 1) {
+      MS_LOG(EXCEPTION) << "The rank id:" << rank_id << " should not be greater than "
+                        << ClusterConfig::server_num() - 1;
+    }
+    node_id_dest = CommUtil::ServerRankToID(static_cast<int>(rank_id));
+  }
+
+  if (clients_to_servers_.find(node_id_dest) == clients_to_servers_.end()) {
+
+  } else {
+
+  }
+  const TcpClient &client = clients_to_servers_.at(node_id_dest);
+}
+
 void ServerNode::Start() {
   std::string interface;
   std::string server_ip;
@@ -181,8 +204,9 @@ void ServerNode::ProcessRegister(const CommMessage &message) {
 
   is_system_ready_ = message.pb_meta().is_system_ready();
 
-  for (auto it = register_message.register_message_meta().begin(); it != register_message.register_message_meta().end();
-       ++it) {
+  auto meta_begin = register_message.register_message_meta().begin();
+  auto meta_end = register_message.register_message_meta().end();
+  for (auto it = meta_begin; it != meta_end; ++it) {
     server_node_ids_[it->node_id()] = it->server_host();
   }
   MS_LOG(INFO) << "The all server host size is:" << server_node_ids_.size();
@@ -273,7 +297,7 @@ void SchedulerNode::ProcessRegister(const TcpServer &server, const TcpConnection
     MS_LOG(INFO) << "All worker nodes and server nodes have registered to scheduler!";
 
     const std::map<evutil_socket_t, const TcpConnection *> &connections = server.Connections();
-    uint32_t node_id = 0;
+    uint32_t node_id;
 
     MessageMeta message_meta;
     message_meta.set_cmd(ClusterCommand::REGISTER);

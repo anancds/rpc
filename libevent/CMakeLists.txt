@@ -33,6 +33,10 @@ add_executable(server4 server4.cpp)
 
 target_link_libraries(server4 event_core Threads::Threads)
 
+add_executable(uuid-test uuid.cpp)
+
+target_link_libraries(uuid-test event_core Threads::Threads uuid)
+
 add_subdirectory(example)
 add_subdirectory(multithread)
 

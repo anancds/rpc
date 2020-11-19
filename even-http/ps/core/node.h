@@ -54,11 +54,6 @@ class Node {
   void ProcessHeartbeat();
   void UpdateHeartbeat(const uint32_t &node_id, const timeval &time);
 
-  std::set<std::string> workers_;
-  std::set<std::string> servers_;
-  std::set<std::string> connected_nodes;
-  std::set<std::string> recovery_nodes;
-
   uint32_t node_id_;
   bool is_system_ready_;
   std::atomic<int> current_worker_rank_id_;
@@ -75,6 +70,7 @@ class ClientNode : public Node {
   ~ClientNode() override = default;
   void Start() override;
   void Stop() override;
+  void Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message);
 
  private:
   void Register(const std::shared_ptr<TcpClient> &client, const NodeRole &role);

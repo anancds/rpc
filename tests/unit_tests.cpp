@@ -30,7 +30,15 @@ static void testGetHandler(std::shared_ptr<HttpMessageHandler> resp) {
   std::string path_param = resp->GetPathParam("key1");
   std::string header_param = resp->GetHeadParam("headerKey");
   std::string post_param = resp->GetPostParam("postKey");
-  std::string post_message = resp->GetPostMsg();
+  unsigned char *data = nullptr;
+  const uint64_t len = resp->GetPostMsg(&data);
+  char post_message[len + 1];
+  if (memset_s(post_message, len + 1, 0, len + 1) != 0) {
+    MS_LOG(EXCEPTION) << "The memset_s error";
+  }
+  if (memcpy_s(post_message, len, data, len) != 0) {
+    MS_LOG(EXCEPTION) << "The memset_s error";
+  }
   //    EXPECT_STREQ(path_param.c_str(), "value1");
   //    EXPECT_STREQ(header_param.c_str(), "headerValue");
   //    EXPECT_STREQ(post_param.c_str(), "postValue");
@@ -48,6 +56,7 @@ static void testGetHandler(std::shared_ptr<HttpMessageHandler> resp) {
 class TestHttpServer : public ::testing::Test {
  protected:
   void SetUp() override {
+    MS_LOG(INFO) << "Start http server!";
     server_ = new HttpServer("0.0.0.0", 9999);
     OnRequestReceive http_get_func = std::bind(
       [](std::shared_ptr<HttpMessageHandler> resp) {
@@ -56,7 +65,6 @@ class TestHttpServer : public ::testing::Test {
         EXPECT_STREQ(resp->GetRequestUri().c_str(), "/httpget?key1=value1");
         EXPECT_STREQ(resp->GetUriPath().c_str(), "/httpget");
         resp->QuickResponse(200, "get request success!\n");
-
       },
       std::placeholders::_1);
 
@@ -68,11 +76,19 @@ class TestHttpServer : public ::testing::Test {
         std::string path_param = resp->GetPathParam("key1");
         std::string header_param = resp->GetHeadParam("headerKey");
         std::string post_param = resp->GetPostParam("postKey");
-        std::string post_message = resp->GetPostMsg();
-        //    EXPECT_STREQ(path_param.c_str(), "value1");
-        //    EXPECT_STREQ(header_param.c_str(), "headerValue");
-        //    EXPECT_STREQ(post_param.c_str(), "postValue");
-        //    EXPECT_STREQ(post_message.c_str(), "postKey=postValue");
+        unsigned char *data = nullptr;
+        const uint64_t len = resp->GetPostMsg(&data);
+        char post_message[len + 1];
+        if (memset_s(post_message, len + 1, 0, len + 1) != 0) {
+          MS_LOG(EXCEPTION) << "The memset_s error";
+        }
+        if (memcpy_s(post_message, len, data, len) != 0) {
+          MS_LOG(EXCEPTION) << "The memset_s error";
+        }
+        EXPECT_STREQ(path_param.c_str(), "value1");
+        EXPECT_STREQ(header_param.c_str(), "headerValue");
+        EXPECT_STREQ(post_param.c_str(), "postValue11");
+        EXPECT_STREQ(post_message, "postKey=postValue11");
 
         const std::string rKey("headKey");
         const std::string rVal("headValue");
@@ -87,14 +103,15 @@ class TestHttpServer : public ::testing::Test {
     server_->RegisterRoute("/httpget", &http_get_func);
     server_->RegisterRoute("/handler", &http_handler_func);
     std::unique_ptr<std::thread> http_server_thread_(nullptr);
-    http_server_thread_ = std::make_unique<std::thread>([&]() {
-      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-      server_->Start();
-    });
+    http_server_thread_ = std::make_unique<std::thread>([&]() { server_->Start(); });
     http_server_thread_->detach();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
 
-  void TearDown() override { server_->Stop(); }
+  void TearDown() override {
+    server_->Stop();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  }
 
  private:
   HttpServer *server_;
@@ -120,7 +137,7 @@ TEST_F(TestHttpServer, messageHandlerTest) {
   char buffer[100];
   FILE *file;
   std::string cmd =
-    R"(curl -X POST -d 'postKey=postValue' -i -H "Accept: application/json" -H "headerKey: headerValue"  http://127.0.0.1:9999/handler?key1=value1)";
+    R"(curl -X POST -d 'postKey=postValue11' -i -H "Accept: application/json" -H "headerKey: headerValue"  http://127.0.0.1:9999/handler?key1=value1)";
   std::string result;
   const char *sysCommand = cmd.data();
   if ((file = popen(sysCommand, "r")) == nullptr) {
