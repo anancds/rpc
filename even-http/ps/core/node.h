@@ -40,7 +40,7 @@ constexpr uint32_t kSchedulerNodeId = 0;
 
 class Node {
  public:
-  Node() : node_id_(0), is_system_ready_(false), current_worker_rank_id_(-1), current_server_rank_id_(-1), {}
+  Node() : node_id_(0), is_system_ready_(false), current_worker_rank_id_(-1), current_server_rank_id_(-1) {}
   virtual ~Node() = default;
 
   virtual void Start() = 0;
