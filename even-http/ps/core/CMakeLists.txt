@@ -26,8 +26,8 @@ add_executable(client_test client.cpp ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} $
 add_executable(server_test server.cpp ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})
 
 target_link_libraries(exampleold event Threads::Threads rpc-log event_pthreads)
-target_link_libraries(exampletcp event event_core Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF})
-target_link_libraries(exampletcpclient event event_core Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF})
-target_link_libraries(exampletcpserver event event_core Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF})
-target_link_libraries(client_test event event_core Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF})
-target_link_libraries(server_test event event_core Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF})
+target_link_libraries(exampletcp event  Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF} event_pthreads)
+target_link_libraries(exampletcpclient event  Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF} event_pthreads)
+target_link_libraries(exampletcpserver event  Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF} event_pthreads)
+target_link_libraries(client_test event  Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF} event_pthreads)
+target_link_libraries(server_test event  Threads::Threads rpc-log ${_PROTOBUF_LIBPROTOBUF} event_pthreads)

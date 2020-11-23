@@ -1,6 +1,10 @@
 
 find_package(Threads REQUIRED)
 
+find_package(PkgConfig REQUIRED)
+
+pkg_search_module(UUID REQUIRED uuid)
+
 add_executable(libeventtest test.cpp)
 
 target_link_libraries(libeventtest event event_core)
@@ -35,7 +39,8 @@ target_link_libraries(server4 event_core Threads::Threads)
 
 add_executable(uuid-test uuid.cpp)
 
-target_link_libraries(uuid-test event_core Threads::Threads uuid)
+message(${UUID_LIBRARIES})
+target_link_libraries(uuid-test event_core Threads::Threads ${UUID_LIBRARIES})
 
 add_subdirectory(example)
 add_subdirectory(multithread)

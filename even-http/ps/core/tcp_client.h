@@ -21,6 +21,7 @@
 
 #include <event2/event.h>
 #include <event2/bufferevent.h>
+#include <event2/thread.h>
 #include <functional>
 #include <string>
 #include <memory>
@@ -41,6 +42,7 @@ class TcpClient {
   using OnRead = std::function<void(const TcpClient &, const void *, size_t)>;
   using OnTimeout = std::function<void(const TcpClient &)>;
   using OnMessage = std::function<void(const TcpClient &, const CommMessage &)>;
+  using OnTimer = std::function<void(const TcpClient &)>;
 
   explicit TcpClient(const std::string &address, std::uint16_t port);
   virtual ~TcpClient();
@@ -57,6 +59,7 @@ class TcpClient {
   void SetMessageCallback(const OnMessage &cb);
   void SendMessage(const CommMessage &message) const;
   void SendMessageWithTimer();
+  void set_timer_callback(const OnTimer &timer);
   const event_base& EventBase();
   void SetNodeId(const uint32_t &node_id);
   const uint32_t &NodeId() const;
@@ -77,6 +80,7 @@ class TcpClient {
   OnDisconnected disconnected_callback_;
   OnRead read_callback_;
   OnTimeout timeout_callback_;
+  OnTimer on_timer_callback_;
 
   static event_base *event_base_;
   std::mutex connection_mutex_;

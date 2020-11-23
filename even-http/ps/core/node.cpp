@@ -22,23 +22,32 @@ namespace ps {
 namespace core {
 
 void Node::Heartbeat(const std::shared_ptr<TcpClient> &client) {
-  std::thread heartbeat_thread([&]() {
-    MS_LOG(INFO) << "The node: " << node_id_ << " begin send heartbeat to the scheduler!";
-    const uint32_t heartbeat_timer = ClusterConfig::heartbeat_interval();
-    if (heartbeat_timer == 0) {
-      MS_LOG(EXCEPTION) << "The heartbeat interval should not be 0!";
-    }
-    while (is_system_ready_) {
-      MessageMeta meta;
-      meta.set_cmd(ClusterCommand::HEARTBEAT);
-      meta.set_node_id(client->NodeId());
-      CommMessage message;
-      *message.mutable_pb_meta() = {meta};
-      client->SendMessage(message);
-      std::this_thread::sleep_for(std::chrono::seconds(heartbeat_timer));
-    }
+  //  std::thread heartbeat_thread([&]() {
+  //    MS_LOG(INFO) << "The node: " << node_id_ << " begin send heartbeat to the scheduler!";
+  //    const uint32_t heartbeat_timer = ClusterConfig::heartbeat_interval();
+  //    if (heartbeat_timer == 0) {
+  //      MS_LOG(EXCEPTION) << "The heartbeat interval should not be 0!";
+  //    }
+  //    while (is_system_ready_) {
+  //      MessageMeta meta;
+  //      meta.set_cmd(ClusterCommand::HEARTBEAT);
+  //      meta.set_node_id(client->NodeId());
+  //      CommMessage message;
+  //      *message.mutable_pb_meta() = {meta};
+  //      client->SendMessage(message);
+  //      std::this_thread::sleep_for(std::chrono::seconds(heartbeat_timer));
+  //    }
+  //  });
+  //  heartbeat_thread.detach();
+  client->set_timer_callback([](const TcpClient &client) {
+    MessageMeta meta;
+    meta.set_cmd(ClusterCommand::HEARTBEAT);
+    meta.set_node_id(client.NodeId());
+    CommMessage message;
+    *message.mutable_pb_meta() = {meta};
+    client.SendMessage(message);
   });
-  heartbeat_thread.detach();
+  client->SendMessageWithTimer();
 }
 
 void Node::ProcessHeartbeat() {
@@ -140,9 +149,7 @@ void ClientNode::Send(const enum NodeRole &node_role, uint32_t rank_id, const Co
   }
 
   if (clients_to_servers_.find(node_id_dest) == clients_to_servers_.end()) {
-
   } else {
-
   }
   const TcpClient &client = clients_to_servers_.at(node_id_dest);
 }

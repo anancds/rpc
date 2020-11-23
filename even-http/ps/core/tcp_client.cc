@@ -71,7 +71,10 @@ void TcpClient::Init() {
   if (!CommUtil::CheckIp(server_address_)) {
     MS_LOG(EXCEPTION) << "The tcp client ip:" << server_address_ << " is illegal!";
   }
-
+  int result = evthread_use_pthreads();
+  if (result != 0) {
+    MS_LOG(EXCEPTION) << "Use event pthread failed!";
+  }
   if (event_base_ == nullptr) {
     event_base_ = event_base_new();
   }
@@ -182,19 +185,20 @@ void TcpClient::OnReadHandler(const void *buf, size_t num) {
 void TcpClient::SendHeartBeatCallback(evutil_socket_t, int16_t, void *arg) {
   MS_EXCEPTION_IF_NULL(arg);
   auto tcp_client = reinterpret_cast<TcpClient *>(arg);
-  MessageMeta meta;
-  meta.set_cmd(ClusterCommand::HEARTBEAT);
-  meta.set_node_id(tcp_client->NodeId());
-  CommMessage message;
-  *message.mutable_pb_meta() = {meta};
-  tcp_client->SendMessage(message);
-
-  struct event *ev;
-  struct timeval timeout {};
-  timeout.tv_sec = ClusterConfig::heartbeat_interval();
-  timeout.tv_usec = 0;
-  ev = evtimer_new(tcp_client->event_base_, SendHeartBeatCallback, arg);
-  evtimer_add(ev, &timeout);
+  tcp_client->on_timer_callback_(*tcp_client);
+//  MessageMeta meta;
+//  meta.set_cmd(ClusterCommand::HEARTBEAT);
+//  meta.set_node_id(tcp_client->NodeId());
+//  CommMessage message;
+//  *message.mutable_pb_meta() = {meta};
+//  tcp_client->SendMessage(message);
+//
+//  struct event *ev;
+//  struct timeval timeout {};
+//  timeout.tv_sec = ClusterConfig::heartbeat_interval();
+//  timeout.tv_usec = 0;
+//  ev = evtimer_new(tcp_client->event_base_, SendHeartBeatCallback, arg);
+//  evtimer_add(ev, &timeout);
 }
 
 void TcpClient::EventCallback(struct bufferevent *bev, std::int16_t events, void *ptr) {
@@ -265,11 +269,15 @@ void TcpClient::SendMessageWithTimer() {
   MS_EXCEPTION_IF_NULL(buffer_event_);
   struct event *ev = nullptr;
   struct timeval timeout {};
-  timeout.tv_sec = 1;
+  timeout.tv_sec = 3;
   timeout.tv_usec = 0;
-  ev = evtimer_new(event_base_, SendHeartBeatCallback, this);
+  ev = event_new(event_base_, -1, EV_PERSIST, SendHeartBeatCallback, this);
   MS_EXCEPTION_IF_NULL(ev);
   evtimer_add(ev, &timeout);
+}
+
+void TcpClient::set_timer_callback(const OnTimer &timer) {
+  on_timer_callback_ = timer;
 }
 
 const event_base &TcpClient::EventBase() { return *event_base_; }
