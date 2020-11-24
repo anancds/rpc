@@ -15,8 +15,8 @@
  */
 
 #include "ps/core/http_server.h"
-#include "ps/core/comm_util.h"
 #include "ps/core/http_message_handler.h"
+#include "ps/core/comm_util.h"
 
 #ifdef WIN32
 #include <WinSock2.h>
@@ -30,7 +30,6 @@
 #include <event2/http_compat.h>
 #include <event2/http_struct.h>
 #include <event2/listener.h>
-#include <event2/thread.h>
 #include <event2/util.h>
 
 #include <cstdio>
@@ -43,16 +42,14 @@ namespace mindspore {
 namespace ps {
 namespace core {
 
-HttpServer::~HttpServer() {
-  MS_LOG(INFO) << "stop---------!";
-  Stop();
-}
+HttpServer::~HttpServer() { Stop(); }
 
 bool HttpServer::InitServer() {
   if (!CommUtil::CheckIp(server_address_)) {
     MS_LOG(EXCEPTION) << "The http server ip:" << server_address_ << " is illegal!";
   }
-  evthread_use_pthreads();
+
+  is_stop_ = false;
   event_base_ = event_base_new();
   MS_EXCEPTION_IF_NULL(event_base_);
   event_http_ = evhttp_new(event_base_);
@@ -150,8 +147,12 @@ bool HttpServer::Start() {
 
 void HttpServer::Stop() {
   MS_LOG(INFO) << "Stop http server!";
+
   if (!is_stop_.load()) {
-    event_base_loopbreak(event_base_);
+    int ret = event_base_loopbreak(event_base_);
+    if (ret != 0) {
+      MS_LOG(EXCEPTION) << "event base loop break failed!";
+    }
     if (event_http_) {
       evhttp_free(event_http_);
       event_http_ = nullptr;

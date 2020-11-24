@@ -25,8 +25,8 @@ static void testGetHandler(std::shared_ptr<mindspore::ps::core::HttpMessageHandl
   std::string header_param = resp->GetHeadParam("headerKey");
   std::string post_param = resp->GetPostParam("postKey");
 
-  const unsigned char *data = nullptr;
-  const uint64_t len = resp->GetPostMsg(data);
+  unsigned char *data = nullptr;
+  const uint64_t len = resp->GetPostMsg(&data);
   char post_message[len + 1];
   memset_s(post_message, len + 1, 0, len + 1);
   if (memcpy_s(post_message, len, data, len) != 0) {

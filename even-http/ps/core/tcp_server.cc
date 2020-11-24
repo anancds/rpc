@@ -54,18 +54,6 @@ TcpServer *TcpConnection::GetServer() const { return const_cast<TcpServer *>(ser
 
 const evutil_socket_t &TcpConnection::GetFd() const { return fd_; }
 
-void TcpConnection::SetRole(const enum NodeRole &role) { role_ = role; }
-
-const enum NodeRole &TcpConnection::Role() const { return role_; }
-
-void TcpConnection::SetNodeHost(const std::string &node_host) { node_host_ = node_host; }
-
-const std::string &TcpConnection::NodeHost() const { return node_host_; }
-
-void TcpConnection::SetNodeId(const uint32_t &node_id) { node_id_ = node_id; }
-
-const uint32_t &TcpConnection::NodeId() const { return node_id_; }
-
 void TcpConnection::SendMessage(const CommMessage &message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
   uint32_t buf_size = message.ByteSizeLong();
@@ -86,7 +74,8 @@ TcpServer::TcpServer(const std::string &address, std::uint16_t port)
       signal_event_(nullptr),
       listener_(nullptr),
       server_address_(std::move(address)),
-      server_port_(port) {}
+      server_port_(port),
+      is_stop_(true) {}
 
 TcpServer::~TcpServer() { Stop(); }
 
@@ -97,7 +86,14 @@ void TcpServer::SetServerCallback(const OnConnected &client_conn, const OnDiscon
   this->client_accept_ = client_accept;
 }
 
+void TcpServer::set_timer_callback(const OnTimer &timer) { on_timer_callback_ = timer; }
+
 void TcpServer::Init() {
+  int result = evthread_use_pthreads();
+  if (result != 0) {
+    MS_LOG(EXCEPTION) << "Use event pthread failed!";
+  }
+
   base_ = event_base_new();
   MS_EXCEPTION_IF_NULL(base_);
   if (!CommUtil::CheckIp(server_address_)) {
@@ -138,18 +134,16 @@ void TcpServer::Init() {
 }
 
 void TcpServer::Start() {
-  std::thread event_base_thread([&]() {
-    std::unique_lock<std::recursive_mutex> lock(connection_mutex_);
-    MS_LOG(INFO) << "Start tcp server!";
-    MS_EXCEPTION_IF_NULL(base_);
-    int ret = event_base_dispatch(base_);
-    MSLOG_IF(INFO, ret == 0, NoExceptionType) << "Event base dispatch success!";
-    MSLOG_IF(mindspore::ERROR, ret == 1, NoExceptionType)
-      << "Event base dispatch failed with no events pending or active!";
-    MSLOG_IF(mindspore::ERROR, ret == -1, NoExceptionType) << "Event base dispatch failed with error occurred!";
-    MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base dispatch with unexpect error code!";
-  });
-  event_base_thread.detach();
+  std::unique_lock<std::recursive_mutex> lock(connection_mutex_);
+  MS_LOG(INFO) << "Start tcp server!";
+  MS_EXCEPTION_IF_NULL(base_);
+  is_stop_ = false;
+  int ret = event_base_dispatch(base_);
+  MSLOG_IF(INFO, ret == 0, NoExceptionType) << "Event base dispatch success!";
+  MSLOG_IF(mindspore::ERROR, ret == 1, NoExceptionType)
+    << "Event base dispatch failed with no events pending or active!";
+  MSLOG_IF(mindspore::ERROR, ret == -1, NoExceptionType) << "Event base dispatch failed with error occurred!";
+  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base dispatch with unexpect error code!";
 }
 
 void TcpServer::StartWithNoBlock() {
@@ -163,21 +157,42 @@ void TcpServer::StartWithNoBlock() {
   MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base loop with unexpect error code!";
 }
 
+void TcpServer::StartTimerOnlyOnce(const uint32_t &time) {
+  MS_EXCEPTION_IF_NULL(base_);
+  if (time == 0) {
+    MS_LOG(EXCEPTION) << "The time should not be 0!";
+  }
+  struct event *ev = nullptr;
+  struct timeval timeout {};
+  timeout.tv_sec = time;
+  timeout.tv_usec = 0;
+  ev = evtimer_new(base_, TimerCallback, this);
+  MS_EXCEPTION_IF_NULL(ev);
+  evtimer_add(ev, &timeout);
+}
+
 void TcpServer::Stop() {
   MS_LOG(INFO) << "Stop tcp server!";
-  if (signal_event_ != nullptr) {
-    event_free(signal_event_);
-    signal_event_ = nullptr;
-  }
+  if (!is_stop_.load()) {
+    int ret = event_base_loopbreak(base_);
+    if (ret != 0) {
+      MS_LOG(EXCEPTION) << "event base loop break failed!";
+    }
+    if (signal_event_ != nullptr) {
+      event_free(signal_event_);
+      signal_event_ = nullptr;
+    }
 
-  if (listener_ != nullptr) {
-    evconnlistener_free(listener_);
-    listener_ = nullptr;
-  }
+    if (listener_ != nullptr) {
+      evconnlistener_free(listener_);
+      listener_ = nullptr;
+    }
 
-  if (base_ != nullptr) {
-    event_base_free(base_);
-    base_ = nullptr;
+    if (base_ != nullptr) {
+      event_base_free(base_);
+      base_ = nullptr;
+    }
+    is_stop_ = true;
   }
 }
 
@@ -213,7 +228,10 @@ void TcpServer::ListenerCallback(struct evconnlistener *, evutil_socket_t fd, st
   struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
   if (!bev) {
     MS_LOG(ERROR) << "Error constructing buffer event!";
-    event_base_loopbreak(base);
+    int ret = event_base_loopbreak(base);
+    if (ret != 0) {
+      MS_LOG(EXCEPTION) << "event base loop break failed!";
+    }
     return;
   }
 
@@ -297,6 +315,14 @@ void TcpServer::EventCallback(struct bufferevent *bev, std::int16_t events, void
     }
   } else {
     MS_LOG(ERROR) << "Unhandled event!";
+  }
+}
+
+void TcpServer::TimerCallback(evutil_socket_t, int16_t, void *arg) {
+  MS_EXCEPTION_IF_NULL(arg);
+  auto tcp_server = reinterpret_cast<TcpServer *>(arg);
+  if (tcp_server->on_timer_callback_) {
+    tcp_server->on_timer_callback_(*tcp_server);
   }
 }
 

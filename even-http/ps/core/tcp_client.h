@@ -22,14 +22,18 @@
 #include <event2/event.h>
 #include <event2/bufferevent.h>
 #include <event2/thread.h>
+
 #include <functional>
 #include <string>
 #include <memory>
 #include <vector>
 #include <thread>
+#include <mutex>
+#include <atomic>
 
 #include "ps/core/cluster_config.h"
 #include "../../../build/even-http/ps/core/comm.pb.h"
+#include "../../../build/even-http/ps/core/ps.pb.h"
 
 namespace mindspore {
 namespace ps {
@@ -58,11 +62,9 @@ class TcpClient {
   void StartWithNoBlock();
   void SetMessageCallback(const OnMessage &cb);
   void SendMessage(const CommMessage &message) const;
-  void SendMessageWithTimer();
+  void StartTimer(const uint32_t &time);
   void set_timer_callback(const OnTimer &timer);
-  const event_base& EventBase();
-  void SetNodeId(const uint32_t &node_id);
-  const uint32_t &NodeId() const;
+  const event_base &eventbase();
 
  protected:
   static void SetTcpNoDelay(const evutil_socket_t &fd);
@@ -70,7 +72,7 @@ class TcpClient {
   static void ReadCallback(struct bufferevent *bev, void *ctx);
   static void EventCallback(struct bufferevent *bev, std::int16_t events, void *ptr);
   virtual void OnReadHandler(const void *buf, size_t num);
-  static void SendHeartBeatCallback(evutil_socket_t fd, int16_t event, void *arg);
+  static void TimerCallback(evutil_socket_t fd, int16_t event, void *arg);
 
  private:
   OnMessage message_callback_;
@@ -89,7 +91,7 @@ class TcpClient {
 
   std::string server_address_;
   std::uint16_t server_port_;
-  uint32_t node_id_;
+  std::atomic<bool> is_stop_;
 };
 
 }  // namespace core

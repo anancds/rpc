@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PS_COMM_HTTP_MESSAGE_HANDLER_H_
-#define MINDSPORE_CCSRC_PS_COMM_HTTP_MESSAGE_HANDLER_H_
+#ifndef MINDSPORE_CCSRC_PS_CORE_HTTP_MESSAGE_HANDLER_H_
+#define MINDSPORE_CCSRC_PS_CORE_HTTP_MESSAGE_HANDLER_H_
 
 #include <event2/buffer.h>
 #include <event2/event.h>
@@ -28,10 +28,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
+#include <string>
 #include <list>
 #include <map>
 #include <memory>
-#include <string>
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -104,4 +104,4 @@ class HttpMessageHandler {
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_PS_COMM_HTTP_MESSAGE_HANDLER_H_
+#endif  // MINDSPORE_CCSRC_PS_CORE_HTTP_MESSAGE_HANDLER_H_

@@ -23,9 +23,9 @@
 #include <memory>
 #include <vector>
 
+#include "utils/log_adapter.h"
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
-#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ps {

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef RPC_NODE_H
-#define RPC_NODE_H
+#ifndef MINDSPORE_CCSRC_PS_CORE_NODE_H_
+#define MINDSPORE_CCSRC_PS_CORE_NODE_H_
 
 #include <atomic>
 #include <cstdlib>
@@ -24,6 +24,10 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <thread>
+#include <map>
+#include <unordered_map>
+#include <functional>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
@@ -36,85 +40,38 @@ namespace mindspore {
 namespace ps {
 namespace core {
 
-constexpr uint32_t kSchedulerNodeId = 0;
-
 class Node {
  public:
-  Node() : node_id_(0), is_system_ready_(false), current_worker_rank_id_(-1), current_server_rank_id_(-1) {}
+  Node() : rank_id_(0), is_cluster_ready_(false), is_node_stop_(true) {}
   virtual ~Node() = default;
+
+  using OnNodeEventMessage = std::function<void(const NodeEvent &event)>;
 
   virtual void Start() = 0;
   virtual void Stop() = 0;
+  void set_callback(const OnNodeEventMessage &on_node_event_message);
 
-  uint32_t NodeId() const;
-  int RankId() const;
+  std::string node_id() const;
+  uint32_t rank_id() const;
 
  protected:
-  void Heartbeat(const std::shared_ptr<TcpClient> &client);
-  void ProcessHeartbeat();
-  void UpdateHeartbeat(const uint32_t &node_id, const timeval &time);
+  void Heartbeat(const std::shared_ptr<TcpClient> &client) const;
+  void ProcessHeartbeat(const CommMessage &message);
+  void UpdateHeartbeat(const std::string &node_id, const timeval &time);
 
-  uint32_t node_id_;
-  bool is_system_ready_;
-  std::atomic<int> current_worker_rank_id_;
-  std::atomic<int> current_server_rank_id_;
-  std::unordered_map<uint32_t, std::shared_ptr<TcpClient>> connected_nodes_;
-  std::unordered_map<uint32_t, std::string> server_node_ids_;
-  std::unordered_map<uint32_t, timeval> heartbeats_;
+  std::string node_id_;
+  uint32_t rank_id_;
+  NodeRole node_role_;
+  std::atomic<bool> is_cluster_ready_;
+  std::atomic<bool> is_node_stop_;
+
+  std::unordered_map<std::string, timeval> heartbeats_;
   std::mutex heartbeat_mutex_;
+  OnNodeEventMessage on_node_event_message_;
 };
 
-class ClientNode : public Node {
- public:
-  ClientNode() : client_to_scheduler_(nullptr) {}
-  ~ClientNode() override = default;
-  void Start() override;
-  void Stop() override;
-  void Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message);
-
- private:
-  void Register(const std::shared_ptr<TcpClient> &client, const NodeRole &role);
-  void ProcessRegister(const CommMessage &message);
-  void ProcessTerminal(const CommMessage &message);
-
-  std::shared_ptr<TcpClient> client_to_scheduler_;
-  std::unordered_map<int, const TcpClient &> clients_to_servers_;
-};
-
-class ServerNode : public Node {
- public:
-  ServerNode() : client_to_scheduler_(nullptr), server_(nullptr) {}
-  ~ServerNode() override = default;
-
-  void Start() override;
-  void Stop() override;
-
- private:
-  void Register(const std::shared_ptr<TcpClient> &client, const std::string &host, const uint32_t &port,
-                const NodeRole &role);
-  void ProcessRegister(const CommMessage &message);
-  void ProcessTerminal(const CommMessage &message);
-  std::shared_ptr<TcpClient> client_to_scheduler_;
-  std::shared_ptr<TcpServer> server_;
-};
-
-class SchedulerNode : public Node {
- public:
-  SchedulerNode() : server_(nullptr) {}
-  ~SchedulerNode() override = default;
-
-  void Start() override;
-  void Stop() override;
-
- private:
-  void HeartBeat(const TcpServer &server, const TcpConnection &conn);
-  void ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
-  void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
-  void Terminal(const TcpServer &server);
-  std::unique_ptr<TcpServer> server_;
-};
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
 
-#endif  // RPC_NODE_H
+#endif  // MINDSPORE_CCSRC_PS_CORE_NODE_H_

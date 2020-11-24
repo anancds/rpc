@@ -43,6 +43,8 @@
 #include <functional>
 #include <string>
 #include <utility>
+#include <random>
+#include <sstream>
 
 #include "utils/log_adapter.h"
 
@@ -50,14 +52,17 @@ namespace mindspore {
 namespace ps {
 namespace core {
 
+static std::random_device rd;
+static std::mt19937 gen(rd());
+static std::uniform_int_distribution<> dis(0, 15);
+static std::uniform_int_distribution<> dis2(8, 11);
+
 class CommUtil {
  public:
   static bool CheckIpWithRegex(const std::string &ip);
   static bool CheckIp(const std::string &ip);
   static void GetAvailableInterfaceAndIP(std::string *interface, std::string *ip);
-  static int WorkerRankToID(int rank);
-  static int ServerRankToID(int rank);
-  static int IDtoRank(int id);
+  static std::string GenerateUUID();
 };
 }  // namespace core
 }  // namespace ps

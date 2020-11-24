@@ -14,31 +14,16 @@
  * limitations under the License.
  */
 syntax = "proto3";
+package mindspore.ps.core;
+option optimize_for = LITE_RUNTIME;
 
 enum PSCommand {
   PUSH = 0;
+  PULL = 1;
 }
 
 message KVMessage {
+  PSCommand command = 1;
   repeated int32 keys = 2;
-  repeated int32 values = 3;
-}
-
-message PBHeartBeatMessage {
-  // the schema is: *.*.*.*:port
-  repeated string worker_host = 1;
-  // the schema is: *.*.*.*:port
-  repeated string server_host = 2;
-}
-
-message RegisterMessage {
-  int32 node_id = 1;
-  repeated RegisterMessageMeta register_message_meta = 2;
-}
-
-message RegisterMessageMeta {
-  // the server node id
-  int32 node_id = 1;
-  // the schema is: *.*.*.*:port
-  string server_host = 2;
+  repeated float values = 3;
 }

@@ -15,8 +15,10 @@ set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
 file(GLOB_RECURSE PROTO_FILES "protos/*.proto")
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
 
-set(HTTP_SRC comm_util.cc network_manager.cpp node.cpp node_manager.cpp scheduler_manager.cpp server_manager.cpp tcp_client.cc tcp_message_handler.cc tcp_server.cc worker_manager.cpp cluster_config.cc)
-set(HTTP_HEADER comm_util.h message.h network_manager.h node.h node_manager.h scheduler_manager.h server_manager.h tcp_client.h tcp_message_handler.h tcp_server.h worker_manager.h cluster_config.h)
+set(HTTP_SRC comm_util.cc network_manager.cpp node_manager.cpp scheduler_manager.cpp server_manager.cpp tcp_client.cc
+        tcp_message_handler.cc tcp_server.cc worker_manager.cpp cluster_config.cc node.cc scheduler_node.cc server_node.cc worker_node.cc)
+set(HTTP_HEADER comm_util.h message.h network_manager.h node.h node_manager.h scheduler_manager.h
+        server_manager.h tcp_client.h tcp_message_handler.h tcp_server.h worker_manager.h cluster_config.h scheduler_node.h server_node.h worker_node.h)
 
 add_executable(exampleold example_old.cpp http_message_handler.cc http_server.cc comm_util.h comm_util.cc)
 add_executable(exampletcp scheduler_example.cpp ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})

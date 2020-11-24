@@ -21,6 +21,8 @@
 #include <event2/bufferevent.h>
 #include <event2/event.h>
 #include <event2/listener.h>
+#include <event2/thread.h>
+
 #include <exception>
 #include <functional>
 #include <iostream>
@@ -30,9 +32,12 @@
 #include <string>
 #include <vector>
 #include <thread>
+#include <atomic>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
+#include "../../../build/even-http/ps/core/ps.pb.h"
 #include "ps/core/tcp_message_handler.h"
+#include "ps/core/cluster_config.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -43,7 +48,7 @@ class TcpServer;
 class TcpConnection {
  public:
   explicit TcpConnection(struct bufferevent *bev, const evutil_socket_t &fd, const TcpServer *server)
-      : buffer_event_(bev), fd_(fd), server_(server), node_id_(0) {}
+      : buffer_event_(bev), fd_(fd), server_(server) {}
   virtual ~TcpConnection() = default;
 
   virtual void InitConnection();
@@ -52,21 +57,12 @@ class TcpConnection {
   virtual void OnReadHandler(const void *buffer, size_t numBytes);
   TcpServer *GetServer() const;
   const evutil_socket_t &GetFd() const;
-  void SetRole(const enum NodeRole &role);
-  const NodeRole &Role() const;
-  void SetNodeHost(const std::string &node_host);
-  const std::string &NodeHost() const;
-  void SetNodeId(const uint32_t &node_id);
-  const uint32_t &NodeId() const;
 
  protected:
   struct bufferevent *buffer_event_;
   evutil_socket_t fd_;
   const TcpServer *server_;
   TcpMessageHandler tcp_message_handler_;
-  enum NodeRole role_;
-  std::string node_host_;
-  uint32_t node_id_;
 };
 
 using OnServerReceiveMessage =
@@ -77,22 +73,25 @@ class TcpServer {
   using OnConnected = std::function<void(const TcpServer &, const TcpConnection &)>;
   using OnDisconnected = std::function<void(const TcpServer &, const TcpConnection &)>;
   using OnAccepted = std::function<const TcpConnection *(const TcpServer &)>;
+  using OnTimer = std::function<void(const TcpServer &)>;
 
   explicit TcpServer(const std::string &address, std::uint16_t port);
   virtual ~TcpServer();
 
   void SetServerCallback(const OnConnected &client_conn, const OnDisconnected &client_disconn,
                          const OnAccepted &client_accept);
+  void set_timer_callback(const OnTimer &timer);
   void Init();
   void Start();
   void StartWithNoBlock();
+  void StartTimerOnlyOnce(const uint32_t &time);
   void Stop();
   void SendToAllClients(const char *data, size_t len);
   void AddConnection(const evutil_socket_t &fd, const TcpConnection *connection);
   void RemoveConnection(const evutil_socket_t &fd);
   OnServerReceiveMessage GetServerReceive() const;
   void SetMessageCallback(const OnServerReceiveMessage &cb);
-  static void SendMessage(const TcpConnection &conn, const CommMessage &message);
+  void SendMessage(const TcpConnection &conn, const CommMessage &message);
   void SendMessage(const CommMessage &message);
   uint16_t BoundPort() const;
   int ConnectionNum() const;
@@ -104,6 +103,7 @@ class TcpServer {
   static void SignalCallback(evutil_socket_t sig, std::int16_t events, void *server);
   static void ReadCallback(struct bufferevent *, void *connection);
   static void EventCallback(struct bufferevent *, std::int16_t events, void *server);
+  static void TimerCallback(evutil_socket_t fd, int16_t event, void *arg);
   virtual TcpConnection *onCreateConnection(struct bufferevent *bev, const evutil_socket_t &fd);
 
   struct event_base *base_;
@@ -111,6 +111,7 @@ class TcpServer {
   struct evconnlistener *listener_;
   std::string server_address_;
   std::uint16_t server_port_;
+  std::atomic<bool> is_stop_;
 
   std::map<evutil_socket_t, const TcpConnection *> connections_;
   OnConnected client_connection_;
@@ -118,6 +119,7 @@ class TcpServer {
   OnAccepted client_accept_;
   std::recursive_mutex connection_mutex_;
   OnServerReceiveMessage message_callback_;
+  OnTimer on_timer_callback_;
 };
 
 }  // namespace core

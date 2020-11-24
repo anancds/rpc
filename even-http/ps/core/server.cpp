@@ -14,7 +14,7 @@ int main(int /*argc*/, char ** /*argv*/) {
     KVMessage kv_message;
     kv_message.ParseFromString(message.data());
     std::cout << kv_message.keys_size() << std::endl;
-    server.SendMessage(conn, message);
+    const_cast<TcpServer&>(server).SendMessage(conn, message);
   });
   server_->Init();
   server_->Start();

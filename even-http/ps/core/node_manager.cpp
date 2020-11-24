@@ -23,7 +23,7 @@ void NodeManager::StartServer() {
 void NodeManager::StopServer() { node_->Stop(); }
 
 void NodeManager::StartClient() {
-  node_ = std::make_unique<ClientNode>();
+  node_ = std::make_unique<WorkerNode>();
   node_->Start();
 }
 
@@ -40,7 +40,6 @@ const std::vector<int> &NodeManager::GetNodeIDs(int node_id) const {
 
 int NodeManager::IDtoRank(int id) { return std::max((id - 8) / 2, 0); }
 
-int NodeManager::my_rank() const { return IDtoRank(node_->NodeId()); }
 
 }  // namespace core
 }  // namespace ps

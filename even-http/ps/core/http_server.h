@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PS_COMM_HTTP_SERVER_H_
-#define MINDSPORE_CCSRC_PS_COMM_HTTP_SERVER_H_
+#ifndef MINDSPORE_CCSRC_PS_CORE_HTTP_SERVER_H_
+#define MINDSPORE_CCSRC_PS_CORE_HTTP_SERVER_H_
 
 #include "ps/core/http_message_handler.h"
 
@@ -61,7 +61,7 @@ class HttpServer {
         event_base_(nullptr),
         event_http_(nullptr),
         is_init_(false),
-        is_stop_(false) {}
+        is_stop_(true) {}
 
   ~HttpServer();
 
@@ -97,4 +97,4 @@ class HttpServer {
 }  // namespace ps
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PS_COMM_HTTP_SERVER_H_
+#endif  // MINDSPORE_CCSRC_PS_CORE_HTTP_SERVER_H_

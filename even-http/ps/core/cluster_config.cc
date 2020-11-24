@@ -27,6 +27,8 @@ uint32_t ClusterConfig::server_num_ = 0;
 uint32_t ClusterConfig::heartbeat_interval_ = kHeartbeatInterval;
 std::unique_ptr<std::string> ClusterConfig::scheduler_host_ = nullptr;
 uint16_t ClusterConfig::scheduler_port_ = 0;
+uint32_t ClusterConfig::heartbeat_timeout_ = 30;
+uint32_t ClusterConfig::cluster_available_timeout_ = 300;
 
 void ClusterConfig::Init(const uint32_t &worker_num, const uint32_t &server_num,
                          std::unique_ptr<std::string> scheduler_host, const uint16_t &scheduler_port) {
@@ -52,6 +54,18 @@ void ClusterConfig::set_heartbeat_interval(const uint32_t &heartbeat_interval) {
 std::string ClusterConfig::scheduler_host() { return *scheduler_host_.get(); }
 
 uint16_t ClusterConfig::scheduler_port() { return scheduler_port_; }
+
+uint32_t ClusterConfig::heartbeat_timeout() { return heartbeat_timeout_; }
+
+void ClusterConfig::set_heartbeat_timeout(const uint32_t &heartbeat_timeout) {
+  heartbeat_interval_ = heartbeat_timeout;
+}
+
+uint32_t ClusterConfig::cluster_available_timeout() { return cluster_available_timeout_; }
+
+void ClusterConfig::set_cluster_available_timeout(const uint32_t &cluster_available_timeout) {
+  cluster_available_timeout_ = cluster_available_timeout;
+}
 
 }  // namespace core
 }  // namespace ps

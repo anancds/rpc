@@ -14,6 +14,9 @@
 
 #include "network_manager.h"
 #include "ps/core/node.h"
+#include "ps/core/scheduler_node.h"
+#include "ps/core/worker_node.h"
+#include "ps/core/server_node.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 
