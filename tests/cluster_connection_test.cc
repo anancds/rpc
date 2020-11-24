@@ -16,6 +16,9 @@
 
 #include "common_test.h"
 #include "ps/core/node.h"
+#include "ps/core/scheduler_node.h"
+#include "ps/core/worker_node.h"
+#include "ps/core/server_node.h"
 #include "ps/core/tcp_client.h"
 #include "ps/core/tcp_server.h"
 
@@ -52,7 +55,7 @@ TEST_F(TestClusterConnection, StartServerAndClient) {
   server_thread_ = std::make_unique<std::thread>([&]() { server_node_->Start(); });
   server_thread_->detach();
 
-  client_node_ = std::make_unique<ClientNode>();
+  client_node_ = std::make_unique<WorkerNode>();
   std::unique_ptr<std::thread> client_server_thread_(nullptr);
   client_server_thread_ = std::make_unique<std::thread>([&]() { client_node_->Start(); });
   client_server_thread_->detach();
