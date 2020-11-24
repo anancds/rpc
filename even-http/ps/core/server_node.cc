@@ -52,20 +52,25 @@ void ServerNode::Start() {
   });
 
   is_node_stop_ = false;
+  node_id_ = CommUtil::GenerateUUID();
+  node_role_ = NodeRole::SERVER;
   client_to_scheduler_->Init();
+  MS_LOG(INFO) << "The node role:" << CommUtil::NodeRoleToString(node_role_) << " is generate uuid is:" << node_id_;
 
   client_to_scheduler_thread_ = std::make_unique<std::thread>([&]() {
     MS_LOG(INFO) << "The server node start a tcp client!";
     client_to_scheduler_->Start();
   });
+  client_to_scheduler_thread_->detach();
 
   Register(client_to_scheduler_, server_ip, server_->BoundPort(), NodeRole::SERVER);
+
+  Heartbeat(client_to_scheduler_);
 
   while (!is_cluster_ready_.load()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   MS_LOG(INFO) << "The cluster is ready to use!";
-  Heartbeat(client_to_scheduler_);
 }
 
 void ServerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message) {

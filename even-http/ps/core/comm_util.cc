@@ -17,11 +17,11 @@
 #include "ps/core/comm_util.h"
 
 #include <arpa/inet.h>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
-#include <algorithm>
 #include <regex>
 
 namespace mindspore {
@@ -103,6 +103,19 @@ std::string CommUtil::GenerateUUID() {
     ss << dis(gen);
   }
   return ss.str();
+}
+
+std::string CommUtil::NodeRoleToString(const NodeRole &role) {
+  switch (role) {
+    case NodeRole::SCHEDULER:
+      return "SCHEDULER";
+    case NodeRole::SERVER:
+      return "SERVER";
+    case NodeRole::WORKER:
+      return "WORKER";
+    default:
+      MS_LOG(EXCEPTION) << "The node role:" << role << " is illegal!";
+  }
 }
 
 }  // namespace core

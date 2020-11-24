@@ -47,6 +47,8 @@
 #include <sstream>
 
 #include "utils/log_adapter.h"
+#include "../../../build/even-http/ps/core/comm.pb.h"
+#include "../../../build/even-http/ps/core/ps.pb.h"
 
 namespace mindspore {
 namespace ps {
@@ -63,6 +65,7 @@ class CommUtil {
   static bool CheckIp(const std::string &ip);
   static void GetAvailableInterfaceAndIP(std::string *interface, std::string *ip);
   static std::string GenerateUUID();
+  static std::string NodeRoleToString(const NodeRole &role);
 };
 }  // namespace core
 }  // namespace ps

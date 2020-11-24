@@ -57,7 +57,7 @@ class Node {
  protected:
   void Heartbeat(const std::shared_ptr<TcpClient> &client) const;
   void ProcessHeartbeat(const CommMessage &message);
-  void UpdateHeartbeat(const std::string &node_id, const timeval &time);
+  void UpdateHeartbeat(const std::string &node_id, const NodeRole &role, const uint32_t rank_id, const timeval &time);
 
   std::string node_id_;
   uint32_t rank_id_;

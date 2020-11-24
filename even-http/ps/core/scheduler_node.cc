@@ -20,6 +20,8 @@ namespace mindspore {
 namespace ps {
 namespace core {
 
+SchedulerNode::~SchedulerNode() { Stop(); }
+
 void SchedulerNode::Start() {
   MS_LOG(INFO) << "Start scheduler node!";
   std::string scheduler_host = ClusterConfig::scheduler_host();
@@ -42,11 +44,14 @@ void SchedulerNode::Start() {
   is_node_stop_ = false;
   server_->Init();
   node_id_ = CommUtil::GenerateUUID();
+  node_role_ = NodeRole::SCHEDULER;
+  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_role_) << ", the node id is:" << node_id_;
 
   scheduler_thread_ = std::make_unique<std::thread>([&]() {
     MS_LOG(INFO) << "The scheduler node start a tcp server!";
     server_->Start();
   });
+  scheduler_thread_->detach();
 
   StartClusterAvailableTimer();
 
@@ -68,14 +73,14 @@ void SchedulerNode::HeartBeat(const TcpServer &server, const TcpConnection &conn
 
   CommMessage comm_message;
   *comm_message.mutable_pb_meta() = {message_meta};
-  const_cast<TcpServer&>(server).SendMessage(conn, comm_message);
+  const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
 }
 
 void SchedulerNode::ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   const MessageMeta &message_meta = message.pb_meta();
   struct timeval current_time {};
   (void)gettimeofday(&current_time, nullptr);
-  UpdateHeartbeat(message_meta.node_id(), current_time);
+  UpdateHeartbeat(message_meta.node_id(), message.pb_meta().role(), message.pb_meta().rank_id(), current_time);
 
   HeartBeat(server, conn);
 
@@ -107,7 +112,6 @@ void SchedulerNode::RegisterResponse(const TcpServer &server, const TcpConnectio
                                      const std::string &node_id, bool is_cluster_ready) {
   struct timeval current_time {};
   (void)gettimeofday(&current_time, nullptr);
-  UpdateHeartbeat(node_id, current_time);
 
   MessageMeta message_meta;
   message_meta.set_cmd(ClusterCommand::REGISTER);
@@ -138,10 +142,10 @@ void SchedulerNode::RegisterResponse(const TcpServer &server, const TcpConnectio
     *register_message.mutable_servers_meta() = {servers_meta_list.begin(), servers_meta_list.end()};
 
     comm_message.set_data(register_message.SerializeAsString());
-    const_cast<TcpServer&>(server).SendMessage(comm_message);
+    const_cast<TcpServer &>(server).SendMessage(comm_message);
   } else {
     comm_message.set_data(register_message.SerializeAsString());
-    const_cast<TcpServer&>(server).SendMessage(conn, comm_message);
+    const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
   }
 }
 
@@ -208,7 +212,10 @@ void SchedulerNode::Stop() {
   if (!is_node_stop_) {
     is_node_stop_ = true;
     server_->Stop();
-    scheduler_thread_->join();
+    if (scheduler_thread_->joinable()) {
+      scheduler_thread_->join();
+    }
+    is_cluster_ready_ = true;
   }
 }
 

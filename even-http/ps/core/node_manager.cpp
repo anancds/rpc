@@ -10,7 +10,15 @@ namespace core {
 
 void NodeManager::StartScheduler() {
   node_ = std::make_unique<SchedulerNode>();
+  node_->set_callback([&](const NodeEvent &event){
+    if (event == NodeEvent::CLUSTER_TIMEOUT) {
+      node_->Stop();
+    }
+  });
   node_->Start();
+//  while (true) {
+//    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+//  }
 }
 
 void NodeManager::StopScheduler() { node_->Stop(); }

@@ -48,11 +48,13 @@ void WorkerNode::Start() {
   node_id_ = CommUtil::GenerateUUID();
   node_role_ = NodeRole::WORKER;
   client_to_scheduler_->Init();
+  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_role_) << ", the node id is:" << node_id_;
 
   worker_thread_ = std::make_unique<std::thread>([&]() {
     MS_LOG(INFO) << "The worker node start a tcp client!";
     client_to_scheduler_->Start();
   });
+  worker_thread_->detach();
 
   Register(client_to_scheduler_, NodeRole::WORKER);
 

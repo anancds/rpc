@@ -21,8 +21,8 @@ namespace ps {
 namespace core {
 
 void Node::Heartbeat(const std::shared_ptr<TcpClient> &client) const {
-  MS_LOG(INFO) << "The node role: " << node_role_ << ", the node id:" << node_id_ << ", the node rank id:" << rank_id_
-               << " begin send heartbeat to the scheduler!";
+  MS_LOG(INFO) << "The node role: " << CommUtil::NodeRoleToString(node_role_) << ", the node id:" << node_id_
+               << ", the node rank id:" << rank_id_ << " begin send heartbeat to the scheduler!";
   if (on_node_event_message_) {
     on_node_event_message_(NodeEvent::HEARTBEAT_START);
   }
@@ -31,6 +31,8 @@ void Node::Heartbeat(const std::shared_ptr<TcpClient> &client) const {
     MessageMeta meta;
     meta.set_cmd(ClusterCommand::HEARTBEAT);
     meta.set_node_id(node_id_);
+    meta.set_rank_id(rank_id_);
+    meta.set_role(node_role_);
     CommMessage message;
     *message.mutable_pb_meta() = {meta};
     client.SendMessage(message);
@@ -43,15 +45,16 @@ void Node::ProcessHeartbeat(const CommMessage &message) {
   register_message.ParseFromString(message.data());
   struct timeval current_time {};
   (void)gettimeofday(&current_time, nullptr);
-  UpdateHeartbeat(register_message.node_id(), current_time);
+  UpdateHeartbeat(message.pb_meta().node_id(), message.pb_meta().role(), message.pb_meta().rank_id(), current_time);
 }
 
-void Node::UpdateHeartbeat(const std::string &node_id, const timeval &time) {
+void Node::UpdateHeartbeat(const std::string &node_id, const NodeRole &role, const uint32_t rank_id,
+                           const timeval &time) {
   std::lock_guard<std::mutex> lock(heartbeat_mutex_);
 
   heartbeats_[node_id] = time;
-  MS_LOG(INFO) << "The node role: " << node_role_ << ", the node id:" << node_id_ << ", the node rank id:" << rank_id_
-               << " the current time is: " << time.tv_sec;
+  MS_LOG(INFO) << "The node role: " << CommUtil::NodeRoleToString(role) << ", the node id:" << node_id
+               << ", the node rank id:" << rank_id << " the current time is: " << time.tv_sec;
 }
 
 std::string Node::node_id() const { return node_id_; }

@@ -56,7 +56,7 @@ message MessageMeta {
   // Is the entire system available
   bool is_cluster_ready = 6;
   // the role of the node: worker,server,scheduler
-  int32 role = 7;
+  NodeRole role = 7;
   // the current Node unique id:0、1、2...
   string node_id = 8;
   // the current Node rank id,the worker node range is:[0,numOfWorker-1], the server node range is:[0, numOfServer-1]

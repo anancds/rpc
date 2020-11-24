@@ -45,7 +45,7 @@ class SchedulerNode : public Node {
  public:
   SchedulerNode()
       : server_(nullptr), current_worker_rank_id_(-1), current_server_rank_id_(-1), scheduler_thread_(nullptr) {}
-  ~SchedulerNode() override = default;
+  ~SchedulerNode() override;
 
   void Start() override;
   void Stop() override;
