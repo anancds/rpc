@@ -24,14 +24,22 @@ enum ClusterCommand {
   REGISTER = 1;
   ACK = 2;
   HEARTBEAT = 3;
-  FETCH_WORKERS = 4;
-  FETCH_SERVERS = 5;
+  DATA = 4;
 }
 
 enum NodeRole {
   SERVER = 0;
   WORKER = 1;
   SCHEDULER = 2;
+}
+
+enum NodeEvent {
+  FINALIZE = 0;
+  CLUSTER_TIMEOUT = 1;
+  HEARTBEAT_START = 2;
+  REGISTER_SUCCESS = 3;
+  CLUSTER_READY = 4;
+  TERMINATE_READY = 5;
 }
 
 message MessageMeta {
@@ -42,17 +50,33 @@ message MessageMeta {
   // the command of this message,for example: register、heartbeat、data
   int32 cmd = 3;
   // the timestamp of this message
-  int32 timestamp = 4;
+  uint64 timestamp = 4;
   // data type of message
   repeated int32 data_type = 5 [packed = true];
   // Is the entire system available
-  bool is_system_ready = 6;
+  bool is_cluster_ready = 6;
   // the role of the node: worker,server,scheduler
   int32 role = 7;
-  // the current Node unique id
-  int32 node_id = 8;
+  // the current Node unique id:0、1、2...
+  string node_id = 8;
+  // the current Node rank id,the worker node range is:[0,numOfWorker-1], the server node range is:[0, numOfServer-1]
+  int32 rank_id = 9;
 }
 
+message RegisterMessage {
+  string node_id = 1;
+  int32 rank_id = 2;
+  repeated ServersMeta servers_meta = 3;
+}
+
+message ServersMeta {
+  // the server node id
+  string node_id = 1;
+  // the server rank id
+  int32 rank_id = 2;
+  // the schema is: *.*.*.*:port
+  string server_host = 3;
+}
 
 message CommMessage {
   MessageMeta pb_meta = 1;
