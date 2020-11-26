@@ -51,8 +51,11 @@ class ServerNode : public Node {
   void Start() override;
   void Stop() override;
 
+  using RequestHandler = std::function<void(const TcpServer &server, const TcpConnection &conn, const CommMessage &message)>;
+
   void Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message);
-  void set_handler(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void set_handler(const RequestHandler &handler);
+  void response(const CommMessage &message);
 
  private:
   void Register(const std::shared_ptr<TcpClient> &client, const std::string &host, const uint32_t &port,
@@ -70,6 +73,7 @@ class ServerNode : public Node {
   // rank_id->tcpclient
   std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
   std::mutex client_mutex_;
+  RequestHandler request_handler_;
 };
 }  // namespace core
 }  // namespace ps

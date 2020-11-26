@@ -19,14 +19,14 @@
 
 #include <unistd.h>
 #ifdef _MSC_VER
-#include <iphlpapi.h>
 #include <tchar.h>
-#include <windows.h>
 #include <winsock2.h>
+#include <windows.h>
+#include <iphlpapi.h>
 #else
+#include <net/if.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
-#include <net/if.h>
 #include <netinet/in.h>
 #endif
 

@@ -67,7 +67,7 @@ class WorkerNode : public Node {
   std::unique_ptr<std::thread> worker_thread_;
   std::atomic_uint64_t timestamp_;
   // rank_id-><node_id, ip:port>
-  std::unordered_map<int, std::pair<std::string, std::string>> server_node_rank_ids_;
+  std::unordered_map<int, std::pair<std::string, std::string>> server_rank_ids_;
   // rank_id->tcpclient
   std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
   std::mutex client_mutex_;

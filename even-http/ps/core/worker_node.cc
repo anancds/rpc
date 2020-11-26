@@ -19,7 +19,17 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-WorkerNode::~WorkerNode() { Stop(); }
+WorkerNode::~WorkerNode() {
+  MS_LOG(INFO) << "Stop worker node!";
+  if (!is_node_stop_.load()) {
+    client_to_scheduler_->Stop();
+    if (worker_thread_->joinable()) {
+      worker_thread_->join();
+    }
+    is_node_stop_ = true;
+    test_ = false;
+  }
+}
 void WorkerNode::Start() {
   MS_LOG(INFO) << "Start worker node!";
   std::string scheduler_host = ClusterConfig::scheduler_host();
@@ -27,16 +37,16 @@ void WorkerNode::Start() {
   client_to_scheduler_ = std::make_shared<TcpClient>(scheduler_host, scheduler_port);
   client_to_scheduler_->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
     switch (message.pb_meta().cmd()) {
-      case ClusterCommand::HEARTBEAT:
+      case NodeCommand::HEARTBEAT:
         ProcessHeartbeat(message);
         break;
-      case ClusterCommand::TERMINATE:
+      case NodeCommand::TERMINATE:
         ProcessTerminate(message);
         break;
-      case ClusterCommand::REGISTER:
+      case NodeCommand::REGISTER:
         ProcessRegister(message);
         break;
-      case ClusterCommand::SEND_DATA:
+      case NodeCommand::SEND_DATA:
         ProcessData(message);
         break;
       default:

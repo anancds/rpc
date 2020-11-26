@@ -17,11 +17,11 @@
 #include "ps/core/comm_util.h"
 
 #include <arpa/inet.h>
-#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
+#include <algorithm>
 #include <regex>
 
 namespace mindspore {
@@ -31,6 +31,7 @@ std::random_device CommUtil::rd;
 std::mt19937 CommUtil::gen(rd());
 std::uniform_int_distribution<> CommUtil::dis = std::uniform_int_distribution<>{0, 15};
 std::uniform_int_distribution<> CommUtil::dis2 = std::uniform_int_distribution<>{8, 11};
+
 bool CommUtil::CheckIpWithRegex(const std::string &ip) {
   std::regex pattern("((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)");
   std::smatch res;

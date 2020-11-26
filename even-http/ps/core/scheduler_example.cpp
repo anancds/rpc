@@ -10,6 +10,7 @@
 #include "message.h"
 #include "ps/core/node_manager.h"
 #include "tcp_server.h"
+#include "ps/core/node_info.h"
 
 using namespace mindspore::ps::core;
 
@@ -18,6 +19,12 @@ static void StartServer() {
   NodeManager::Get()->StartScheduler();
 
 }
+
+
+//enum NodeEvent {
+//  NODE_TIMEOUT = 0;
+//}
+//
 
 
 int main(int /*argc*/, char ** /*argv*/) {

@@ -86,8 +86,9 @@ void SchedulerNode::ProcessHeartBeat(const TcpServer &server, const TcpConnectio
 
   for (auto it = heartbeats_.begin(); it != heartbeats_.end(); ++it) {
     if (it->second.tv_sec + ClusterConfig::heartbeat_timeout() < current_time.tv_sec) {
-      MS_LOG(ERROR) << "There is a node failed, should terminal the whole cluster!";
+      MS_LOG(ERROR) << "There is a node failed, should terminate the whole cluster!";
       Terminate(server);
+      break;
     }
   }
 }

@@ -34,6 +34,7 @@
 #include "ps/core/cluster_config.h"
 #include "ps/core/tcp_client.h"
 #include "ps/core/tcp_server.h"
+#include "ps/core/node_info.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -57,11 +58,12 @@ class Node {
  protected:
   void Heartbeat(const std::shared_ptr<TcpClient> &client) const;
   void ProcessHeartbeat(const CommMessage &message);
-  void UpdateHeartbeat(const std::string &node_id, const NodeRole &role, const uint32_t rank_id, const timeval &time);
+  void UpdateHeartbeat(const std::string &node_id, const NodeRole &role, const uint32_t &rank_id, const timeval &time);
 
   std::string node_id_;
   uint32_t rank_id_;
   NodeRole node_role_;
+  NodeInfo
   std::atomic<bool> is_cluster_ready_;
   std::atomic<bool> is_node_stop_;
   std::atomic<bool> test_{true};

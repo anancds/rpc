@@ -28,11 +28,6 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-
-constexpr uint32_t kHeartbeatInterval = 3;
-constexpr uint32_t kHeartbeatTimeout = 30;
-constexpr uint32_t kClusterAvailableTimeout = 300;
-
 class ClusterConfig {
  public:
   static void Init(const uint32_t &worker_num, const uint32_t &server_num, std::unique_ptr<std::string> scheduler_host,

@@ -19,6 +19,7 @@ namespace mindspore {
 namespace ps {
 namespace core {
 ServerNode::~ServerNode() { Stop(); }
+
 void ServerNode::Start() {
   MS_LOG(INFO) << "Start server node!";
   std::string interface;
@@ -71,10 +72,12 @@ void ServerNode::Start() {
   while (!is_cluster_ready_.load()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
+
+  wait()
   MS_LOG(INFO) << "The cluster is ready to use!";
-  while (test_.load()) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
+//  while (test_.load()) {
+//    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+//  }
 }
 
 void ServerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message) {
@@ -99,6 +102,10 @@ void ServerNode::Register(const std::shared_ptr<TcpClient> &client, const std::s
   message_meta.set_node_id(node_id_);
   *comm_message.mutable_pb_meta() = {message_meta};
   client->SendMessage(comm_message);
+}
+
+void ServerNode::set_handler(const RequestHandler &handler) {
+  request_handler_ = handler;
 }
 
 void ServerNode::ProcessRegister(const CommMessage &message) {

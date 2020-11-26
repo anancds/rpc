@@ -48,7 +48,7 @@ void Node::ProcessHeartbeat(const CommMessage &message) {
   UpdateHeartbeat(message.pb_meta().node_id(), message.pb_meta().role(), message.pb_meta().rank_id(), current_time);
 }
 
-void Node::UpdateHeartbeat(const std::string &node_id, const NodeRole &role, const uint32_t rank_id,
+void Node::UpdateHeartbeat(const std::string &node_id, const NodeRole &role, const uint32_t &rank_id,
                            const timeval &time) {
   std::lock_guard<std::mutex> lock(heartbeat_mutex_);
 
