@@ -56,7 +56,7 @@ class SchedulerNode : public Node {
   void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   void RegisterResponse(const TcpServer &server, const TcpConnection &conn, const int &rank_id,
                         const std::string &node_id, bool is_cluster_ready);
-  void Terminal(const TcpServer &server);
+  void Terminate(const TcpServer &server);
   void StartClusterAvailableTimer();
   int AssignRankId(const CommMessage &message);
 

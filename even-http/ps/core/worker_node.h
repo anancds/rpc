@@ -45,10 +45,11 @@ namespace core {
 class WorkerNode : public Node {
  public:
   WorkerNode() : client_to_scheduler_(nullptr), worker_thread_(nullptr), timestamp_(0) {}
-  ~WorkerNode() override = default;
+  ~WorkerNode() override;
 
   void Start() override;
   void Stop() override;
+  void Finish();
 
   void Send(const enum NodeRole &node_role, uint32_t rank_id, CommMessage &message);
   void Wait(uint64_t timestamp);
@@ -57,7 +58,7 @@ class WorkerNode : public Node {
  private:
   void Register(const std::shared_ptr<TcpClient> &client, const NodeRole &role);
   void ProcessRegister(const CommMessage &message);
-  void ProcessTerminal(const CommMessage &message);
+  void ProcessTerminate(const CommMessage &message);
   void ProcessData(const CommMessage &message);
   const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
   uint64_t AssignTimestamp(const uint32_t &server_sent_num);

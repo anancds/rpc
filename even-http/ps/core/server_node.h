@@ -46,7 +46,7 @@ class ServerNode : public Node {
         server_(nullptr),
         client_to_scheduler_thread_(nullptr),
         server_thread_(nullptr) {}
-  ~ServerNode() override = default;
+  ~ServerNode() override;
 
   void Start() override;
   void Stop() override;

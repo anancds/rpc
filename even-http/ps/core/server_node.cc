@@ -18,7 +18,7 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-
+ServerNode::~ServerNode() { Stop(); }
 void ServerNode::Start() {
   MS_LOG(INFO) << "Start server node!";
   std::string interface;
@@ -31,6 +31,7 @@ void ServerNode::Start() {
     MS_LOG(INFO) << "The server node start a tcp server!";
     server_->Start();
   });
+  server_thread_->detach();
 
   std::string scheduler_host = ClusterConfig::scheduler_host();
   uint16_t scheduler_port = ClusterConfig::scheduler_port();
@@ -71,6 +72,9 @@ void ServerNode::Start() {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   MS_LOG(INFO) << "The cluster is ready to use!";
+  while (test_.load()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
 }
 
 void ServerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message) {
@@ -100,7 +104,7 @@ void ServerNode::Register(const std::shared_ptr<TcpClient> &client, const std::s
 void ServerNode::ProcessRegister(const CommMessage &message) {
   RegisterMessage register_message;
   register_message.ParseFromString(message.data());
-  if (register_message.node_id().compare(node_id_)) {
+  if (register_message.node_id() == node_id_) {
     rank_id_ = register_message.rank_id();
     if (on_node_event_message_) {
       on_node_event_message_(NodeEvent::REGISTER_SUCCESS);
@@ -142,7 +146,7 @@ const std::shared_ptr<TcpClient> &ServerNode::GetOrCreateTcpClient(const int &ra
       MS_LOG(EXCEPTION) << "Server node Fetch servers failed!";
     }
     std::string host_and_port = server_node_rank_ids_[rank_id].second;
-    int index = host_and_port.find(":");
+    int index = host_and_port.find(':');
     std::string host = host_and_port.substr(0, index);
     uint16_t port = std::strtol(host_and_port.substr(index + 1, host_and_port.size()).c_str(), nullptr, 10);
     auto client = std::make_shared<TcpClient>(host, port);
@@ -157,9 +161,14 @@ void ServerNode::Stop() {
     server_->Stop();
     client_to_scheduler_->Stop();
     client_to_scheduler_->StopEventBase();
-    server_thread_->join();
-    client_to_scheduler_thread_->join();
+    if (server_thread_->joinable()) {
+      server_thread_->join();
+    }
+    if (client_to_scheduler_thread_->joinable()) {
+      client_to_scheduler_thread_->join();
+    }
     is_node_stop_ = true;
+    test_ = false;
   }
 }
 }  // namespace core

@@ -64,6 +64,7 @@ class Node {
   NodeRole node_role_;
   std::atomic<bool> is_cluster_ready_;
   std::atomic<bool> is_node_stop_;
+  std::atomic<bool> test_{true};
 
   std::unordered_map<std::string, timeval> heartbeats_;
   std::mutex heartbeat_mutex_;

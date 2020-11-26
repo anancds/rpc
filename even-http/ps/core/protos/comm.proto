@@ -24,7 +24,7 @@ enum ClusterCommand {
   REGISTER = 1;
   ACK = 2;
   HEARTBEAT = 3;
-  DATA = 4;
+  SEND_DATA = 4;
 }
 
 enum NodeRole {
@@ -49,8 +49,8 @@ message MessageMeta {
   int32 port = 2;
   // the command of this message,for example: register、heartbeat、data
   int32 cmd = 3;
-  // the timestamp of this message
-  uint64 timestamp = 4;
+  // the request id of this message
+  uint64 request_id = 4;
   // data type of message
   repeated int32 data_type = 5 [packed = true];
   // Is the entire system available

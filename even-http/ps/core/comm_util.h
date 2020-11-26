@@ -19,14 +19,14 @@
 
 #include <unistd.h>
 #ifdef _MSC_VER
-#include <tchar.h>
-#include <winsock2.h>
-#include <windows.h>
 #include <iphlpapi.h>
+#include <tchar.h>
+#include <windows.h>
+#include <winsock2.h>
 #else
-#include <net/if.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
+#include <net/if.h>
 #include <netinet/in.h>
 #endif
 
@@ -41,24 +41,18 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
-#include <string>
-#include <utility>
 #include <random>
 #include <sstream>
+#include <string>
+#include <utility>
 
-#include "utils/log_adapter.h"
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
-
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_int_distribution<> dis(0, 15);
-static std::uniform_int_distribution<> dis2(8, 11);
-
 class CommUtil {
  public:
   static bool CheckIpWithRegex(const std::string &ip);
@@ -66,6 +60,12 @@ class CommUtil {
   static void GetAvailableInterfaceAndIP(std::string *interface, std::string *ip);
   static std::string GenerateUUID();
   static std::string NodeRoleToString(const NodeRole &role);
+
+ private:
+  static std::random_device rd;
+  static std::mt19937 gen;
+  static std::uniform_int_distribution<> dis;
+  static std::uniform_int_distribution<> dis2;
 };
 }  // namespace core
 }  // namespace ps

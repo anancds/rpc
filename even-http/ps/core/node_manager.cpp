@@ -9,33 +9,45 @@ namespace ps {
 namespace core {
 
 void NodeManager::StartScheduler() {
-  node_ = std::make_unique<SchedulerNode>();
-  node_->set_callback([&](const NodeEvent &event){
+  scheduler_node_ = std::make_unique<SchedulerNode>();
+  scheduler_node_->set_callback([&](const NodeEvent &event){
     if (event == NodeEvent::CLUSTER_TIMEOUT) {
-      node_->Stop();
+      scheduler_node_->Stop();
     }
   });
-  node_->Start();
+  scheduler_node_->Start();
 //  while (true) {
 //    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 //  }
 }
 
-void NodeManager::StopScheduler() { node_->Stop(); }
+void NodeManager::StopScheduler() { scheduler_node_->Stop(); }
 
 void NodeManager::StartServer() {
-  node_ = std::make_unique<ServerNode>();
-  node_->Start();
+  server_node_ = std::make_unique<ServerNode>();
+  server_node_->set_callback([&](const NodeEvent &event){
+    if (event == NodeEvent::TERMINATE_READY) {
+      server_node_->Stop();
+    }
+  });
+  server_node_->Start();
 }
 
-void NodeManager::StopServer() { node_->Stop(); }
+void NodeManager::StopServer() { server_node_->Stop(); }
 
 void NodeManager::StartClient() {
-  node_ = std::make_unique<WorkerNode>();
-  node_->Start();
+  worker_node_ = std::make_unique<WorkerNode>();
+  worker_node_->set_callback([&](const NodeEvent &event){
+        if (event == NodeEvent::TERMINATE_READY) {
+          worker_node_->Stop();
+        }
+       });
+  worker_node_->Start();
+  worker_node_->Finish();
+  worker_node_->Stop();
 }
 
-void NodeManager::StopClient() { node_->Stop(); }
+void NodeManager::StopClient() { worker_node_->Stop(); }
 
 int NodeManager::WorkerRankToID(int rank) { return rank * 2 + 9; }
 

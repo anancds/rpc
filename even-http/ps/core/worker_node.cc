@@ -19,7 +19,7 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-
+WorkerNode::~WorkerNode() { Stop(); }
 void WorkerNode::Start() {
   MS_LOG(INFO) << "Start worker node!";
   std::string scheduler_host = ClusterConfig::scheduler_host();
@@ -31,12 +31,12 @@ void WorkerNode::Start() {
         ProcessHeartbeat(message);
         break;
       case ClusterCommand::TERMINATE:
-        ProcessTerminal(message);
+        ProcessTerminate(message);
         break;
       case ClusterCommand::REGISTER:
         ProcessRegister(message);
         break;
-      case ClusterCommand::DATA:
+      case ClusterCommand::SEND_DATA:
         ProcessData(message);
         break;
       default:
@@ -64,6 +64,9 @@ void WorkerNode::Start() {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   MS_LOG(INFO) << "The cluster is ready to use!";
+  while (test_.load()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
 }
 
 void WorkerNode::Register(const std::shared_ptr<TcpClient> &client, const NodeRole &role) {
@@ -86,10 +89,10 @@ void WorkerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, CommMess
 
   uint64_t timestamp = AssignTimestamp(1);
   MessageMeta message_meta;
-  message_meta.set_cmd(ClusterCommand::DATA);
+  message_meta.set_cmd(ClusterCommand::SEND_DATA);
   message_meta.set_role(node_role_);
   message_meta.set_node_id(node_id_);
-  message_meta.set_timestamp(timestamp);
+  message_meta.set_request_id(timestamp);
   *message.mutable_pb_meta() = {message_meta};
 
   auto client = GetOrCreateTcpClient(rank_id);
@@ -105,7 +108,7 @@ void WorkerNode::Wait(uint64_t timestamp) {
 void WorkerNode::ProcessRegister(const CommMessage &message) {
   RegisterMessage register_message;
   register_message.ParseFromString(message.data());
-  if (register_message.node_id().compare(node_id_)) {
+  if (register_message.node_id() == node_id_) {
     rank_id_ = register_message.rank_id();
     if (on_node_event_message_) {
       on_node_event_message_(NodeEvent::REGISTER_SUCCESS);
@@ -129,7 +132,7 @@ void WorkerNode::ProcessRegister(const CommMessage &message) {
   }
 }
 
-void WorkerNode::ProcessTerminal(const CommMessage &message) {
+void WorkerNode::ProcessTerminate(const CommMessage &message) {
   MS_LOG(INFO) << "The node role: " << node_role_ << ", the node id:" << node_id_ << ", the node rank id:" << rank_id_
                << " is process terminal message!";
   if (on_node_event_message_) {
@@ -139,7 +142,7 @@ void WorkerNode::ProcessTerminal(const CommMessage &message) {
 
 void WorkerNode::ProcessData(const CommMessage &message) {
   std::lock_guard<std::mutex> lock(message_mutex_);
-  message_tracker_[message.pb_meta().timestamp()].second++;
+  message_tracker_[message.pb_meta().request_id()].second++;
   message_tracker_cond_.notify_all();
 }
 
@@ -152,7 +155,7 @@ const std::shared_ptr<TcpClient> &WorkerNode::GetOrCreateTcpClient(const int &ra
       MS_LOG(EXCEPTION) << "Worker node Fetch servers failed!";
     }
     std::string host_and_port = server_node_rank_ids_[rank_id].second;
-    int index = host_and_port.find(":");
+    int index = host_and_port.find(':');
     std::string host = host_and_port.substr(0, index);
     uint16_t port = std::strtol(host_and_port.substr(index + 1, host_and_port.size()).c_str(), nullptr, 10);
     auto client = std::make_shared<TcpClient>(host, port);
@@ -172,8 +175,11 @@ void WorkerNode::Stop() {
   MS_LOG(INFO) << "Stop worker node!";
   if (!is_node_stop_.load()) {
     client_to_scheduler_->Stop();
-    worker_thread_->join();
+    if (worker_thread_->joinable()) {
+      worker_thread_->join();
+    }
     is_node_stop_ = true;
+    test_ = false;
   }
 }
 }  // namespace core

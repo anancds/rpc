@@ -55,7 +55,9 @@ class NodeManager {
 
  private:
   std::unordered_map<int, std::vector<int>> node_ids_;
-  std::unique_ptr<Node> node_{nullptr};
+  std::unique_ptr<WorkerNode> worker_node_{nullptr};
+  std::unique_ptr<SchedulerNode> scheduler_node_{nullptr};
+  std::unique_ptr<ServerNode> server_node_{nullptr};
 };
 }  // namespace core
 }  // namespace ps

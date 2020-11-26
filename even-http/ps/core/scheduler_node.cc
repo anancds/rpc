@@ -87,7 +87,7 @@ void SchedulerNode::ProcessHeartBeat(const TcpServer &server, const TcpConnectio
   for (auto it = heartbeats_.begin(); it != heartbeats_.end(); ++it) {
     if (it->second.tv_sec + ClusterConfig::heartbeat_timeout() < current_time.tv_sec) {
       MS_LOG(ERROR) << "There is a node failed, should terminal the whole cluster!";
-      Terminal(server);
+      Terminate(server);
     }
   }
 }
@@ -96,6 +96,9 @@ void SchedulerNode::ProcessRegister(const TcpServer &server, const TcpConnection
   MS_LOG(INFO) << "The scheduler process a register message!";
   // assign worker node and server node rank id
   int rank_id = AssignRankId(message);
+  if (rank_id < 0) {
+    MS_LOG(EXCEPTION) << "The rank id is wrong!";
+  }
   std::string node_id = message.pb_meta().node_id();
 
   uint32_t total_node_num = ClusterConfig::server_num() + ClusterConfig::worker_num();
@@ -165,7 +168,7 @@ int SchedulerNode::AssignRankId(const CommMessage &message) {
     }
     MS_LOG(INFO) << "The server node host: " << node_host_ip_and_port << " node id: " << node_id
                  << " assign rank id:" << rank_id;
-  } else if (message.pb_meta().role() == NodeRole::SERVER) {
+  } else if (message.pb_meta().role() == NodeRole::WORKER) {
     std::string node_id = message.pb_meta().node_id();
     if (worker_nodes_.find(node_id) != worker_nodes_.end()) {
       rank_id = worker_nodes_[node_id];
@@ -178,7 +181,7 @@ int SchedulerNode::AssignRankId(const CommMessage &message) {
   return rank_id;
 }
 
-void SchedulerNode::Terminal(const TcpServer &server) {
+void SchedulerNode::Terminate(const TcpServer &server) {
   MessageMeta message_meta;
   message_meta.set_cmd(ClusterCommand::TERMINATE);
   message_meta.set_role(NodeRole::SCHEDULER);
@@ -201,7 +204,7 @@ void SchedulerNode::StartClusterAvailableTimer() {
       if (on_node_event_message_) {
         on_node_event_message_(NodeEvent::CLUSTER_TIMEOUT);
       }
-      Terminal(server);
+      Terminate(server);
     }
   });
   server_->StartTimerOnlyOnce(ClusterConfig::cluster_available_timeout());
