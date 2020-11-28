@@ -20,10 +20,59 @@ namespace mindspore {
 namespace ps {
 namespace core {
 
-SchedulerNode::~SchedulerNode() { Stop(); }
+SchedulerNode::~SchedulerNode() {
+  MS_LOG(INFO) << "Stop scheduler node!";
+  if (!is_node_stop_) {
+    is_node_stop_ = true;
+    server_->Stop();
+    if (scheduler_thread_->joinable()) {
+      scheduler_thread_->join();
+    }
+    is_cluster_ready_ = true;
+  }
+}
 
 void SchedulerNode::Start() {
   MS_LOG(INFO) << "Start scheduler node!";
+  Init();
+  InitNode();
+  StartHeartbeatTimer();
+  StartClusterAvailableTimer();
+
+  //改成bool，是不需要发送terminal指令
+  while (!is_cluster_ready_.load()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+
+  MS_LOG(INFO) << "The scheduler is ready to quit!";
+}
+
+void SchedulerNode::ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+  HeartbeatMessage heartbeat_message;
+  heartbeat_message.ParseFromString(message.data());
+
+  UpdateHeartbeat(heartbeat_message.node_id());
+
+  HeartbeatRespMessage heartbeat_resp_message;
+  heartbeat_resp_message.set_is_cluster_ready(is_cluster_ready_);
+  heartbeat_resp_message.set_is_cluster_finish(is_cluster_finish_);
+  heartbeat_resp_message.set_is_node_timeout(is_node_timeout_);
+
+  CommMessage comm_message;
+  *comm_message.mutable_pb_meta() = {message.pb_meta()};
+  comm_message.set_data(heartbeat_resp_message.SerializeAsString());
+  const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
+}
+
+void SchedulerNode::InitNode() {
+  is_node_stop_ = false;
+  node_info_.node_id_ = CommUtil::GenerateUUID();
+  node_info_.node_role_ = NodeRole::SCHEDULER;
+  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+               << ", the node id is:" << node_info_.node_id_;
+}
+
+void SchedulerNode::Init() {
   std::string scheduler_host = ClusterConfig::scheduler_host();
   uint32_t scheduler_port = ClusterConfig::scheduler_port();
 
@@ -47,44 +96,13 @@ void SchedulerNode::Start() {
     }
   });
 
-  is_node_stop_ = false;
   server_->Init();
-  node_info_.node_id_ = CommUtil::GenerateUUID();
-  node_info_.node_role_ = NodeRole::SCHEDULER;
-  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
-               << ", the node id is:" << node_info_.node_id_;
 
   scheduler_thread_ = std::make_unique<std::thread>([&]() {
     MS_LOG(INFO) << "The scheduler node start a tcp server!";
     server_->Start();
   });
   scheduler_thread_->detach();
-
-  StartHeartbeatTimer();
-  StartClusterAvailableTimer();
-
-  //改成bool，是不需要发送terminal指令
-  while (!is_cluster_ready_.load() || server_->ConnectionNum() != 0) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
-
-  MS_LOG(INFO) << "The scheduler is ready to quit!";
-}
-
-void SchedulerNode::ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
-  HeartbeatMessage heartbeat_message;
-  heartbeat_message.ParseFromString(message.data());
-
-  UpdateHeartbeat(heartbeat_message.node_id());
-
-  HeartbeatRespMessage heartbeat_resp_message;
-  heartbeat_resp_message.set_is_cluster_ready(is_cluster_ready_);
-  heartbeat_resp_message.set_is_cluster_finish(is_cluster_finish_);
-
-  CommMessage comm_message;
-  *comm_message.mutable_pb_meta() = {message.pb_meta()};
-  comm_message.set_data(heartbeat_resp_message.SerializeAsString());
-  const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
 }
 
 void SchedulerNode::UpdateHeartbeat(const std::string &node_id) {
@@ -164,10 +182,11 @@ void SchedulerNode::ProcessFinish(const TcpServer &server, const TcpConnection &
   FinishMessage finish_message;
   finish_message.ParseFromString(message.data());
   finish_nodes_id_.insert(finish_message.node_id());
-  const_cast<TcpServer&>(server).SendMessage(conn, message);
+  const_cast<TcpServer &>(server).SendMessage(conn, message);
 }
 
-void SchedulerNode::ProcessFetchServers(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+void SchedulerNode::ProcessFetchServers(const TcpServer &server, const TcpConnection &conn,
+                                        const CommMessage &message) {
   FetchServersRespMessage fetch_servers_message;
   std::vector<ServersMeta> servers_meta_list;
   for (auto it = nodes_info_.begin(); it != nodes_info_.end(); ++it) {
@@ -205,21 +224,34 @@ void SchedulerNode::StartClusterAvailableTimer() {
 
 void SchedulerNode::StartHeartbeatTimer() {
   MS_LOG(WARNING) << "The scheduler start a heartbeat timer!";
+  uint32_t total_node_num = ClusterConfig::server_num() + ClusterConfig::worker_num();
   server_->set_timer_callback([&]() {
+    // 1. assign node timeout
     struct timeval current_time {};
     (void)gettimeofday(&current_time, nullptr);
+    timeout_nodes_info_.clear();
     for (auto it = heartbeats_.begin(); it != heartbeats_.end(); ++it) {
       if (it->second.tv_sec + ClusterConfig::heartbeat_timeout() < current_time.tv_sec) {
-        MS_LOG(ERROR) << "There is a node failed, should terminate the whole cluster!";
-        is_cluster_finish_ = true;
-        break;
+        MS_LOG(ERROR) << "The node id:" << it->first << " is timeout!";
+        timeout_nodes_info_[it->first] = nodes_info_[it->first];
       }
+    }
+    if (!timeout_nodes_info_.empty()) {
+      is_node_timeout_ = true;
+      for (auto it = timeout_nodes_info_.begin(); it != timeout_nodes_info_.end(); ++it) {
+        finish_nodes_id_.insert(it->first);
+      }
+    }
+
+    // 2. assign node finish
+    if (finish_nodes_id_.size() == total_node_num) {
+      is_node_finish_ = true;
     }
   });
   server_->StartTimer(ClusterConfig::heartbeat_interval());
 
-  uint32_t total_node_num = ClusterConfig::server_num() + ClusterConfig::worker_num();
-  if (total_node_num == nodes_info_.size()) {
+  // 3. assign node ready
+  if (nodes_info_.size() == total_node_num) {
     is_cluster_ready_ = true;
   }
 }

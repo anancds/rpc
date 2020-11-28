@@ -51,6 +51,8 @@ class SchedulerNode : public Node {
   void Stop() override;
 
  private:
+  void InitNode();
+  void Init();
   void UpdateHeartbeat(const std::string &node_id);
   void ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);

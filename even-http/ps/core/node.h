@@ -44,7 +44,13 @@ namespace core {
 
 class Node {
  public:
-  Node() : is_cluster_ready_(false), is_cluster_finish_(false), is_node_stop_(true), request_id_(0) {}
+  Node()
+      : is_cluster_ready_(false),
+        is_cluster_finish_(false),
+        is_node_timeout_(false),
+        is_node_stop_(true),
+        is_node_finish_(false),
+        request_id_(0) {}
   virtual ~Node() = default;
 
   using OnNodeEventMessage = std::function<void(const NodeEvent &event)>;
@@ -70,7 +76,9 @@ class Node {
   NodeInfo node_info_;
   std::atomic<bool> is_cluster_ready_;
   std::atomic<bool> is_cluster_finish_;
+  std::atomic<bool> is_node_timeout_;
   std::atomic<bool> is_node_stop_;
+  std::atomic<bool> is_node_finish_;
   std::atomic_uint64_t request_id_;
 
   std::unordered_map<std::string, timeval> heartbeats_;
