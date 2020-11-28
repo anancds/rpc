@@ -10,12 +10,15 @@ namespace core {
 
 void NodeManager::StartScheduler() {
   scheduler_node_ = std::make_unique<SchedulerNode>();
-  scheduler_node_->set_callback([&](const NodeEvent &event){
-    if (event == NodeEvent::CLUSTER_TIMEOUT) {
-      scheduler_node_->Stop();
-    }
-  });
+//  scheduler_node_->set_callback([&](const NodeEvent &event){
+//    if (event == NodeEvent::NODE_TIMEOUT) {
+//      scheduler_node_->Finish();
+//      scheduler_node_->Stop();
+//    }
+//  });
   scheduler_node_->Start();
+  scheduler_node_->Finish();
+  scheduler_node_->Stop();
 //  while (true) {
 //    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 //  }
@@ -26,7 +29,7 @@ void NodeManager::StopScheduler() { scheduler_node_->Stop(); }
 void NodeManager::StartServer() {
   server_node_ = std::make_unique<ServerNode>();
   server_node_->set_callback([&](const NodeEvent &event){
-    if (event == NodeEvent::TERMINATE_READY) {
+    if (event == NodeEvent::NODE_TIMEOUT) {
       server_node_->Stop();
     }
   });
@@ -38,7 +41,7 @@ void NodeManager::StopServer() { server_node_->Stop(); }
 void NodeManager::StartClient() {
   worker_node_ = std::make_unique<WorkerNode>();
   worker_node_->set_callback([&](const NodeEvent &event){
-        if (event == NodeEvent::TERMINATE_READY) {
+        if (event == NodeEvent::NODE_TIMEOUT) {
           worker_node_->Stop();
         }
        });

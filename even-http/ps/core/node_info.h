@@ -21,9 +21,6 @@
 
 #ifndef RPC_NODE_INFO_H
 #define RPC_NODE_INFO_H
-
-#endif  // RPC_NODE_INFO_H
-
 namespace mindspore {
 namespace ps {
 namespace core {
@@ -46,3 +43,4 @@ struct NodeInfo {
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
+#endif  // RPC_NODE_INFO_H

@@ -168,7 +168,7 @@ void TcpServer::StartTimerOnlyOnce(const uint32_t &time) {
   struct timeval timeout {};
   timeout.tv_sec = time;
   timeout.tv_usec = 0;
-  ev = evtimer_new(base_, TimerCallback, this);
+  ev = evtimer_new(base_, TimerOnceCallback, this);
   MS_EXCEPTION_IF_NULL(ev);
   evtimer_add(ev, &timeout);
 }
@@ -335,6 +335,14 @@ void TcpServer::EventCallback(struct bufferevent *bev, std::int16_t events, void
 }
 
 void TcpServer::TimerCallback(evutil_socket_t, int16_t, void *arg) {
+  MS_EXCEPTION_IF_NULL(arg);
+  auto tcp_server = reinterpret_cast<TcpServer *>(arg);
+  if (tcp_server->on_timer_callback_) {
+    tcp_server->on_timer_callback_();
+  }
+}
+
+void TcpServer::TimerOnceCallback(evutil_socket_t, int16_t, void *arg) {
   MS_EXCEPTION_IF_NULL(arg);
   auto tcp_server = reinterpret_cast<TcpServer *>(arg);
   if (tcp_server->on_timer_once_callback_) {

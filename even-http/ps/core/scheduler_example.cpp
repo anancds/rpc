@@ -21,12 +21,6 @@ static void StartServer() {
 }
 
 
-//enum NodeEvent {
-//  NODE_TIMEOUT = 0;
-//}
-//
-
-
 int main(int /*argc*/, char ** /*argv*/) {
   std::cout << CommUtil::GenerateUUID() << std::endl;
   StartServer();

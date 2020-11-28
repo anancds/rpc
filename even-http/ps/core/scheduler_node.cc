@@ -39,7 +39,6 @@ void SchedulerNode::Start() {
   StartHeartbeatTimer();
   StartClusterAvailableTimer();
 
-  //改成bool，是不需要发送terminal指令
   while (!is_cluster_ready_.load()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
@@ -107,9 +106,6 @@ void SchedulerNode::Init() {
 
 void SchedulerNode::UpdateHeartbeat(const std::string &node_id) {
   std::lock_guard<std::mutex> lock(heartbeat_mutex_);
-  if (nodes_info_.find(node_id) == nodes_info_.end()) {
-    MS_LOG(INFO) << "The node id:" << node_id << " is not registered!";
-  }
   NodeInfo node_info = nodes_info_[node_id];
   struct timeval current_time {};
   (void)gettimeofday(&current_time, nullptr);
@@ -129,6 +125,7 @@ void SchedulerNode::ProcessRegister(const TcpServer &server, const TcpConnection
     MS_LOG(EXCEPTION) << "The rank id is wrong!";
   }
   const std::string &node_id = register_message.node_id();
+  UpdateHeartbeat(node_id);
 
   RegisterRespMessage register_resp_message;
   register_resp_message.set_node_id(node_id);
@@ -217,6 +214,8 @@ void SchedulerNode::StartClusterAvailableTimer() {
       if (on_node_event_message_) {
         on_node_event_message_(NodeEvent::NODE_TIMEOUT);
       }
+      is_cluster_ready_ = true;
+      is_cluster_finish_ = true;
     }
   });
   server_->StartTimerOnlyOnce(ClusterConfig::cluster_available_timeout());
@@ -244,16 +243,16 @@ void SchedulerNode::StartHeartbeatTimer() {
     }
 
     // 2. assign node finish
-    if (finish_nodes_id_.size() == total_node_num) {
-      is_node_finish_ = true;
+    if (finish_nodes_id_.size() == nodes_info_.size()) {
+      is_cluster_finish_ = true;
+    }
+
+    // 3. assign node ready
+    if (nodes_info_.size() == total_node_num) {
+      is_cluster_ready_ = true;
     }
   });
   server_->StartTimer(ClusterConfig::heartbeat_interval());
-
-  // 3. assign node ready
-  if (nodes_info_.size() == total_node_num) {
-    is_cluster_ready_ = true;
-  }
 }
 
 void SchedulerNode::Stop() {
@@ -272,7 +271,7 @@ void SchedulerNode::Finish() {
   std::unique_lock<std::mutex> lock(message_mutex_);
   message_tracker_cond_.wait(lock, [&] {
     bool res_is_finish = is_cluster_finish_;
-    return  res_is_finish;
+    return res_is_finish;
   });
 }
 
