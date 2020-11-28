@@ -49,6 +49,7 @@ class SchedulerNode : public Node {
 
   void Start() override;
   void Stop() override;
+  void Finish() override;
 
  private:
   void InitNode();

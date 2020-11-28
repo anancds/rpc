@@ -51,14 +51,13 @@ class WorkerNode : public Node {
   void Stop() override;
   void Finish() override;
 
-  void Send(const enum NodeRole &node_role, uint32_t rank_id, CommMessage &message);
+  uint64_t Send(const enum NodeRole &node_role, uint32_t rank_id, CommMessage &message);
 
   void SendForData();
 
  private:
   void Register();
   void ProcessRegister(const CommMessage &message);
-  void ProcessTerminate(const CommMessage &message);
   void ProcessData(const CommMessage &message);
   const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
 

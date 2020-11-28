@@ -268,6 +268,14 @@ void SchedulerNode::Stop() {
   }
 }
 
+void SchedulerNode::Finish() {
+  std::unique_lock<std::mutex> lock(message_mutex_);
+  message_tracker_cond_.wait(lock, [&] {
+    bool res_is_finish = is_cluster_finish_;
+    return  res_is_finish;
+  });
+}
+
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore

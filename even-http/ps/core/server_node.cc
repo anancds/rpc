@@ -97,27 +97,17 @@ void ServerNode::ProcessRegister(const CommMessage &message) {
   MS_LOG(INFO) << "The server node id is:" << node_info_.node_id_ << ", and the rank id is:" << node_info_.rank_id_;
 }
 
-void ServerNode::ProcessTerminal(const CommMessage &message) {
-  MS_LOG(INFO) << "The node role: " << node_role_ << ", the node id:" << node_id_ << ", the node rank id:" << rank_id_
-               << " is process terminal message!";
-  if (on_node_event_message_) {
-    on_node_event_message_(NodeEvent::NODE_TIMEOUT);
-  }
-}
-
 const std::shared_ptr<TcpClient> &ServerNode::GetOrCreateTcpClient(const int &rank_id) {
   std::lock_guard<std::mutex> lock(client_mutex_);
   if (connected_nodes_.find(rank_id) != connected_nodes_.end()) {
     return connected_nodes_[rank_id];
   } else {
-    if (server_node_rank_ids_.find(rank_id) == server_node_rank_ids_.end()) {
+    if (server_rank_ids_.find(rank_id) == server_rank_ids_.end()) {
       MS_LOG(EXCEPTION) << "Server node Fetch servers failed!";
     }
-    std::string host_and_port = server_node_rank_ids_[rank_id].second;
-    int index = host_and_port.find(':');
-    std::string host = host_and_port.substr(0, index);
-    uint16_t port = std::strtol(host_and_port.substr(index + 1, host_and_port.size()).c_str(), nullptr, 10);
-    auto client = std::make_shared<TcpClient>(host, port);
+    std::string ip = server_rank_ids_[rank_id].first;
+    uint16_t port = server_rank_ids_[rank_id].second;
+    auto client = std::make_shared<TcpClient>(ip, port);
     connected_nodes_[rank_id] = client;
     return connected_nodes_[rank_id];
   }
@@ -153,9 +143,6 @@ void ServerNode::InitClientToScheduler() {
   client_to_scheduler_ = std::make_unique<TcpClient>(scheduler_host, scheduler_port);
   client_to_scheduler_->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
     switch (message.pb_meta().cmd()) {
-      case NodeCommand::TERMINATE:
-        ProcessTerminal(message);
-        break;
       case NodeCommand::REGISTER:
         ProcessRegister(message);
         break;
@@ -204,11 +191,11 @@ void ServerNode::Finish() {
   std::unique_lock<std::mutex> lock(message_mutex_);
   message_tracker_cond_.wait(lock, [&] {
     bool ret = message_tracker_[request_id].first == message_tracker_[request_id].second;
-    if (ret) {
+    bool res_is_finish = is_cluster_finish_;
+    if (ret && res_is_finish) {
       MS_LOG(INFO) << "Message tracker remove request id!";
       message_tracker_.erase(request_id);
     }
-    bool res_is_finish = is_cluster_finish_;
     return ret && res_is_finish;
   });
 }

@@ -52,7 +52,8 @@ class ServerNode : public Node {
   void Stop() override;
   void Finish() override;
 
-  using RequestHandler = std::function<void(const TcpServer &server, const TcpConnection &conn, const CommMessage &message)>;
+  using RequestHandler =
+    std::function<void(const TcpServer &server, const TcpConnection &conn, const CommMessage &message)>;
 
   void Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message);
   void set_handler(const RequestHandler &handler);
@@ -61,7 +62,6 @@ class ServerNode : public Node {
  private:
   void Register(const std::shared_ptr<TcpClient> &client);
   void ProcessRegister(const CommMessage &message);
-  void ProcessTerminal(const CommMessage &message);
   const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
   void Init();
   void InitNode();
@@ -71,8 +71,6 @@ class ServerNode : public Node {
   std::shared_ptr<TcpServer> server_;
   std::unique_ptr<std::thread> client_to_scheduler_thread_;
   std::unique_ptr<std::thread> server_thread_;
-  // rank_id-><node_id, ip:port>
-  std::unordered_map<int, std::pair<std::string, std::string>> server_node_rank_ids_;
   // rank_id->tcpclient
   std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
   std::mutex client_mutex_;
