@@ -51,24 +51,26 @@ class SchedulerNode : public Node {
   void Stop() override;
 
  private:
-  void HeartBeat(const TcpServer &server, const TcpConnection &conn);
+  void UpdateHeartbeat(const std::string &node_id);
   void ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
-  void RegisterResponse(const TcpServer &server, const TcpConnection &conn, const int &rank_id,
-                        const std::string &node_id, bool is_cluster_ready);
-  void Terminate(const TcpServer &server);
   void StartClusterAvailableTimer();
-  int AssignRankId(const CommMessage &message);
+  void StartHeartbeatTimer();
+  int AssignRankId(const RegisterMessage &register_message);
+  void ProcessFinish(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void ProcessFetchServers(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
 
   std::unique_ptr<TcpServer> server_;
   std::atomic<int> current_worker_rank_id_;
   std::atomic<int> current_server_rank_id_;
   std::unique_ptr<std::thread> scheduler_thread_;
-  // node_id->rank_id
-  std::unordered_map<std::string, int> worker_nodes_;
-  // node_id-><rank_id, ip:port>
-  std::unordered_map<std::string, std::pair<int, std::string>> server_nodes_;
+  // worker nodes and server nodes
+  std::unordered_map<std::string, NodeInfo> nodes_info_;
+  // timeout nodes
+  std::unordered_map<std::string, NodeInfo> timeout_nodes_info_;
   std::mutex assign_rank_id_mutex_;
+  std::mutex heartbeat_mutex_;
+  std::unordered_set<std::string> finish_nodes_id_;
 };
 }  // namespace core
 }  // namespace ps

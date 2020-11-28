@@ -44,37 +44,35 @@ namespace core {
 
 class WorkerNode : public Node {
  public:
-  WorkerNode() : client_to_scheduler_(nullptr), worker_thread_(nullptr), timestamp_(0) {}
+  WorkerNode() : client_to_scheduler_(nullptr), worker_thread_(nullptr) {}
   ~WorkerNode() override;
 
   void Start() override;
   void Stop() override;
-  void Finish();
+  void Finish() override;
 
   void Send(const enum NodeRole &node_role, uint32_t rank_id, CommMessage &message);
-  void Wait(uint64_t timestamp);
+
   void SendForData();
 
  private:
-  void Register(const std::shared_ptr<TcpClient> &client, const NodeRole &role);
+  void Register();
   void ProcessRegister(const CommMessage &message);
   void ProcessTerminate(const CommMessage &message);
   void ProcessData(const CommMessage &message);
   const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
-  uint64_t AssignTimestamp(const uint32_t &server_sent_num);
+
+  void InitNode();
+  void InitClientToScheduler();
+
 
   std::shared_ptr<TcpClient> client_to_scheduler_;
   std::unique_ptr<std::thread> worker_thread_;
-  std::atomic_uint64_t timestamp_;
-  // rank_id-><node_id, ip:port>
-  std::unordered_map<int, std::pair<std::string, std::string>> server_rank_ids_;
+
   // rank_id->tcpclient
   std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
   std::mutex client_mutex_;
-  // timestamp-><expected responses, actual responses>
-  std::unordered_map<uint64_t, std::pair<uint32_t, uint32_t>> message_tracker_;
-  std::mutex message_mutex_;
-  std::condition_variable message_tracker_cond_;
+
 };
 }  // namespace core
 }  // namespace ps

@@ -31,7 +31,7 @@ namespace core {
 enum NodeEvent { NODE_TIMEOUT = 0 };
 
 struct NodeInfo {
-  NodeInfo() : port_(0), role_(NodeRole::SCHEDULER), rank_id_(0) {}
+  NodeInfo() : port_(0), node_role_(NodeRole::SCHEDULER), rank_id_(0) {}
   // ip
   std::string ip_;
   // the port of this node
@@ -39,7 +39,7 @@ struct NodeInfo {
   // the current Node unique id:0,1,2...
   std::string node_id_;
   // the role of the node: worker,server,scheduler
-  NodeRole role_;
+  NodeRole node_role_;
   // the current Node rank id,the worker node range is:[0,numOfWorker-1], the server node range is:[0, numOfServer-1]
   uint32_t rank_id_;
 };

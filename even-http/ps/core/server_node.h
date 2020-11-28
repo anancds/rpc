@@ -50,6 +50,7 @@ class ServerNode : public Node {
 
   void Start() override;
   void Stop() override;
+  void Finish() override;
 
   using RequestHandler = std::function<void(const TcpServer &server, const TcpConnection &conn, const CommMessage &message)>;
 
@@ -58,11 +59,13 @@ class ServerNode : public Node {
   void response(const CommMessage &message);
 
  private:
-  void Register(const std::shared_ptr<TcpClient> &client, const std::string &host, const uint32_t &port,
-                const NodeRole &role);
+  void Register(const std::shared_ptr<TcpClient> &client);
   void ProcessRegister(const CommMessage &message);
   void ProcessTerminal(const CommMessage &message);
   const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
+  void Init();
+  void InitNode();
+  void InitClientToScheduler();
 
   std::shared_ptr<TcpClient> client_to_scheduler_;
   std::shared_ptr<TcpServer> server_;

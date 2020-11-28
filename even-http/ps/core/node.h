@@ -19,22 +19,23 @@
 
 #include <atomic>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 #include <thread>
-#include <map>
 #include <unordered_map>
-#include <functional>
+#include <vector>
+#include <condition_variable>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
 #include "ps/core/cluster_config.h"
+#include "ps/core/node_info.h"
 #include "ps/core/tcp_client.h"
 #include "ps/core/tcp_server.h"
-#include "ps/core/node_info.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -43,34 +44,45 @@ namespace core {
 
 class Node {
  public:
-  Node() : rank_id_(0), is_cluster_ready_(false), is_node_stop_(true) {}
+  Node() : is_cluster_ready_(false), is_cluster_finish_(false), is_node_stop_(true), request_id_(0) {}
   virtual ~Node() = default;
 
   using OnNodeEventMessage = std::function<void(const NodeEvent &event)>;
 
   virtual void Start() = 0;
   virtual void Stop() = 0;
+  virtual void Finish() = 0;
   void set_callback(const OnNodeEventMessage &on_node_event_message);
 
   std::string node_id() const;
   uint32_t rank_id() const;
 
- protected:
-  void Heartbeat(const std::shared_ptr<TcpClient> &client) const;
-  void ProcessHeartbeat(const CommMessage &message);
-  void UpdateHeartbeat(const std::string &node_id, const NodeRole &role, const uint32_t &rank_id, const timeval &time);
+  // wait 需要有一个超时吗
+  void Wait(uint64_t request_id);
+  uint64_t AssignRequestId(const uint32_t &expected_resp_num);
 
-  std::string node_id_;
-  uint32_t rank_id_;
-  NodeRole node_role_;
-  NodeInfo
+ protected:
+  void Heartbeat(const std::shared_ptr<TcpClient> &client);
+  void ProcessHeartbeat(const CommMessage &message);
+  uint64_t FetchServers(const std::shared_ptr<TcpClient> &client);
+  void ProcessFetchServers(const CommMessage &message);
+
+  NodeInfo node_info_;
   std::atomic<bool> is_cluster_ready_;
+  std::atomic<bool> is_cluster_finish_;
   std::atomic<bool> is_node_stop_;
-  std::atomic<bool> test_{true};
+  std::atomic_uint64_t request_id_;
 
   std::unordered_map<std::string, timeval> heartbeats_;
-  std::mutex heartbeat_mutex_;
   OnNodeEventMessage on_node_event_message_;
+
+  // rank_id-><ip, port>
+  std::unordered_map<int, std::pair<std::string, uint16_t>> server_rank_ids_;
+
+  // timestamp-><expected responses, actual responses>
+  std::unordered_map<uint64_t, std::pair<uint32_t, uint32_t>> message_tracker_;
+  std::mutex message_mutex_;
+  std::condition_variable message_tracker_cond_;
 };
 
 }  // namespace core

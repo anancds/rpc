@@ -18,66 +18,37 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-ServerNode::~ServerNode() { Stop(); }
+ServerNode::~ServerNode() {
+  MS_LOG(INFO) << "Stop server node!";
+  if (!is_node_stop_.load()) {
+    server_->Stop();
+    client_to_scheduler_->Stop();
+    client_to_scheduler_->StopEventBase();
+    if (server_thread_->joinable()) {
+      server_thread_->join();
+    }
+    if (client_to_scheduler_thread_->joinable()) {
+      client_to_scheduler_thread_->join();
+    }
+    is_node_stop_ = true;
+  }
+}
 
 void ServerNode::Start() {
   MS_LOG(INFO) << "Start server node!";
-  std::string interface;
-  std::string server_ip;
-  CommUtil::GetAvailableInterfaceAndIP(&interface, &server_ip);
-  server_ = std::make_shared<TcpServer>(server_ip, 0);
-  server_->SetMessageCallback([&](const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {});
-  server_->Init();
-  server_thread_ = std::make_unique<std::thread>([&]() {
-    MS_LOG(INFO) << "The server node start a tcp server!";
-    server_->Start();
-  });
-  server_thread_->detach();
-
-  std::string scheduler_host = ClusterConfig::scheduler_host();
-  uint16_t scheduler_port = ClusterConfig::scheduler_port();
-  client_to_scheduler_ = std::make_unique<TcpClient>(scheduler_host, scheduler_port);
-  client_to_scheduler_->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
-    switch (message.pb_meta().cmd()) {
-      case ClusterCommand::TERMINATE:
-        ProcessTerminal(message);
-        break;
-      case ClusterCommand::REGISTER:
-        ProcessRegister(message);
-        break;
-      case ClusterCommand::HEARTBEAT:
-        ProcessHeartbeat(message);
-        break;
-      default:
-        MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
-    }
-  });
-
-  is_node_stop_ = false;
-  node_id_ = CommUtil::GenerateUUID();
-  node_role_ = NodeRole::SERVER;
-  client_to_scheduler_->Init();
-  MS_LOG(INFO) << "The node role:" << CommUtil::NodeRoleToString(node_role_) << " is generate uuid is:" << node_id_;
-
-  client_to_scheduler_thread_ = std::make_unique<std::thread>([&]() {
-    MS_LOG(INFO) << "The server node start a tcp client!";
-    client_to_scheduler_->Start();
-  });
-  client_to_scheduler_thread_->detach();
-
-  Register(client_to_scheduler_, server_ip, server_->BoundPort(), NodeRole::SERVER);
-
+  Init();
+  InitNode();
+  InitClientToScheduler();
+  Register(client_to_scheduler_);
   Heartbeat(client_to_scheduler_);
 
   while (!is_cluster_ready_.load()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
-
-  wait()
   MS_LOG(INFO) << "The cluster is ready to use!";
-//  while (test_.load()) {
-//    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//  }
+
+  Wait(FetchServers(client_to_scheduler_));
+  MS_LOG(INFO) << "Fetch servers successful!";
 }
 
 void ServerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message) {
@@ -91,56 +62,46 @@ void ServerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, const Co
   client->SendMessage(message);
 }
 
-void ServerNode::Register(const std::shared_ptr<TcpClient> &client, const std::string &host, const uint32_t &port,
-                          const NodeRole &role) {
+void ServerNode::Register(const std::shared_ptr<TcpClient> &client) {
   MessageMeta message_meta;
+  message_meta.set_cmd(NodeCommand::REGISTER);
+  message_meta.set_request_id(++request_id_);
+
+  RegisterMessage register_message;
+  register_message.set_node_id(node_info_.node_id_);
+  register_message.set_role(node_info_.node_role_);
+  register_message.set_ip(node_info_.ip_);
+  register_message.set_port(node_info_.port_);
+
   CommMessage comm_message;
-  message_meta.set_cmd(ClusterCommand::REGISTER);
-  message_meta.set_hostname(host);
-  message_meta.set_port(port);
-  message_meta.set_role(role);
-  message_meta.set_node_id(node_id_);
   *comm_message.mutable_pb_meta() = {message_meta};
+  comm_message.set_data(register_message.SerializeAsString());
   client->SendMessage(comm_message);
+
+  MS_LOG(INFO) << "The server node id:" << node_info_.node_id_
+               << "is registering to scheduler, the request id is:" << message_meta.request_id();
 }
 
-void ServerNode::set_handler(const RequestHandler &handler) {
-  request_handler_ = handler;
-}
+void ServerNode::set_handler(const RequestHandler &handler) { request_handler_ = handler; }
 
 void ServerNode::ProcessRegister(const CommMessage &message) {
-  RegisterMessage register_message;
-  register_message.ParseFromString(message.data());
-  if (register_message.node_id() == node_id_) {
-    rank_id_ = register_message.rank_id();
-    if (on_node_event_message_) {
-      on_node_event_message_(NodeEvent::REGISTER_SUCCESS);
-    }
+  RegisterRespMessage register_resp_message;
+  register_resp_message.ParseFromString(message.data());
+  if (register_resp_message.node_id() != node_info_.node_id_) {
+    MS_LOG(EXCEPTION) << "The node id received:" << register_resp_message.node_id()
+                      << " is not match the current node id:" << node_info_.node_id_;
   }
-  MS_LOG(INFO) << "The server node id is:" << node_id_ << ", and the rank id is:" << rank_id_;
 
-  is_cluster_ready_ = message.pb_meta().is_cluster_ready();
+  node_info_.rank_id_ = register_resp_message.rank_id();
 
-  if (is_cluster_ready_) {
-    auto meta_begin = register_message.servers_meta().begin();
-    auto meta_end = register_message.servers_meta().end();
-    for (auto it = meta_begin; it != meta_end; ++it) {
-      server_node_rank_ids_[it->rank_id()] = std::make_pair(it->node_id(), it->server_host());
-    }
-
-    if (on_node_event_message_) {
-      on_node_event_message_(NodeEvent::CLUSTER_READY);
-    }
-
-    MS_LOG(DEBUG) << "The all server host size is:" << server_node_rank_ids_.size();
-  }
+  MS_LOG(INFO) << "The server node id is:" << node_info_.node_id_ << ", and the rank id is:" << node_info_.rank_id_;
 }
 
 void ServerNode::ProcessTerminal(const CommMessage &message) {
   MS_LOG(INFO) << "The node role: " << node_role_ << ", the node id:" << node_id_ << ", the node rank id:" << rank_id_
                << " is process terminal message!";
   if (on_node_event_message_) {
-    on_node_event_message_(NodeEvent::TERMINATE_READY);
+    on_node_event_message_(NodeEvent::NODE_TIMEOUT);
   }
 }
 
@@ -162,6 +123,58 @@ const std::shared_ptr<TcpClient> &ServerNode::GetOrCreateTcpClient(const int &ra
   }
 }
 
+void ServerNode::Init() {
+  std::string interface;
+  std::string server_ip;
+  CommUtil::GetAvailableInterfaceAndIP(&interface, &server_ip);
+  server_ = std::make_shared<TcpServer>(server_ip, 0);
+  server_->SetMessageCallback([&](const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {});
+  server_->Init();
+  server_thread_ = std::make_unique<std::thread>([&]() {
+    MS_LOG(INFO) << "The server node start a tcp server!";
+    server_->Start();
+  });
+  server_thread_->detach();
+}
+
+void ServerNode::InitNode() {
+  is_node_stop_ = false;
+  node_info_.node_id_ = CommUtil::GenerateUUID();
+  node_info_.node_role_ = NodeRole::SERVER;
+  node_info_.ip_ = server_->BoundIp();
+  node_info_.port_ = server_->BoundPort();
+  MS_LOG(INFO) << "The node role:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+               << " is generate uuid is:" << node_info_.node_id_;
+}
+
+void ServerNode::InitClientToScheduler() {
+  std::string scheduler_host = ClusterConfig::scheduler_host();
+  uint16_t scheduler_port = ClusterConfig::scheduler_port();
+  client_to_scheduler_ = std::make_unique<TcpClient>(scheduler_host, scheduler_port);
+  client_to_scheduler_->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
+    switch (message.pb_meta().cmd()) {
+      case NodeCommand::TERMINATE:
+        ProcessTerminal(message);
+        break;
+      case NodeCommand::REGISTER:
+        ProcessRegister(message);
+        break;
+      case NodeCommand::HEARTBEAT:
+        ProcessHeartbeat(message);
+        break;
+      default:
+        MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
+    }
+  });
+
+  client_to_scheduler_->Init();
+  client_to_scheduler_thread_ = std::make_unique<std::thread>([&]() {
+    MS_LOG(INFO) << "The server node start a tcp client!";
+    client_to_scheduler_->Start();
+  });
+  client_to_scheduler_thread_->detach();
+}
+
 void ServerNode::Stop() {
   MS_LOG(INFO) << "Stop server node!";
   if (!is_node_stop_.load()) {
@@ -175,8 +188,29 @@ void ServerNode::Stop() {
       client_to_scheduler_thread_->join();
     }
     is_node_stop_ = true;
-    test_ = false;
   }
+}
+
+void ServerNode::Finish() {
+  MessageMeta meta;
+  meta.set_cmd(NodeCommand::FINISH);
+  uint64_t request_id = AssignRequestId(1);
+  meta.set_request_id(request_id);
+
+  CommMessage message;
+  *message.mutable_pb_meta() = {meta};
+  client_to_scheduler_->SendMessage(message);
+
+  std::unique_lock<std::mutex> lock(message_mutex_);
+  message_tracker_cond_.wait(lock, [&] {
+    bool ret = message_tracker_[request_id].first == message_tracker_[request_id].second;
+    if (ret) {
+      MS_LOG(INFO) << "Message tracker remove request id!";
+      message_tracker_.erase(request_id);
+    }
+    bool res_is_finish = is_cluster_finish_;
+    return ret && res_is_finish;
+  });
 }
 }  // namespace core
 }  // namespace ps
