@@ -44,7 +44,11 @@ namespace core {
 class SchedulerNode : public Node {
  public:
   SchedulerNode()
-      : server_(nullptr), current_worker_rank_id_(-1), current_server_rank_id_(-1), scheduler_thread_(nullptr) {}
+      : server_(nullptr),
+        current_worker_rank_id_(-1),
+        current_server_rank_id_(-1),
+        scheduler_thread_(nullptr),
+        total_node_num_(0) {}
   ~SchedulerNode() override;
 
   void Start() override;
@@ -67,6 +71,8 @@ class SchedulerNode : public Node {
   std::atomic<int> current_worker_rank_id_;
   std::atomic<int> current_server_rank_id_;
   std::unique_ptr<std::thread> scheduler_thread_;
+  uint32_t total_node_num_;
+
   // worker nodes and server nodes
   std::unordered_map<std::string, NodeInfo> nodes_info_;
   // timeout nodes

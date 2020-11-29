@@ -72,6 +72,7 @@ class Node {
   void ProcessHeartbeat(const CommMessage &message);
   uint64_t FetchServers(const std::shared_ptr<TcpClient> &client);
   void ProcessFetchServers(const CommMessage &message);
+  void FinishNode(const std::shared_ptr<TcpClient> &client);
 
   NodeInfo node_info_;
   std::atomic<bool> is_cluster_ready_;

@@ -43,7 +43,7 @@ void SchedulerNode::Start() {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
-  MS_LOG(INFO) << "The scheduler is ready to quit!";
+  MS_LOG(INFO) << "The scheduler is ready!";
 }
 
 void SchedulerNode::ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
@@ -65,6 +65,7 @@ void SchedulerNode::ProcessHeartBeat(const TcpServer &server, const TcpConnectio
 
 void SchedulerNode::InitNode() {
   is_node_stop_ = false;
+  total_node_num_ = ClusterConfig::server_num() + ClusterConfig::worker_num();
   node_info_.node_id_ = CommUtil::GenerateUUID();
   node_info_.node_role_ = NodeRole::SCHEDULER;
   MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
@@ -166,7 +167,7 @@ int SchedulerNode::AssignRankId(const RegisterMessage &register_message) {
   } else if (register_message.role() == NodeRole::WORKER) {
     rank_id = ++current_worker_rank_id_;
     NodeInfo node_info;
-    node_info.node_role_ = NodeRole::SERVER;
+    node_info.node_role_ = NodeRole::WORKER;
     node_info.node_id_ = node_id;
     node_info.rank_id_ = rank_id;
     nodes_info_[node_id] = node_info;
@@ -179,6 +180,7 @@ void SchedulerNode::ProcessFinish(const TcpServer &server, const TcpConnection &
   FinishMessage finish_message;
   finish_message.ParseFromString(message.data());
   finish_nodes_id_.insert(finish_message.node_id());
+  MS_LOG(INFO) << "Process finish message from node id:" << finish_message.node_id();
   const_cast<TcpServer &>(server).SendMessage(conn, message);
 }
 
@@ -207,15 +209,12 @@ void SchedulerNode::ProcessFetchServers(const TcpServer &server, const TcpConnec
 void SchedulerNode::StartClusterAvailableTimer() {
   MS_LOG(WARNING) << "The scheduler start a timing event to determine whether the system is available";
   server_->set_timer_once_callback([&](const TcpServer &server) {
-    uint32_t total_node_num = ClusterConfig::server_num() + ClusterConfig::worker_num();
-    if (total_node_num != nodes_info_.size()) {
+    if (total_node_num_ != nodes_info_.size()) {
       MS_LOG(WARNING) << "The cluster is not ready after " << ClusterConfig::cluster_available_timeout()
-                      << " seconds,so quit the cluster!";
-      if (on_node_event_message_) {
-        on_node_event_message_(NodeEvent::NODE_TIMEOUT);
-      }
-      is_cluster_ready_ = true;
-      is_cluster_finish_ = true;
+                      << " seconds,so finish the cluster, and change total node number from " << total_node_num_
+                      << " to " << nodes_info_.size();
+      total_node_num_ = nodes_info_.size();
+      is_node_timeout_ = true;
     }
   });
   server_->StartTimerOnlyOnce(ClusterConfig::cluster_available_timeout());
@@ -223,7 +222,6 @@ void SchedulerNode::StartClusterAvailableTimer() {
 
 void SchedulerNode::StartHeartbeatTimer() {
   MS_LOG(WARNING) << "The scheduler start a heartbeat timer!";
-  uint32_t total_node_num = ClusterConfig::server_num() + ClusterConfig::worker_num();
   server_->set_timer_callback([&]() {
     // 1. assign node timeout
     struct timeval current_time {};
@@ -243,12 +241,14 @@ void SchedulerNode::StartHeartbeatTimer() {
     }
 
     // 2. assign node finish
-    if (finish_nodes_id_.size() == nodes_info_.size()) {
+    if (finish_nodes_id_.size() == total_node_num_) {
       is_cluster_finish_ = true;
+      is_cluster_ready_ = true;
+      message_tracker_cond_.notify_all();
     }
 
     // 3. assign node ready
-    if (nodes_info_.size() == total_node_num) {
+    if (nodes_info_.size() == total_node_num_) {
       is_cluster_ready_ = true;
     }
   });
@@ -268,6 +268,7 @@ void SchedulerNode::Stop() {
 }
 
 void SchedulerNode::Finish() {
+  MS_LOG(INFO) << "Finish scheduler node!";
   std::unique_lock<std::mutex> lock(message_mutex_);
   message_tracker_cond_.wait(lock, [&] {
     bool res_is_finish = is_cluster_finish_;

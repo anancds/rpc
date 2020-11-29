@@ -84,6 +84,10 @@ void ServerNode::Register(const std::shared_ptr<TcpClient> &client) {
 
 void ServerNode::set_handler(const RequestHandler &handler) { request_handler_ = handler; }
 
+void ServerNode::Response(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+  const_cast<TcpServer &>(server).SendMessage(conn, message);
+}
+
 void ServerNode::ProcessRegister(const CommMessage &message) {
   RegisterRespMessage register_resp_message;
   register_resp_message.ParseFromString(message.data());
@@ -118,7 +122,15 @@ void ServerNode::Init() {
   std::string server_ip;
   CommUtil::GetAvailableInterfaceAndIP(&interface, &server_ip);
   server_ = std::make_shared<TcpServer>(server_ip, 0);
-  server_->SetMessageCallback([&](const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {});
+  server_->SetMessageCallback([&](const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+    switch (message.pb_meta().cmd()) {
+      case NodeCommand::SEND_DATA:
+        ProcessSendData(server, conn, message);
+        break;
+      default:
+        MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
+    }
+  });
   server_->Init();
   server_thread_ = std::make_unique<std::thread>([&]() {
     MS_LOG(INFO) << "The server node start a tcp server!";
@@ -149,6 +161,11 @@ void ServerNode::InitClientToScheduler() {
       case NodeCommand::HEARTBEAT:
         ProcessHeartbeat(message);
         break;
+      case NodeCommand::FETCH_SERVER:
+        ProcessFetchServers(message);
+        break;
+      case NodeCommand::FINISH:
+        break;
       default:
         MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
@@ -160,6 +177,12 @@ void ServerNode::InitClientToScheduler() {
     client_to_scheduler_->Start();
   });
   client_to_scheduler_thread_->detach();
+}
+
+void ServerNode::ProcessSendData(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+  if (request_handler_) {
+    request_handler_(server, conn, message);
+  }
 }
 
 void ServerNode::Stop() {
@@ -179,25 +202,8 @@ void ServerNode::Stop() {
 }
 
 void ServerNode::Finish() {
-  MessageMeta meta;
-  meta.set_cmd(NodeCommand::FINISH);
-  uint64_t request_id = AssignRequestId(1);
-  meta.set_request_id(request_id);
-
-  CommMessage message;
-  *message.mutable_pb_meta() = {meta};
-  client_to_scheduler_->SendMessage(message);
-
-  std::unique_lock<std::mutex> lock(message_mutex_);
-  message_tracker_cond_.wait(lock, [&] {
-    bool ret = message_tracker_[request_id].first == message_tracker_[request_id].second;
-    bool res_is_finish = is_cluster_finish_;
-    if (ret && res_is_finish) {
-      MS_LOG(INFO) << "Message tracker remove request id!";
-      message_tracker_.erase(request_id);
-    }
-    return ret && res_is_finish;
-  });
+  MS_LOG(INFO) << "Finish server node!";
+  FinishNode(client_to_scheduler_);
 }
 }  // namespace core
 }  // namespace ps

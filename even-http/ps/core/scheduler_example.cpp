@@ -22,6 +22,12 @@ static void StartServer() {
 
 
 int main(int /*argc*/, char ** /*argv*/) {
+  std::unordered_map<int , int> map;
+  map.insert(std::make_pair(1,1));
+  uint32_t a = 2;
+  if (map.size() == a) {
+
+  }
   std::cout << CommUtil::GenerateUUID() << std::endl;
   StartServer();
   CommMessage message;

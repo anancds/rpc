@@ -57,7 +57,7 @@ class ServerNode : public Node {
 
   void Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message);
   void set_handler(const RequestHandler &handler);
-  void response(const CommMessage &message);
+  void Response(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
 
  private:
   void Register(const std::shared_ptr<TcpClient> &client);
@@ -66,6 +66,7 @@ class ServerNode : public Node {
   void Init();
   void InitNode();
   void InitClientToScheduler();
+  void ProcessSendData(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
 
   std::shared_ptr<TcpClient> client_to_scheduler_;
   std::shared_ptr<TcpServer> server_;

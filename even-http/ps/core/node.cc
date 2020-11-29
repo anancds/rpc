@@ -50,8 +50,8 @@ void Node::ProcessHeartbeat(const CommMessage &message) {
     is_cluster_finish_ = true;
     message_tracker_cond_.notify_all();
   }
-  bool is_node_timeout = heartbeat_resp_message.is_node_timeout();
-  if (is_node_timeout && on_node_event_message_) {
+  is_node_timeout_ = heartbeat_resp_message.is_node_timeout();
+  if (is_node_timeout_ && on_node_event_message_) {
     on_node_event_message_(NodeEvent::NODE_TIMEOUT);
   }
 }
@@ -107,10 +107,40 @@ void Node::Wait(uint64_t request_id) {
 }
 
 uint64_t Node::AssignRequestId(const uint32_t &expected_resp_num) {
-  std::lock_guard<std::mutex> lock(message_mutex_);
   uint64_t request_id = ++request_id_;
   message_tracker_[request_id] = std::make_pair(expected_resp_num, 0);
   return request_id;
+}
+
+void Node::FinishNode(const std::shared_ptr<TcpClient> &client) {
+  MessageMeta meta;
+  meta.set_cmd(NodeCommand::FINISH);
+  uint64_t request_id = AssignRequestId(1);
+  meta.set_request_id(request_id);
+
+  FinishMessage finish_message;
+  finish_message.set_node_id(node_info_.node_id_);
+
+  CommMessage message;
+  *message.mutable_pb_meta() = {meta};
+  message.set_data(finish_message.SerializeAsString());
+  client->SendMessage(message);
+
+  std::unique_lock<std::mutex> lock(message_mutex_);
+  message_tracker_cond_.wait(lock, [&] {
+    //    bool ret = message_tracker_[request_id].first == message_tracker_[request_id].second;
+    //    bool res_is_finish = is_cluster_finish_;
+    //    if (ret && res_is_finish) {
+    //      MS_LOG(INFO) << "Message tracker remove request id!";
+    //      message_tracker_.erase(request_id);
+    //    }
+    //    return ret && res_is_finish;
+    bool res = is_cluster_finish_;
+    if (res) {
+      MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is success finish!";
+    }
+    return res;
+  });
 }
 
 }  // namespace core

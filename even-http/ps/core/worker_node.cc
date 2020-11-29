@@ -40,10 +40,13 @@ void WorkerNode::Start() {
   while (!is_cluster_ready_.load()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
-  MS_LOG(INFO) << "The cluster is ready to use!";
+  MS_LOG(INFO) << "The node is ready to fetch servers!";
 
-  Wait(FetchServers(client_to_scheduler_));
-  MS_LOG(INFO) << "Fetch servers successful!";
+  if (!is_node_timeout_) {
+    Wait(FetchServers(client_to_scheduler_));
+    MS_LOG(INFO) << "Fetch servers successful!";
+  }
+  MS_LOG(INFO) << "Start the node is finish!";
 }
 
 void WorkerNode::Register() {
@@ -112,7 +115,7 @@ const std::shared_ptr<TcpClient> &WorkerNode::GetOrCreateTcpClient(const int &ra
     std::string ip = server_rank_ids_[rank_id].first;
     uint16_t port = server_rank_ids_[rank_id].second;
     auto client = std::make_shared<TcpClient>(ip, port);
-    client->SetMessageCallback([&](const TcpClient &client, const CommMessage &message){
+    client->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
       switch (message.pb_meta().cmd()) {
         case NodeCommand::SEND_DATA:
           ProcessData(message);
@@ -150,6 +153,8 @@ void WorkerNode::InitClientToScheduler() {
       case NodeCommand::FETCH_SERVER:
         ProcessFetchServers(message);
         break;
+      case NodeCommand::FINISH:
+        break;
       default:
         MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
@@ -166,7 +171,9 @@ void WorkerNode::InitClientToScheduler() {
 void WorkerNode::Stop() {
   MS_LOG(INFO) << "Stop worker node!";
   if (!is_node_stop_.load()) {
+    is_cluster_ready_ = true;
     client_to_scheduler_->Stop();
+    client_to_scheduler_->StopEventBase();
     if (worker_thread_->joinable()) {
       worker_thread_->join();
     }
@@ -174,30 +181,10 @@ void WorkerNode::Stop() {
   }
 }
 
+
 void WorkerNode::Finish() {
-  MessageMeta meta;
-  meta.set_cmd(NodeCommand::FINISH);
-  uint64_t request_id = AssignRequestId(1);
-  meta.set_request_id(request_id);
-
-  FinishMessage finish_message;
-  finish_message.set_node_id(node_info_.node_id_);
-
-  CommMessage message;
-  *message.mutable_pb_meta() = {meta};
-  message.set_data(finish_message.SerializeAsString());
-  client_to_scheduler_->SendMessage(message);
-
-  std::unique_lock<std::mutex> lock(message_mutex_);
-  message_tracker_cond_.wait(lock, [&] {
-    bool ret = message_tracker_[request_id].first == message_tracker_[request_id].second;
-    bool res_is_finish = is_cluster_finish_;
-    if (ret && res_is_finish) {
-      MS_LOG(INFO) << "Message tracker remove request id!";
-      message_tracker_.erase(request_id);
-    }
-    return ret && res_is_finish;
-  });
+  MS_LOG(INFO) << "Finish worker node!";
+  FinishNode(client_to_scheduler_);
 }
 }  // namespace core
 }  // namespace ps
