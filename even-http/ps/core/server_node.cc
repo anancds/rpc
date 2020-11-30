@@ -45,7 +45,7 @@ void ServerNode::Start() {
   WaitNodeStart();
   MS_LOG(INFO) << "The cluster is ready to use!";
 
-  Wait(FetchServers(client_to_scheduler_));
+  FetchServers(client_to_scheduler_);
   MS_LOG(INFO) << "Fetch servers successful!";
 }
 
@@ -157,10 +157,10 @@ void ServerNode::InitClientToScheduler() {
         ProcessRegister(message);
         break;
       case NodeCommand::HEARTBEAT:
-        ProcessHeartbeat(message);
+        ProcessHeartbeatResp(message);
         break;
       case NodeCommand::FETCH_SERVER:
-        ProcessFetchServers(message);
+        ProcessFetchServersResp(message);
         break;
       case NodeCommand::FINISH:
         break;

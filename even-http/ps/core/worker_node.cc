@@ -41,7 +41,7 @@ void WorkerNode::Start() {
   MS_LOG(INFO) << "The node is ready to fetch servers!";
 
   if (!is_timeout_) {
-    Wait(FetchServers(client_to_scheduler_));
+    FetchServers(client_to_scheduler_);
     MS_LOG(INFO) << "Fetch servers successful!";
   }
   MS_LOG(INFO) << "Start the node is successful!";
@@ -72,7 +72,7 @@ uint64_t WorkerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, Comm
     MS_LOG(EXCEPTION) << "The rank id:" << rank_id << " is illegal!";
   }
 
-  uint64_t request_id = NextRequestId(1);
+  uint64_t request_id = ++next_request_id_;
   MessageMeta message_meta;
   message_meta.set_cmd(NodeCommand::SEND_DATA);
   message_meta.set_request_id(request_id);
@@ -143,13 +143,13 @@ void WorkerNode::InitClientToScheduler() {
   client_to_scheduler_->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
     switch (message.pb_meta().cmd()) {
       case NodeCommand::HEARTBEAT:
-        ProcessHeartbeat(message);
+        ProcessHeartbeatResp(message);
         break;
       case NodeCommand::REGISTER:
         ProcessRegister(message);
         break;
       case NodeCommand::FETCH_SERVER:
-        ProcessFetchServers(message);
+        ProcessFetchServersResp(message);
         break;
       case NodeCommand::FINISH:
         break;

@@ -57,16 +57,17 @@ class Node {
   uint32_t rank_id() const;
 
   void Wait(uint64_t request_id);
-  uint64_t NextRequestId(const uint32_t &expected_resp_num);
 
  protected:
   void Heartbeat(const std::shared_ptr<TcpClient> &client);
-  void ProcessHeartbeat(const CommMessage &message);
-  uint64_t FetchServers(const std::shared_ptr<TcpClient> &client);
-  void ProcessFetchServers(const CommMessage &message);
+  void ProcessHeartbeatResp(const CommMessage &message);
+  void FetchServers(const std::shared_ptr<TcpClient> &client);
+  void ProcessFetchServersResp(const CommMessage &message);
   void FinishNode(const std::shared_ptr<TcpClient> &client);
+  void ProcessFinishResp(const CommMessage &message);
   void WaitNodeStart();
   void WaitNodeFinish();
+  void SendMessage(const TcpClient &client, const uint32_t &expected_resp_num, const CommMessage &message);
 
   NodeInfo node_info_;
   std::atomic<bool> is_ready_;
