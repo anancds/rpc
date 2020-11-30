@@ -2,13 +2,13 @@
 // Created by cds on 2020/10/24.
 //
 
-#include "node_manager.h"
+#include "node_manager_test.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
 
-void NodeManager::StartScheduler() {
+void NodeManagerTest::StartScheduler() {
   scheduler_node_ = std::make_unique<SchedulerNode>();
   //  scheduler_node_->set_callback([&](const NodeEvent &event){
   //    if (event == NodeEvent::NODE_TIMEOUT) {
@@ -24,9 +24,9 @@ void NodeManager::StartScheduler() {
   //  }
 }
 
-void NodeManager::StopScheduler() { scheduler_node_->Stop(); }
+void NodeManagerTest::StopScheduler() { scheduler_node_->Stop(); }
 
-void NodeManager::StartServer() {
+void NodeManagerTest::StartServer() {
   server_node_ = std::make_unique<ServerNode>();
   server_node_->set_callback([&](const NodeEvent &event) {
     if (event == NodeEvent::NODE_TIMEOUT) {
@@ -43,9 +43,9 @@ void NodeManager::StartServer() {
   server_node_->Stop();
 }
 
-void NodeManager::StopServer() { server_node_->Stop(); }
+void NodeManagerTest::StopServer() { server_node_->Stop(); }
 
-void NodeManager::StartClient() {
+void NodeManagerTest::StartClient() {
   worker_node_ = std::make_unique<WorkerNode>();
   worker_node_->set_callback([&](const NodeEvent &event) {
     if (event == NodeEvent::NODE_TIMEOUT) {
@@ -64,23 +64,23 @@ void NodeManager::StartClient() {
   *kv_message.mutable_values() = {values.begin(), values.end()};
 
   comm_message.set_data(kv_message.SerializeAsString());
-  worker_node_->Wait(worker_node_->Send(NodeRole::SERVER, 0, comm_message));
+//  worker_node_->Wait(worker_node_->Send(NodeRole::SERVER, 0, comm_message));
   worker_node_->Finish();
   worker_node_->Stop();
 }
 
-void NodeManager::StopClient() { worker_node_->Stop(); }
+void NodeManagerTest::StopClient() { worker_node_->Stop(); }
 
-int NodeManager::WorkerRankToID(int rank) { return rank * 2 + 9; }
+int NodeManagerTest::WorkerRankToID(int rank) { return rank * 2 + 9; }
 
-int NodeManager::ServerRankToID(int rank) { return rank * 2 + 8; }
+int NodeManagerTest::ServerRankToID(int rank) { return rank * 2 + 8; }
 
-const std::vector<int> &NodeManager::GetNodeIDs(int node_id) const {
+const std::vector<int> &NodeManagerTest::GetNodeIDs(int node_id) const {
   const auto it = node_ids_.find(node_id);
   return it->second;
 }
 
-int NodeManager::IDtoRank(int id) { return std::max((id - 8) / 2, 0); }
+int NodeManagerTest::IDtoRank(int id) { return std::max((id - 8) / 2, 0); }
 
 }  // namespace core
 }  // namespace ps

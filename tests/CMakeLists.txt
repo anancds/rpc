@@ -15,7 +15,7 @@ set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_client.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/scheduler_node.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/server_node.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/worker_node.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node_manager.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node_manager_test.cpp)
 
 add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_message_handler.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_server.cc

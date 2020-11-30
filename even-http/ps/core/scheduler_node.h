@@ -34,6 +34,7 @@
 #include "ps/core/cluster_config.h"
 #include "ps/core/tcp_client.h"
 #include "ps/core/tcp_server.h"
+#include "ps/core/node_manager.h"
 #include "ps/core/node.h"
 #include "utils/log_adapter.h"
 
@@ -44,11 +45,7 @@ namespace core {
 class SchedulerNode : public Node {
  public:
   SchedulerNode()
-      : server_(nullptr),
-        current_worker_rank_id_(-1),
-        current_server_rank_id_(-1),
-        scheduler_thread_(nullptr),
-        total_node_num_(0) {}
+      : server_(nullptr), scheduler_thread_(nullptr), heartbeat_thread_(nullptr), cluster_available_thread_(nullptr) {}
   ~SchedulerNode() override;
 
   void Start() override;
@@ -58,28 +55,19 @@ class SchedulerNode : public Node {
  private:
   void InitNode();
   void Init();
-  void UpdateHeartbeat(const std::string &node_id);
   void ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   void StartClusterAvailableTimer();
-  void StartHeartbeatTimer();
-  int AssignRankId(const RegisterMessage &register_message);
+  void StartClusterStateFlushTimer();
   void ProcessFinish(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   void ProcessFetchServers(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
 
   std::unique_ptr<TcpServer> server_;
-  std::atomic<int> current_worker_rank_id_;
-  std::atomic<int> current_server_rank_id_;
   std::unique_ptr<std::thread> scheduler_thread_;
-  uint32_t total_node_num_;
+  std::unique_ptr<std::thread> heartbeat_thread_;
+  std::unique_ptr<std::thread> cluster_available_thread_;
 
-  // worker nodes and server nodes
-  std::unordered_map<std::string, NodeInfo> nodes_info_;
-  // timeout nodes
-  std::unordered_map<std::string, NodeInfo> timeout_nodes_info_;
-  std::mutex assign_rank_id_mutex_;
-  std::mutex heartbeat_mutex_;
-  std::unordered_set<std::string> finish_nodes_id_;
+  NodeManager node_manager_;
 };
 }  // namespace core
 }  // namespace ps

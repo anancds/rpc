@@ -8,7 +8,7 @@
 #include <thread>
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "message.h"
-#include "ps/core/node_manager.h"
+#include "ps/core/node_manager_test.h"
 #include "tcp_server.h"
 #include "ps/core/node_info.h"
 
@@ -16,7 +16,7 @@ using namespace mindspore::ps::core;
 
 static void StartServer() {
   ClusterConfig::Init(1, 1, std::make_unique<std::string>("127.0.0.1"), 9999);
-  NodeManager::Get()->StartScheduler();
+  NodeManagerTest::Get()->StartScheduler();
 
 }
 

@@ -21,12 +21,12 @@ namespace ps {
 namespace core {
 WorkerNode::~WorkerNode() {
   MS_LOG(INFO) << "Stop worker node!";
-  if (!is_node_stop_.load()) {
+  if (!is_already_stopped_.load()) {
     client_to_scheduler_->Stop();
     if (worker_thread_->joinable()) {
       worker_thread_->join();
     }
-    is_node_stop_ = true;
+    is_already_stopped_ = true;
   }
 }
 void WorkerNode::Start() {
@@ -37,12 +37,10 @@ void WorkerNode::Start() {
   Register();
   Heartbeat(client_to_scheduler_);
 
-  while (!is_cluster_ready_.load()) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
+  WaitNodeStart();
   MS_LOG(INFO) << "The node is ready to fetch servers!";
 
-  if (!is_node_timeout_) {
+  if (!is_timeout_) {
     Wait(FetchServers(client_to_scheduler_));
     MS_LOG(INFO) << "Fetch servers successful!";
   }
@@ -52,7 +50,7 @@ void WorkerNode::Start() {
 void WorkerNode::Register() {
   MessageMeta message_meta;
   message_meta.set_cmd(NodeCommand::REGISTER);
-  message_meta.set_request_id(++request_id_);
+  message_meta.set_request_id(++next_request_id_);
 
   RegisterMessage register_message;
   register_message.set_node_id(node_info_.node_id_);
@@ -74,7 +72,7 @@ uint64_t WorkerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, Comm
     MS_LOG(EXCEPTION) << "The rank id:" << rank_id << " is illegal!";
   }
 
-  uint64_t request_id = AssignRequestId(1);
+  uint64_t request_id = NextRequestId(1);
   MessageMeta message_meta;
   message_meta.set_cmd(NodeCommand::SEND_DATA);
   message_meta.set_request_id(request_id);
@@ -131,7 +129,7 @@ const std::shared_ptr<TcpClient> &WorkerNode::GetOrCreateTcpClient(const int &ra
 }
 
 void WorkerNode::InitNode() {
-  is_node_stop_ = false;
+  is_already_stopped_ = false;
   node_info_.node_id_ = CommUtil::GenerateUUID();
   node_info_.node_role_ = NodeRole::WORKER;
   MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
@@ -170,17 +168,16 @@ void WorkerNode::InitClientToScheduler() {
 
 void WorkerNode::Stop() {
   MS_LOG(INFO) << "Stop worker node!";
-  if (!is_node_stop_.load()) {
-    is_cluster_ready_ = true;
+  if (!is_already_stopped_.load()) {
+    is_ready_ = true;
     client_to_scheduler_->Stop();
     client_to_scheduler_->StopEventBase();
     if (worker_thread_->joinable()) {
       worker_thread_->join();
     }
-    is_node_stop_ = true;
+    is_already_stopped_ = true;
   }
 }
-
 
 void WorkerNode::Finish() {
   MS_LOG(INFO) << "Finish worker node!";

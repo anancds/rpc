@@ -20,7 +20,7 @@ namespace ps {
 namespace core {
 ServerNode::~ServerNode() {
   MS_LOG(INFO) << "Stop server node!";
-  if (!is_node_stop_.load()) {
+  if (!is_already_stopped_.load()) {
     server_->Stop();
     client_to_scheduler_->Stop();
     client_to_scheduler_->StopEventBase();
@@ -30,7 +30,7 @@ ServerNode::~ServerNode() {
     if (client_to_scheduler_thread_->joinable()) {
       client_to_scheduler_thread_->join();
     }
-    is_node_stop_ = true;
+    is_already_stopped_ = true;
   }
 }
 
@@ -42,9 +42,7 @@ void ServerNode::Start() {
   Register(client_to_scheduler_);
   Heartbeat(client_to_scheduler_);
 
-  while (!is_cluster_ready_.load()) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
+  WaitNodeStart();
   MS_LOG(INFO) << "The cluster is ready to use!";
 
   Wait(FetchServers(client_to_scheduler_));
@@ -65,7 +63,7 @@ void ServerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, const Co
 void ServerNode::Register(const std::shared_ptr<TcpClient> &client) {
   MessageMeta message_meta;
   message_meta.set_cmd(NodeCommand::REGISTER);
-  message_meta.set_request_id(++request_id_);
+  message_meta.set_request_id(++next_request_id_);
 
   RegisterMessage register_message;
   register_message.set_node_id(node_info_.node_id_);
@@ -140,7 +138,7 @@ void ServerNode::Init() {
 }
 
 void ServerNode::InitNode() {
-  is_node_stop_ = false;
+  is_already_stopped_ = false;
   node_info_.node_id_ = CommUtil::GenerateUUID();
   node_info_.node_role_ = NodeRole::SERVER;
   node_info_.ip_ = server_->BoundIp();
@@ -187,7 +185,7 @@ void ServerNode::ProcessSendData(const TcpServer &server, const TcpConnection &c
 
 void ServerNode::Stop() {
   MS_LOG(INFO) << "Stop server node!";
-  if (!is_node_stop_.load()) {
+  if (!is_already_stopped_.load()) {
     server_->Stop();
     client_to_scheduler_->Stop();
     client_to_scheduler_->StopEventBase();
@@ -197,7 +195,7 @@ void ServerNode::Stop() {
     if (client_to_scheduler_thread_->joinable()) {
       client_to_scheduler_thread_->join();
     }
-    is_node_stop_ = true;
+    is_already_stopped_ = true;
   }
 }
 

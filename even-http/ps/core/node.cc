@@ -19,7 +19,6 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-
 void Node::Heartbeat(const std::shared_ptr<TcpClient> &client) {
   MS_LOG(INFO) << "The node role: " << CommUtil::NodeRoleToString(node_info_.node_role_)
                << ", the node id:" << node_info_.node_id_ << ", the node rank id:" << node_info_.rank_id_
@@ -28,7 +27,7 @@ void Node::Heartbeat(const std::shared_ptr<TcpClient> &client) {
   client->set_timer_callback([&](const TcpClient &client) {
     MessageMeta meta;
     meta.set_cmd(NodeCommand::HEARTBEAT);
-    meta.set_request_id(++request_id_);
+    meta.set_request_id(++next_request_id_);
 
     HeartbeatMessage heartbeat_message;
     heartbeat_message.set_node_id(node_info_.node_id_);
@@ -44,14 +43,16 @@ void Node::Heartbeat(const std::shared_ptr<TcpClient> &client) {
 void Node::ProcessHeartbeat(const CommMessage &message) {
   HeartbeatRespMessage heartbeat_resp_message;
   heartbeat_resp_message.ParseFromString(message.data());
-  is_cluster_ready_ = heartbeat_resp_message.is_cluster_ready();
-  bool is_cluster_finish = heartbeat_resp_message.is_cluster_finish();
-  if (is_cluster_finish) {
-    is_cluster_finish_ = true;
-    message_tracker_cond_.notify_all();
+  is_ready_ = heartbeat_resp_message.is_cluster_ready();
+  if (is_ready_.load()) {
+    wait_start_cond_.notify_all();
   }
-  is_node_timeout_ = heartbeat_resp_message.is_node_timeout();
-  if (is_node_timeout_ && on_node_event_message_) {
+  is_finish_ = heartbeat_resp_message.is_cluster_finish();
+  if (is_finish_.load()) {
+    wait_finish_cond_.notify_all();
+  }
+  is_timeout_ = heartbeat_resp_message.is_cluster_timeout();
+  if (is_timeout_ && on_node_event_message_) {
     on_node_event_message_(NodeEvent::NODE_TIMEOUT);
   }
 }
@@ -59,7 +60,7 @@ void Node::ProcessHeartbeat(const CommMessage &message) {
 uint64_t Node::FetchServers(const std::shared_ptr<TcpClient> &client) {
   MessageMeta meta;
   meta.set_cmd(NodeCommand::FETCH_SERVER);
-  uint64_t request_id = AssignRequestId(1);
+  uint64_t request_id = NextRequestId(1);
   meta.set_request_id(request_id);
 
   CommMessage message;
@@ -106,8 +107,8 @@ void Node::Wait(uint64_t request_id) {
   });
 }
 
-uint64_t Node::AssignRequestId(const uint32_t &expected_resp_num) {
-  uint64_t request_id = ++request_id_;
+uint64_t Node::NextRequestId(const uint32_t &expected_resp_num) {
+  uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(expected_resp_num, 0);
   return request_id;
 }
@@ -115,7 +116,7 @@ uint64_t Node::AssignRequestId(const uint32_t &expected_resp_num) {
 void Node::FinishNode(const std::shared_ptr<TcpClient> &client) {
   MessageMeta meta;
   meta.set_cmd(NodeCommand::FINISH);
-  uint64_t request_id = AssignRequestId(1);
+  uint64_t request_id = NextRequestId(1);
   meta.set_request_id(request_id);
 
   FinishMessage finish_message;
@@ -125,24 +126,29 @@ void Node::FinishNode(const std::shared_ptr<TcpClient> &client) {
   *message.mutable_pb_meta() = {meta};
   message.set_data(finish_message.SerializeAsString());
   client->SendMessage(message);
+}
 
-  std::unique_lock<std::mutex> lock(message_mutex_);
-  message_tracker_cond_.wait(lock, [&] {
-    //    bool ret = message_tracker_[request_id].first == message_tracker_[request_id].second;
-    //    bool res_is_finish = is_cluster_finish_;
-    //    if (ret && res_is_finish) {
-    //      MS_LOG(INFO) << "Message tracker remove request id!";
-    //      message_tracker_.erase(request_id);
-    //    }
-    //    return ret && res_is_finish;
-    bool res = is_cluster_finish_;
+void Node::WaitNodeStart() {
+  std::unique_lock<std::mutex> lock(wait_start_mutex_);
+  wait_start_cond_.wait(lock, [&] {
+    bool res = is_ready_;
+    if (res) {
+      MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is success start!";
+    }
+    return res;
+  });
+}
+
+void Node::WaitNodeFinish() {
+  std::unique_lock<std::mutex> lock(wait_finish_mutex_);
+  wait_finish_cond_.wait(lock, [&] {
+    bool res = is_finish_;
     if (res) {
       MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is success finish!";
     }
     return res;
   });
 }
-
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
