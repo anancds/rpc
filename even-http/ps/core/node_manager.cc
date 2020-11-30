@@ -2,7 +2,7 @@
 // Created by cds on 2020/11/30.
 //
 
-#include "node_manager.h"
+#include "ps/core/node_manager.h"
 
 namespace mindspore {
 namespace ps {

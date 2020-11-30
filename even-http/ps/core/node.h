@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <vector>
 #include <condition_variable>
+#include <utility>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
