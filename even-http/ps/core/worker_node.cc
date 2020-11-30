@@ -44,7 +44,7 @@ void WorkerNode::Start() {
     Wait(FetchServers(client_to_scheduler_));
     MS_LOG(INFO) << "Fetch servers successful!";
   }
-  MS_LOG(INFO) << "Start the node is finish!";
+  MS_LOG(INFO) << "Start the node is successful!";
 }
 
 void WorkerNode::Register() {

@@ -28,6 +28,12 @@ SchedulerNode::~SchedulerNode() {
     if (scheduler_thread_->joinable()) {
       scheduler_thread_->join();
     }
+    if (heartbeat_thread_->joinable()) {
+      heartbeat_thread_->join();
+    }
+    if (cluster_available_thread_->joinable()) {
+      cluster_available_thread_->join();
+    }
     is_ready_ = true;
   }
 }
@@ -161,6 +167,14 @@ void SchedulerNode::StartClusterStateFlushTimer() {
     while (!is_finish_.load()) {
       std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval()));
       node_manager_.ClusterStateFlush();
+      if (node_manager_.is_cluster_ready()) {
+        is_ready_ = true;
+        wait_start_cond_.notify_all();
+      }
+      if (node_manager_.is_cluster_finish()) {
+        is_finish_ = true;
+        wait_finish_cond_.notify_all();
+      }
     }
   });
   heartbeat_thread_->detach();
@@ -174,14 +188,20 @@ void SchedulerNode::Stop() {
     if (scheduler_thread_->joinable()) {
       scheduler_thread_->join();
     }
+    if (heartbeat_thread_->joinable()) {
+      heartbeat_thread_->join();
+    }
+    if (cluster_available_thread_->joinable()) {
+      cluster_available_thread_->join();
+    }
     is_ready_ = true;
   }
 }
 
 void SchedulerNode::Finish() {
   MS_LOG(INFO) << "Finish scheduler node!";
-  std::unique_lock<std::mutex> lock(message_mutex_);
-  message_tracker_cond_.wait(lock, [&] {
+  std::unique_lock<std::mutex> lock(wait_finish_mutex_);
+  wait_finish_cond_.wait(lock, [&] {
     bool res = is_finish_;
     if (res) {
       MS_LOG(INFO) << "The scheduler finish success!";

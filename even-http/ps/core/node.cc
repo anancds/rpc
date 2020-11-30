@@ -126,12 +126,13 @@ void Node::FinishNode(const std::shared_ptr<TcpClient> &client) {
   *message.mutable_pb_meta() = {meta};
   message.set_data(finish_message.SerializeAsString());
   client->SendMessage(message);
+  WaitNodeFinish();
 }
 
 void Node::WaitNodeStart() {
   std::unique_lock<std::mutex> lock(wait_start_mutex_);
   wait_start_cond_.wait(lock, [&] {
-    bool res = is_ready_;
+    bool res = is_ready_.load();
     if (res) {
       MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is success start!";
     }

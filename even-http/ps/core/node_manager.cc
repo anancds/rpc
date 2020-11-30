@@ -100,7 +100,6 @@ void NodeManager::ClusterStateFlush() {
   // 3. assign node ready
   if (nodes_info_.size() == total_node_num_) {
     is_cluster_ready_ = true;
-
   }
 }
 
