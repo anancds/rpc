@@ -67,7 +67,7 @@ class Node {
   void ProcessFinishResp(const CommMessage &message);
   void WaitNodeStart();
   void WaitNodeFinish();
-  void SendMessage(const TcpClient &client, const uint32_t &expected_resp_num, const CommMessage &message);
+  void SendMessage(const TcpClient &client, const CommMessage &message);
 
   NodeInfo node_info_;
   std::atomic<bool> is_ready_;

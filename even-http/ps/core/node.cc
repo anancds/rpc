@@ -34,7 +34,7 @@ void Node::Heartbeat(const std::shared_ptr<TcpClient> &client) {
     CommMessage message;
     *message.mutable_pb_meta() = {meta};
     message.set_data(heartbeat_message.SerializeAsString());
-    SendMessage(client, 1, message);
+    SendMessage(client, message);
   });
   client->StartTimer(ClusterConfig::heartbeat_interval());
 }
@@ -68,7 +68,7 @@ void Node::FetchServers(const std::shared_ptr<TcpClient> &client) {
 
   CommMessage message;
   *message.mutable_pb_meta() = {meta};
-  SendMessage(*client, 1, message);
+  SendMessage(*client, message);
 }
 
 void Node::ProcessFetchServersResp(const CommMessage &message) {
@@ -127,7 +127,7 @@ void Node::FinishNode(const std::shared_ptr<TcpClient> &client) {
   CommMessage message;
   *message.mutable_pb_meta() = {meta};
   message.set_data(finish_message.SerializeAsString());
-  SendMessage(*client, 1, message);
+  SendMessage(*client, message);
   WaitNodeFinish();
 }
 
@@ -153,9 +153,9 @@ void Node::WaitNodeFinish() {
   });
 }
 
-void Node::SendMessage(const TcpClient &client, const uint32_t &expected_resp_num, const CommMessage &message) {
+void Node::SendMessage(const TcpClient &client, const CommMessage &message) {
   uint64_t request_id = ++next_request_id_;
-  message_tracker_[request_id] = std::make_pair(expected_resp_num, 0);
+  message_tracker_[request_id] = std::make_pair(1, 0);
   const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
   client.SendMessage(message);
   Wait(request_id);
