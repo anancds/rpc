@@ -40,7 +40,7 @@ void WorkerNode::Start() {
   WaitNodeStart();
   MS_LOG(INFO) << "The node is ready to fetch servers!";
 
-  if (!is_timeout_) {
+  if (!is_timeout_.load()) {
     FetchServers(client_to_scheduler_);
     MS_LOG(INFO) << "Fetch servers successful!";
   }
@@ -152,10 +152,12 @@ void WorkerNode::InitClientToScheduler() {
         ProcessFetchServersResp(message);
         break;
       case NodeCommand::FINISH:
+        ProcessFinishResp(message);
         break;
       default:
         MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
+    NotifyMessageReceive(message);
   });
 
   client_to_scheduler_->Init();
@@ -170,10 +172,14 @@ void WorkerNode::Stop() {
   MS_LOG(INFO) << "Stop worker node!";
   if (!is_already_stopped_.load()) {
     is_ready_ = true;
+    is_timeout_ = true;
     client_to_scheduler_->Stop();
     client_to_scheduler_->StopEventBase();
     if (worker_thread_->joinable()) {
       worker_thread_->join();
+    }
+    if (heart_beat_thread_->joinable()) {
+      heart_beat_thread_->join();
     }
     is_already_stopped_ = true;
   }

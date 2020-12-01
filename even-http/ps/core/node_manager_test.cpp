@@ -30,6 +30,7 @@ void NodeManagerTest::StartServer() {
   server_node_ = std::make_unique<ServerNode>();
   server_node_->set_callback([&](const NodeEvent &event) {
     if (event == NodeEvent::NODE_TIMEOUT) {
+
       server_node_->Finish();
       server_node_->Stop();
     }
@@ -39,8 +40,12 @@ void NodeManagerTest::StartServer() {
   });
   server_node_->Start();
 
+
+
+
   server_node_->Finish();
   server_node_->Stop();
+
 }
 
 void NodeManagerTest::StopServer() { server_node_->Stop(); }
@@ -51,7 +56,7 @@ void NodeManagerTest::StartClient() {
     if (event == NodeEvent::NODE_TIMEOUT) {
       MS_LOG(INFO) << "NODE_TIMEOUT, finish!";
       std::this_thread::sleep_for(std::chrono::milliseconds(50000));
-      worker_node_->Finish();
+//      worker_node_->Finish();
       worker_node_->Stop();
     }
   });

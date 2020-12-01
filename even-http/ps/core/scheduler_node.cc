@@ -28,8 +28,8 @@ SchedulerNode::~SchedulerNode() {
     if (scheduler_thread_->joinable()) {
       scheduler_thread_->join();
     }
-    if (heartbeat_thread_->joinable()) {
-      heartbeat_thread_->join();
+    if (state_flush_thread_->joinable()) {
+      state_flush_thread_->join();
     }
     if (cluster_available_thread_->joinable()) {
       cluster_available_thread_->join();
@@ -163,7 +163,7 @@ void SchedulerNode::StartClusterAvailableTimer() {
 
 void SchedulerNode::StartClusterStateFlushTimer() {
   MS_LOG(WARNING) << "The scheduler start a heartbeat timer!";
-  heartbeat_thread_ = std::make_unique<std::thread>([&]() {
+  state_flush_thread_ = std::make_unique<std::thread>([&]() {
     while (!is_finish_.load()) {
       std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval()));
       node_manager_.ClusterStateFlush();
@@ -173,11 +173,12 @@ void SchedulerNode::StartClusterStateFlushTimer() {
       }
       if (node_manager_.is_cluster_finish()) {
         is_finish_ = true;
+        std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval() + 1));
         wait_finish_cond_.notify_all();
       }
     }
   });
-  heartbeat_thread_->detach();
+  state_flush_thread_->detach();
 }
 
 void SchedulerNode::Stop() {
@@ -188,8 +189,8 @@ void SchedulerNode::Stop() {
     if (scheduler_thread_->joinable()) {
       scheduler_thread_->join();
     }
-    if (heartbeat_thread_->joinable()) {
-      heartbeat_thread_->join();
+    if (state_flush_thread_->joinable()) {
+      state_flush_thread_->join();
     }
     if (cluster_available_thread_->joinable()) {
       cluster_available_thread_->join();

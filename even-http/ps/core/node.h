@@ -44,7 +44,13 @@ namespace ps {
 namespace core {
 class Node {
  public:
-  Node() : is_ready_(false), is_finish_(false), is_timeout_(false), is_already_stopped_(true), next_request_id_(0) {}
+  Node()
+      : is_ready_(false),
+        is_finish_(false),
+        is_timeout_(false),
+        is_already_stopped_(true),
+        next_request_id_(0),
+        heart_beat_thread_(nullptr) {}
   virtual ~Node() = default;
 
   using OnNodeEventMessage = std::function<void(const NodeEvent &event)>;
@@ -68,7 +74,9 @@ class Node {
   void ProcessFinishResp(const CommMessage &message);
   void WaitNodeStart();
   void WaitNodeFinish();
-  void SendMessage(const TcpClient &client, const CommMessage &message);
+  void SyncSendMessage(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
+  void AsyncSendMessage(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
+  void NotifyMessageReceive(const CommMessage &message);
 
   NodeInfo node_info_;
   std::atomic<bool> is_ready_;
@@ -76,6 +84,7 @@ class Node {
   std::atomic<bool> is_timeout_;
   std::atomic<bool> is_already_stopped_;
   std::atomic_uint64_t next_request_id_;
+  std::unique_ptr<std::thread> heart_beat_thread_;
 
   OnNodeEventMessage on_node_event_message_;
 
@@ -91,7 +100,6 @@ class Node {
   std::mutex wait_start_mutex_;
   std::condition_variable wait_start_cond_;
 };
-
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore

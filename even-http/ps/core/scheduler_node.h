@@ -45,7 +45,8 @@ namespace core {
 class SchedulerNode : public Node {
  public:
   SchedulerNode()
-      : server_(nullptr), scheduler_thread_(nullptr), heartbeat_thread_(nullptr), cluster_available_thread_(nullptr) {}
+      : server_(nullptr), scheduler_thread_(nullptr),
+        state_flush_thread_(nullptr), cluster_available_thread_(nullptr) {}
   ~SchedulerNode() override;
 
   void Start() override;
@@ -64,7 +65,7 @@ class SchedulerNode : public Node {
 
   std::unique_ptr<TcpServer> server_;
   std::unique_ptr<std::thread> scheduler_thread_;
-  std::unique_ptr<std::thread> heartbeat_thread_;
+  std::unique_ptr<std::thread> state_flush_thread_;
   std::unique_ptr<std::thread> cluster_available_thread_;
 
   NodeManager node_manager_;

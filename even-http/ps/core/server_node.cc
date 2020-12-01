@@ -45,8 +45,13 @@ void ServerNode::Start() {
   WaitNodeStart();
   MS_LOG(INFO) << "The cluster is ready to use!";
 
-  FetchServers(client_to_scheduler_);
-  MS_LOG(INFO) << "Fetch servers successful!";
+  if (!is_timeout_) {
+    MS_LOG(INFO) << "The node begin to fetch servers";
+    FetchServers(client_to_scheduler_);
+    MS_LOG(INFO) << "Fetch servers successful!";
+  }
+  MS_LOG(INFO) << "The node timeout is:" << is_timeout_;
+  MS_LOG(INFO) << "Start the node is successful!";
 }
 
 void ServerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message) {
@@ -63,7 +68,6 @@ void ServerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, const Co
 void ServerNode::Register(const std::shared_ptr<TcpClient> &client) {
   MessageMeta message_meta;
   message_meta.set_cmd(NodeCommand::REGISTER);
-  message_meta.set_request_id(++next_request_id_);
 
   RegisterMessage register_message;
   register_message.set_node_id(node_info_.node_id_);
@@ -74,7 +78,7 @@ void ServerNode::Register(const std::shared_ptr<TcpClient> &client) {
   CommMessage comm_message;
   *comm_message.mutable_pb_meta() = {message_meta};
   comm_message.set_data(register_message.SerializeAsString());
-  client->SendMessage(comm_message);
+  SyncSendMessage(client, comm_message);
 
   MS_LOG(INFO) << "The server node id:" << node_info_.node_id_
                << "is registering to scheduler, the request id is:" << message_meta.request_id();
@@ -163,10 +167,12 @@ void ServerNode::InitClientToScheduler() {
         ProcessFetchServersResp(message);
         break;
       case NodeCommand::FINISH:
+        ProcessFinishResp(message);
         break;
       default:
         MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
+    NotifyMessageReceive(message);
   });
 
   client_to_scheduler_->Init();
@@ -194,6 +200,9 @@ void ServerNode::Stop() {
     }
     if (client_to_scheduler_thread_->joinable()) {
       client_to_scheduler_thread_->join();
+    }
+    if (heart_beat_thread_->joinable()) {
+      heart_beat_thread_->join();
     }
     is_already_stopped_ = true;
   }

@@ -23,43 +23,41 @@ void Node::Heartbeat(const std::shared_ptr<TcpClient> &client) {
   MS_LOG(INFO) << "The node role: " << CommUtil::NodeRoleToString(node_info_.node_role_)
                << ", the node id:" << node_info_.node_id_ << ", the node rank id:" << node_info_.rank_id_
                << " begin send heartbeat to the scheduler!";
+  heart_beat_thread_ = std::make_unique<std::thread>([&]() {
+    while (!is_finish_.load()) {
+      std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval()));
+      MessageMeta meta;
+      meta.set_cmd(NodeCommand::HEARTBEAT);
 
-  client->set_timer_callback([&](const TcpClient &client) {
-    MessageMeta meta;
-    meta.set_cmd(NodeCommand::HEARTBEAT);
+      HeartbeatMessage heartbeat_message;
+      heartbeat_message.set_node_id(node_info_.node_id_);
 
-    HeartbeatMessage heartbeat_message;
-    heartbeat_message.set_node_id(node_info_.node_id_);
-
-    CommMessage message;
-    *message.mutable_pb_meta() = {meta};
-    message.set_data(heartbeat_message.SerializeAsString());
-    SendMessage(client, message);
+      CommMessage message;
+      *message.mutable_pb_meta() = {meta};
+      message.set_data(heartbeat_message.SerializeAsString());
+      AsyncSendMessage(client, message);
+    }
   });
-  client->StartTimer(ClusterConfig::heartbeat_interval());
+  heart_beat_thread_->detach();
 }
 
 void Node::ProcessHeartbeatResp(const CommMessage &message) {
-  const MessageMeta &message_meta = message.pb_meta();
-  uint64_t request_id = message_meta.request_id();
-
   HeartbeatRespMessage heartbeat_resp_message;
   heartbeat_resp_message.ParseFromString(message.data());
   is_ready_ = heartbeat_resp_message.is_cluster_ready();
   if (is_ready_.load()) {
     wait_start_cond_.notify_all();
+    MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is ready!";
   }
   is_finish_ = heartbeat_resp_message.is_cluster_finish();
   if (is_finish_.load()) {
     wait_finish_cond_.notify_all();
+    MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is finish!";
   }
   is_timeout_ = heartbeat_resp_message.is_cluster_timeout();
   if (is_timeout_ && on_node_event_message_) {
     on_node_event_message_(NodeEvent::NODE_TIMEOUT);
   }
-
-  message_tracker_[request_id].second++;
-  message_tracker_cond_.notify_all();
 }
 
 void Node::FetchServers(const std::shared_ptr<TcpClient> &client) {
@@ -68,13 +66,10 @@ void Node::FetchServers(const std::shared_ptr<TcpClient> &client) {
 
   CommMessage message;
   *message.mutable_pb_meta() = {meta};
-  SendMessage(*client, message);
+  SyncSendMessage(client, message);
 }
 
 void Node::ProcessFetchServersResp(const CommMessage &message) {
-  const MessageMeta &message_meta = message.pb_meta();
-  uint64_t request_id = message_meta.request_id();
-
   FetchServersRespMessage fetch_servers_resp_message;
   fetch_servers_resp_message.ParseFromString(message.data());
 
@@ -84,17 +79,11 @@ void Node::ProcessFetchServersResp(const CommMessage &message) {
     server_rank_ids_[it->rank_id()] = std::make_pair(it->ip(), it->port());
   }
 
-  message_tracker_[request_id].second++;
-  message_tracker_cond_.notify_all();
   MS_LOG(DEBUG) << "The all server host size is:" << server_rank_ids_.size();
 }
 
 void Node::ProcessFinishResp(const CommMessage &message) {
-  const MessageMeta &message_meta = message.pb_meta();
-  uint64_t request_id = message_meta.request_id();
-
-  message_tracker_[request_id].second++;
-  message_tracker_cond_.notify_all();
+  MS_LOG(INFO) << "The Node id:" << node_info_.node_id_ << " receive a finish message response!";
 }
 
 std::string Node::node_id() const { return node_info_.node_id_; }
@@ -110,7 +99,7 @@ void Node::Wait(uint64_t request_id) {
   message_tracker_cond_.wait(lock, [&] {
     bool ret = message_tracker_[request_id].first == message_tracker_[request_id].second;
     if (ret) {
-      MS_LOG(INFO) << "Message tracker remove request id!";
+      MS_LOG(INFO) << "Message tracker remove request id:" << request_id;
       message_tracker_.erase(request_id);
     }
     return ret;
@@ -127,7 +116,7 @@ void Node::FinishNode(const std::shared_ptr<TcpClient> &client) {
   CommMessage message;
   *message.mutable_pb_meta() = {meta};
   message.set_data(finish_message.SerializeAsString());
-  SendMessage(*client, message);
+  SyncSendMessage(client, message);
   WaitNodeFinish();
 }
 
@@ -153,12 +142,26 @@ void Node::WaitNodeFinish() {
   });
 }
 
-void Node::SendMessage(const TcpClient &client, const CommMessage &message) {
+void Node::SyncSendMessage(const std::shared_ptr<TcpClient> &client, const CommMessage &message) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(1, 0);
   const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
-  client.SendMessage(message);
+  client->SendMessage(message);
   Wait(request_id);
+}
+
+void Node::AsyncSendMessage(const std::shared_ptr<TcpClient> &client, const CommMessage &message) {
+  uint64_t request_id = ++next_request_id_;
+  const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
+  client->SendMessage(message);
+}
+
+void Node::NotifyMessageReceive(const CommMessage &message) {
+  const MessageMeta &message_meta = message.pb_meta();
+  uint64_t request_id = message_meta.request_id();
+
+  message_tracker_[request_id].second++;
+  message_tracker_cond_.notify_all();
 }
 }  // namespace core
 }  // namespace ps
