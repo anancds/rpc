@@ -82,10 +82,6 @@ void Node::ProcessFetchServersResp(const CommMessage &message) {
   MS_LOG(DEBUG) << "The all server host size is:" << server_rank_ids_.size();
 }
 
-void Node::ProcessFinishResp(const CommMessage &message) {
-  MS_LOG(INFO) << "The Node id:" << node_info_.node_id_ << " receive a finish message response!";
-}
-
 std::string Node::node_id() const { return node_info_.node_id_; }
 
 uint32_t Node::rank_id() const { return node_info_.rank_id_; }

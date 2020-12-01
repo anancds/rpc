@@ -71,7 +71,6 @@ class Node {
   void FetchServers(const std::shared_ptr<TcpClient> &client);
   void ProcessFetchServersResp(const CommMessage &message);
   void FinishNode(const std::shared_ptr<TcpClient> &client);
-  void ProcessFinishResp(const CommMessage &message);
   void WaitNodeStart();
   void WaitNodeFinish();
   void SyncSendMessage(const std::shared_ptr<TcpClient> &client, const CommMessage &message);

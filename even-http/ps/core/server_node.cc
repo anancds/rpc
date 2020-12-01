@@ -167,7 +167,7 @@ void ServerNode::InitClientToScheduler() {
         ProcessFetchServersResp(message);
         break;
       case NodeCommand::FINISH:
-        ProcessFinishResp(message);
+        MS_LOG(INFO) << "The Node id:" << node_info_.node_id_ << " receive a finish message response!";
         break;
       default:
         MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
