@@ -58,7 +58,6 @@ class SchedulerNode : public Node {
   void Init();
   void ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
-  void StartClusterAvailableTimer();
   void StartClusterStateFlushTimer();
   void ProcessFinish(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   void ProcessFetchServers(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);

@@ -1,15 +1,25 @@
-//
-// Created by cds on 2020/11/30.
-//
+/**
+ * Copyright 2020 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "ps/core/node_manager.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
-void NodeManager::InitNodesNum() {
-  total_node_num_ = ClusterConfig::server_num() + ClusterConfig::worker_num();
-}
+void NodeManager::InitNodesNum() { total_node_num_ = ClusterConfig::server_num() + ClusterConfig::worker_num(); }
 
 int NodeManager::NextRankId(const RegisterMessage &register_message) {
   std::lock_guard<std::mutex> lock(assign_rank_id_mutex_);
@@ -73,8 +83,8 @@ std::vector<ServersMeta> NodeManager::FetchServersMeta() {
   return servers_meta_list;
 }
 
-void NodeManager::ClusterStateFlush() {
-  // 1. assign node timeout
+void NodeManager::UpdateClusterState() {
+  // 1. update cluster timeout state
   struct timeval current_time {};
   (void)gettimeofday(&current_time, nullptr);
   timeout_nodes_info_.clear();
@@ -91,29 +101,29 @@ void NodeManager::ClusterStateFlush() {
     }
   }
 
-  // 2. assign node finish
+  // 2. update cluster finish state
   if (finish_nodes_id_.size() == total_node_num_) {
     is_cluster_finish_ = true;
     is_cluster_ready_ = true;
   }
 
-  // 3. assign node ready
+  // 3. update cluster ready state
   if (nodes_info_.size() == total_node_num_) {
     is_cluster_ready_ = true;
   }
 }
 
-void NodeManager::ClusterAvailableFlush() {
+void NodeManager::UpdateClusterTimeout() {
   if (total_node_num_ != nodes_info_.size()) {
     MS_LOG(WARNING) << "The cluster is not ready after " << ClusterConfig::cluster_available_timeout()
-                    << " seconds,so finish the cluster, and change total node number from " << total_node_num_
-                    << " to " << nodes_info_.size();
+                    << " seconds,so finish the cluster, and change total node number from " << total_node_num_ << " to "
+                    << nodes_info_.size();
     total_node_num_ = nodes_info_.size();
     is_cluster_timeout_ = true;
   }
 }
 
-void NodeManager::FinishNodesStateFlush(const FinishMessage& finish_message) {
+void NodeManager::FinishNodesStateFlush(const FinishMessage &finish_message) {
   finish_nodes_id_.insert(finish_message.node_id());
 }
 
@@ -124,6 +134,8 @@ bool NodeManager::is_cluster_finish() { return is_cluster_finish_.load(); }
 bool NodeManager::is_cluster_ready() { return is_cluster_ready_.load(); }
 
 bool NodeManager::is_cluster_timeout() { return is_cluster_timeout_; }
+
+void NodeManager::set_cluster_timeout(bool is_cluster_timeout) { is_cluster_timeout_ = is_cluster_timeout; }
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore

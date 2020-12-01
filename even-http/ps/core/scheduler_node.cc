@@ -31,9 +31,6 @@ SchedulerNode::~SchedulerNode() {
     if (state_flush_thread_->joinable()) {
       state_flush_thread_->join();
     }
-    if (cluster_available_thread_->joinable()) {
-      cluster_available_thread_->join();
-    }
     is_ready_ = true;
   }
 }
@@ -43,8 +40,6 @@ void SchedulerNode::Start() {
   Init();
   InitNode();
   StartClusterStateFlushTimer();
-  StartClusterAvailableTimer();
-
   WaitNodeStart();
   MS_LOG(INFO) << "The scheduler is ready!";
 }
@@ -152,21 +147,20 @@ void SchedulerNode::ProcessFetchServers(const TcpServer &server, const TcpConnec
   const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
 }
 
-void SchedulerNode::StartClusterAvailableTimer() {
-  MS_LOG(WARNING) << "The scheduler start a timing event to determine whether the system is available";
-  cluster_available_thread_ = std::make_unique<std::thread>([&]() {
-    std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::cluster_available_timeout()));
-    node_manager_.ClusterAvailableFlush();
-  });
-  cluster_available_thread_->detach();
-}
-
 void SchedulerNode::StartClusterStateFlushTimer() {
   MS_LOG(WARNING) << "The scheduler start a heartbeat timer!";
   state_flush_thread_ = std::make_unique<std::thread>([&]() {
+    auto start_time = std::chrono::steady_clock::now();
     while (!is_finish_.load()) {
+      // 1. update cluster timeout
+      if (!node_manager_.is_cluster_ready() && (std::chrono::steady_clock::now() - start_time >
+                                                std::chrono::seconds(ClusterConfig::cluster_available_timeout()))) {
+        node_manager_.UpdateClusterTimeout();
+      }
+
+      // 2. update cluster state
       std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval()));
-      node_manager_.ClusterStateFlush();
+      node_manager_.UpdateClusterState();
       if (node_manager_.is_cluster_ready()) {
         is_ready_ = true;
         wait_start_cond_.notify_all();
@@ -191,9 +185,6 @@ void SchedulerNode::Stop() {
     }
     if (state_flush_thread_->joinable()) {
       state_flush_thread_->join();
-    }
-    if (cluster_available_thread_->joinable()) {
-      cluster_available_thread_->join();
     }
     is_ready_ = true;
   }

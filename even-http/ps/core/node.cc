@@ -130,11 +130,10 @@ void Node::WaitNodeStart() {
 void Node::WaitNodeFinish() {
   std::unique_lock<std::mutex> lock(wait_finish_mutex_);
   wait_finish_cond_.wait(lock, [&] {
-    bool res = is_finish_;
-    if (res) {
+    if (is_finish_.load()) {
       MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is success finish!";
     }
-    return res;
+    return is_finish_.load();
   });
 }
 
