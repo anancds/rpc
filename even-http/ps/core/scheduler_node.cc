@@ -166,8 +166,8 @@ void SchedulerNode::StartClusterStateFlushTimer() {
         wait_start_cond_.notify_all();
       }
       if (node_manager_.is_cluster_finish()) {
+        std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval() * 2));
         is_finish_ = true;
-        std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval() + 1));
         wait_finish_cond_.notify_all();
       }
     }
@@ -194,11 +194,10 @@ void SchedulerNode::Finish() {
   MS_LOG(INFO) << "Finish scheduler node!";
   std::unique_lock<std::mutex> lock(wait_finish_mutex_);
   wait_finish_cond_.wait(lock, [&] {
-    bool res = is_finish_;
-    if (res) {
+    if (is_finish_.load()) {
       MS_LOG(INFO) << "The scheduler finish success!";
     }
-    return res;
+    return is_finish_.load();
   });
 }
 }  // namespace core

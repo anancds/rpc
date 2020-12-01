@@ -186,8 +186,14 @@ void WorkerNode::Stop() {
 }
 
 void WorkerNode::Finish() {
+  std::lock_guard<std::mutex> lock(finish_mutex_);
+  if (is_already_finished_) {
+    MS_LOG(INFO) << "Worker node already finish!";
+    return;
+  }
   MS_LOG(INFO) << "Finish worker node!";
   FinishNode(client_to_scheduler_);
+  is_already_finished_ = true;
 }
 }  // namespace core
 }  // namespace ps

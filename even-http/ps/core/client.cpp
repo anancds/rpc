@@ -58,8 +58,10 @@ int main(int /*argc*/, char ** /*argv*/) {
 
   comm_message1.set_data(kv_message.SerializeAsString());
   client1_->SendMessage(comm_message1);
-  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(20000));
   client_->Stop();
+  client1_->Stop();
+  client_->StopEventBase();
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   return EXIT_SUCCESS;
 }

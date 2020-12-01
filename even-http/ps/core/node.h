@@ -49,6 +49,7 @@ class Node {
         is_finish_(false),
         is_timeout_(false),
         is_already_stopped_(true),
+        is_already_finished_(false),
         next_request_id_(0),
         heart_beat_thread_(nullptr) {}
   virtual ~Node() = default;
@@ -82,6 +83,7 @@ class Node {
   std::atomic<bool> is_finish_;
   std::atomic<bool> is_timeout_;
   std::atomic<bool> is_already_stopped_;
+  std::atomic<bool> is_already_finished_;
   std::atomic_uint64_t next_request_id_;
   std::unique_ptr<std::thread> heart_beat_thread_;
 
@@ -98,6 +100,7 @@ class Node {
   std::condition_variable wait_finish_cond_;
   std::mutex wait_start_mutex_;
   std::condition_variable wait_start_cond_;
+  std::mutex finish_mutex_;
 };
 }  // namespace core
 }  // namespace ps

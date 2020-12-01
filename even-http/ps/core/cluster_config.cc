@@ -30,7 +30,7 @@ uint32_t ClusterConfig::heartbeat_interval_ = 3;
 // The timeout for worker node and server node sending heartbeat packets to scheduler node is 30 seconds.
 uint32_t ClusterConfig::heartbeat_timeout_ = 30;
 // Timeout period for cluster preparation is 300 seconds.
-uint32_t ClusterConfig::cluster_available_timeout_ = 15;
+uint32_t ClusterConfig::cluster_available_timeout_ = 20;
 
 void ClusterConfig::Init(const uint32_t &worker_num, const uint32_t &server_num,
                          std::unique_ptr<std::string> scheduler_host, const uint16_t &scheduler_port) {

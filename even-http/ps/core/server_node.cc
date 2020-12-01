@@ -50,7 +50,6 @@ void ServerNode::Start() {
     FetchServers(client_to_scheduler_);
     MS_LOG(INFO) << "Fetch servers successful!";
   }
-  MS_LOG(INFO) << "The node timeout is:" << is_timeout_;
   MS_LOG(INFO) << "Start the node is successful!";
 }
 
@@ -209,8 +208,15 @@ void ServerNode::Stop() {
 }
 
 void ServerNode::Finish() {
-  MS_LOG(INFO) << "Finish server node!";
+  std::lock_guard<std::mutex> lock(finish_mutex_);
+  if (is_already_finished_) {
+    MS_LOG(INFO) << "Server node already finish!";
+    return;
+  }
+  MS_LOG(INFO) << "Finish server node begin !";
   FinishNode(client_to_scheduler_);
+  is_already_finished_ = true;
+  MS_LOG(INFO) << "Finish server node end!";
 }
 }  // namespace core
 }  // namespace ps

@@ -47,15 +47,17 @@ void Node::ProcessHeartbeatResp(const CommMessage &message) {
   is_ready_ = heartbeat_resp_message.is_cluster_ready();
   if (is_ready_.load()) {
     wait_start_cond_.notify_all();
-    MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is ready!";
+    MS_LOG(DEBUG) << "The node id:" << node_info_.node_id_ << " is ready!";
   }
   is_finish_ = heartbeat_resp_message.is_cluster_finish();
   if (is_finish_.load()) {
     wait_finish_cond_.notify_all();
-    MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is finish!";
+    MS_LOG(DEBUG) << "The node id:" << node_info_.node_id_ << " is finish!";
   }
   is_timeout_ = heartbeat_resp_message.is_cluster_timeout();
   if (is_timeout_ && on_node_event_message_) {
+    is_ready_ = true;
+    wait_start_cond_.notify_all();
     on_node_event_message_(NodeEvent::NODE_TIMEOUT);
   }
 }
@@ -113,6 +115,7 @@ void Node::FinishNode(const std::shared_ptr<TcpClient> &client) {
   *message.mutable_pb_meta() = {meta};
   message.set_data(finish_message.SerializeAsString());
   SyncSendMessage(client, message);
+  MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " send finish message!";
   WaitNodeFinish();
 }
 
