@@ -192,7 +192,7 @@ void WorkerNode::Finish() {
     return;
   }
   MS_LOG(INFO) << "Finish worker node!";
-  FinishNode(client_to_scheduler_);
+  Disconnect(client_to_scheduler_);
   is_already_finished_ = true;
 }
 }  // namespace core

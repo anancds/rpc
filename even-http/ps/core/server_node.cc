@@ -77,7 +77,7 @@ void ServerNode::Register(const std::shared_ptr<TcpClient> &client) {
   CommMessage comm_message;
   *comm_message.mutable_pb_meta() = {message_meta};
   comm_message.set_data(register_message.SerializeAsString());
-  SyncSendMessage(client, comm_message);
+  SendMessageSync(client, comm_message);
 
   MS_LOG(INFO) << "The server node id:" << node_info_.node_id_
                << "is registering to scheduler, the request id is:" << message_meta.request_id();
@@ -214,7 +214,7 @@ void ServerNode::Finish() {
     return;
   }
   MS_LOG(INFO) << "Finish server node begin !";
-  FinishNode(client_to_scheduler_);
+  Disconnect(client_to_scheduler_);
   is_already_finished_ = true;
   MS_LOG(INFO) << "Finish server node end!";
 }

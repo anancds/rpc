@@ -71,11 +71,11 @@ class Node {
   void ProcessHeartbeatResp(const CommMessage &message);
   void FetchServers(const std::shared_ptr<TcpClient> &client);
   void ProcessFetchServersResp(const CommMessage &message);
-  void FinishNode(const std::shared_ptr<TcpClient> &client);
+  void Disconnect(const std::shared_ptr<TcpClient> &client);
   void WaitNodeStart();
   void WaitNodeFinish();
-  void SyncSendMessage(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
-  void AsyncSendMessage(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
+  void SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
+  void SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
   void NotifyMessageReceive(const CommMessage &message);
 
   NodeInfo node_info_;

@@ -35,7 +35,7 @@ void Node::Heartbeat(const std::shared_ptr<TcpClient> &client) {
       CommMessage message;
       *message.mutable_pb_meta() = {meta};
       message.set_data(heartbeat_message.SerializeAsString());
-      AsyncSendMessage(client, message);
+      SendMessageAsync(client, message);
     }
   });
   heart_beat_thread_->detach();
@@ -51,6 +51,7 @@ void Node::ProcessHeartbeatResp(const CommMessage &message) {
   }
   is_finish_ = heartbeat_resp_message.is_cluster_finish();
   if (is_finish_.load()) {
+    // todo 这里应该要立即再发送次心跳
     wait_finish_cond_.notify_all();
     MS_LOG(DEBUG) << "The node id:" << node_info_.node_id_ << " is finish!";
   }
@@ -68,17 +69,15 @@ void Node::FetchServers(const std::shared_ptr<TcpClient> &client) {
 
   CommMessage message;
   *message.mutable_pb_meta() = {meta};
-  SyncSendMessage(client, message);
+  SendMessageSync(client, message);
 }
 
 void Node::ProcessFetchServersResp(const CommMessage &message) {
   FetchServersRespMessage fetch_servers_resp_message;
   fetch_servers_resp_message.ParseFromString(message.data());
 
-  auto meta_begin = fetch_servers_resp_message.servers_meta().begin();
-  auto meta_end = fetch_servers_resp_message.servers_meta().end();
-  for (auto it = meta_begin; it != meta_end; ++it) {
-    server_rank_ids_[it->rank_id()] = std::make_pair(it->ip(), it->port());
+  for (const auto &it : fetch_servers_resp_message.servers_meta()) {
+    server_rank_ids_[it.rank_id()] = std::make_pair(it.ip(), it.port());
   }
 
   MS_LOG(DEBUG) << "The all server host size is:" << server_rank_ids_.size();
@@ -104,7 +103,7 @@ void Node::Wait(uint64_t request_id) {
   });
 }
 
-void Node::FinishNode(const std::shared_ptr<TcpClient> &client) {
+void Node::Disconnect(const std::shared_ptr<TcpClient> &client) {
   MessageMeta meta;
   meta.set_cmd(NodeCommand::FINISH);
 
@@ -114,7 +113,7 @@ void Node::FinishNode(const std::shared_ptr<TcpClient> &client) {
   CommMessage message;
   *message.mutable_pb_meta() = {meta};
   message.set_data(finish_message.SerializeAsString());
-  SyncSendMessage(client, message);
+  SendMessageSync(client, message);
   MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " send finish message!";
   WaitNodeFinish();
 }
@@ -140,7 +139,7 @@ void Node::WaitNodeFinish() {
   });
 }
 
-void Node::SyncSendMessage(const std::shared_ptr<TcpClient> &client, const CommMessage &message) {
+void Node::SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(1, 0);
   const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
@@ -148,7 +147,7 @@ void Node::SyncSendMessage(const std::shared_ptr<TcpClient> &client, const CommM
   Wait(request_id);
 }
 
-void Node::AsyncSendMessage(const std::shared_ptr<TcpClient> &client, const CommMessage &message) {
+void Node::SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message) {
   uint64_t request_id = ++next_request_id_;
   const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
   client->SendMessage(message);

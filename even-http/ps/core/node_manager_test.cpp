@@ -30,14 +30,15 @@ void NodeManagerTest::StartServer() {
   server_node_ = std::make_unique<ServerNode>();
   server_node_->set_callback([&](const NodeEvent &event) {
     if (event == NodeEvent::NODE_TIMEOUT) {
-
-
       MS_LOG(INFO) << "111111111111111111111111111111!";
-//      server_node_->Finish();
-//      server_node_->Stop();
+      //      server_node_->Finish();
+      //      server_node_->Stop();
     }
   });
   server_node_->set_handler([&](const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+    KVMessage kv_message;
+    kv_message.ParseFromString(message.data());
+    MS_LOG(INFO) << "size:" << kv_message.keys_size();
     server_node_->Response(server, conn, message);
   });
   server_node_->Start();
@@ -45,7 +46,6 @@ void NodeManagerTest::StartServer() {
   MS_LOG(INFO) << "2222222222222222222222222222222222222!";
   server_node_->Finish();
   server_node_->Stop();
-
 }
 
 void NodeManagerTest::StopServer() { server_node_->Stop(); }
@@ -56,8 +56,8 @@ void NodeManagerTest::StartClient() {
     if (event == NodeEvent::NODE_TIMEOUT) {
       MS_LOG(INFO) << "NODE_TIMEOUT, finish!";
       std::this_thread::sleep_for(std::chrono::milliseconds(50000));
-//      worker_node_->Finish();
-//      worker_node_->Stop();
+      //      worker_node_->Finish();
+      //      worker_node_->Stop();
     }
   });
   worker_node_->Start();
@@ -69,9 +69,9 @@ void NodeManagerTest::StartClient() {
   *kv_message.mutable_values() = {values.begin(), values.end()};
 
   comm_message.set_data(kv_message.SerializeAsString());
-//  worker_node_->Wait(worker_node_->Send(NodeRole::SERVER, 0, comm_message));
   MS_LOG(INFO) << "send data!";
   std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval() * 3));
+  worker_node_->Wait(worker_node_->Send(NodeRole::SERVER, 0, comm_message));
   MS_LOG(INFO) << "send ok";
   worker_node_->Finish();
   worker_node_->Stop();
