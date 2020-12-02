@@ -40,7 +40,7 @@ void SchedulerNode::Start() {
   Init();
   InitNode();
   StartClusterStateFlushTimer();
-  WaitNodeStart();
+  WaitForStart();
   MS_LOG(INFO) << "The scheduler is ready!";
 }
 

@@ -42,7 +42,7 @@ void ServerNode::Start() {
   Register(client_to_scheduler_);
   Heartbeat(client_to_scheduler_);
 
-  WaitNodeStart();
+  WaitForStart();
   MS_LOG(INFO) << "The cluster is ready to use!";
 
   if (!is_timeout_) {

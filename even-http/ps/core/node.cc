@@ -115,10 +115,10 @@ void Node::Disconnect(const std::shared_ptr<TcpClient> &client) {
   message.set_data(finish_message.SerializeAsString());
   SendMessageSync(client, message);
   MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " send finish message!";
-  WaitNodeFinish();
+  WaitForDisconnect();
 }
 
-void Node::WaitNodeStart() {
+void Node::WaitForStart() {
   std::unique_lock<std::mutex> lock(wait_start_mutex_);
   wait_start_cond_.wait(lock, [&] {
     bool res = is_ready_.load();
@@ -129,7 +129,7 @@ void Node::WaitNodeStart() {
   });
 }
 
-void Node::WaitNodeFinish() {
+void Node::WaitForDisconnect() {
   std::unique_lock<std::mutex> lock(wait_finish_mutex_);
   wait_finish_cond_.wait(lock, [&] {
     if (is_finish_.load()) {

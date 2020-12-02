@@ -72,8 +72,8 @@ class Node {
   void FetchServers(const std::shared_ptr<TcpClient> &client);
   void ProcessFetchServersResp(const CommMessage &message);
   void Disconnect(const std::shared_ptr<TcpClient> &client);
-  void WaitNodeStart();
-  void WaitNodeFinish();
+  void WaitForStart();
+  void WaitForDisconnect();
   void SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
   void SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
   void NotifyMessageReceive(const CommMessage &message);

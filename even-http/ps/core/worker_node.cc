@@ -37,7 +37,7 @@ void WorkerNode::Start() {
   Register();
   Heartbeat(client_to_scheduler_);
 
-  WaitNodeStart();
+  WaitForStart();
   MS_LOG(INFO) << "The node is ready to fetch servers!";
 
   if (!is_timeout_.load()) {
