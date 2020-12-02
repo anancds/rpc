@@ -129,7 +129,7 @@ void SchedulerNode::ProcessRegister(const TcpServer &server, const TcpConnection
 void SchedulerNode::ProcessFinish(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   FinishMessage finish_message;
   finish_message.ParseFromString(message.data());
-  node_manager_.UpdateFinishNodesState(finish_message);
+  node_manager_.AddFinishNode(finish_message);
   MS_LOG(INFO) << "Process finish message from node id:" << finish_message.node_id();
   const_cast<TcpServer &>(server).SendMessage(conn, message);
 }

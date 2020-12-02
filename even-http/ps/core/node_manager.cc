@@ -123,7 +123,7 @@ void NodeManager::CheckClusterTimeout() {
   }
 }
 
-void NodeManager::UpdateFinishNodesState(const FinishMessage &finish_message) {
+void NodeManager::AddFinishNode(const FinishMessage &finish_message) {
   finish_nodes_id_.insert(finish_message.node_id());
 }
 
