@@ -70,7 +70,7 @@ void SchedulerNode::InitNode() {
 }
 
 void SchedulerNode::Init() {
-  node_manager_.InitNodesNum();
+  node_manager_.InitNodeNum();
 
   std::string scheduler_host = ClusterConfig::scheduler_host();
   uint32_t scheduler_port = ClusterConfig::scheduler_port();
@@ -129,7 +129,7 @@ void SchedulerNode::ProcessRegister(const TcpServer &server, const TcpConnection
 void SchedulerNode::ProcessFinish(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   FinishMessage finish_message;
   finish_message.ParseFromString(message.data());
-  node_manager_.FinishNodesStateFlush(finish_message);
+  node_manager_.UpdateFinishNodesState(finish_message);
   MS_LOG(INFO) << "Process finish message from node id:" << finish_message.node_id();
   const_cast<TcpServer &>(server).SendMessage(conn, message);
 }
@@ -155,7 +155,7 @@ void SchedulerNode::StartClusterStateFlushTimer() {
       // 1. update cluster timeout
       if (!node_manager_.is_cluster_ready() && (std::chrono::steady_clock::now() - start_time >
                                                 std::chrono::seconds(ClusterConfig::cluster_available_timeout()))) {
-        node_manager_.UpdateClusterTimeout();
+        node_manager_.CheckClusterTimeout();
       }
 
       // 2. update cluster state

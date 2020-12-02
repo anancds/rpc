@@ -77,9 +77,11 @@ uint64_t WorkerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, Comm
   message_meta.set_cmd(NodeCommand::SEND_DATA);
   message_meta.set_request_id(request_id);
   *message.mutable_pb_meta() = {message_meta};
+  message_tracker_[request_id] = std::make_pair(1, 0);
 
   auto client = GetOrCreateTcpClient(rank_id);
   client->SendMessage(message);
+  Wait(request_id);
   return request_id;
 }
 
@@ -97,9 +99,6 @@ void WorkerNode::ProcessRegister(const CommMessage &message) {
 }
 
 void WorkerNode::ProcessData(const CommMessage &message) {
-  std::lock_guard<std::mutex> lock(message_mutex_);
-  message_tracker_[message.pb_meta().request_id()].second++;
-  message_tracker_cond_.notify_all();
 }
 
 const std::shared_ptr<TcpClient> &WorkerNode::GetOrCreateTcpClient(const int &rank_id) {
@@ -121,6 +120,7 @@ const std::shared_ptr<TcpClient> &WorkerNode::GetOrCreateTcpClient(const int &ra
         default:
           MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
       }
+      NotifyMessageArrival(message);
     });
     client->Init();
     connected_nodes_[rank_id] = client;
@@ -157,7 +157,7 @@ void WorkerNode::InitClientToScheduler() {
       default:
         MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
-    NotifyMessageReceive(message);
+    NotifyMessageArrival(message);
   });
 
   client_to_scheduler_->Init();

@@ -46,17 +46,19 @@ class NodeManager {
         is_cluster_finish_(false),
         is_cluster_timeout_(false),
         total_node_num_(0),
-        current_worker_rank_id_(-1),
-        current_server_rank_id_(-1) {}
+        next_worker_rank_id_(-1),
+        next_server_rank_id_(-1) {}
   virtual ~NodeManager() = default;
 
-  void InitNodesNum();
+  enum ClusterState { STARTING, STARTED, FAILED, STOPPING, STOPPED };
+
+  void InitNodeNum();
   int NextRankId(const RegisterMessage &register_message);
   void UpdateHeartbeat(const std::string &node_id);
   std::vector<ServersMeta> FetchServersMeta();
   void UpdateClusterState();
-  void UpdateClusterTimeout();
-  void FinishNodesStateFlush(const FinishMessage& finish_message);
+  void CheckClusterTimeout();
+  void UpdateFinishNodesState(const FinishMessage &finish_message);
   std::unordered_map<std::string, NodeInfo> nodes_info();
   bool is_cluster_ready();
   bool is_cluster_finish();
@@ -68,8 +70,8 @@ class NodeManager {
   std::atomic<bool> is_cluster_finish_;
   std::atomic<bool> is_cluster_timeout_;
   uint32_t total_node_num_;
-  std::atomic<int> current_worker_rank_id_;
-  std::atomic<int> current_server_rank_id_;
+  std::atomic<int> next_worker_rank_id_;
+  std::atomic<int> next_server_rank_id_;
   // worker nodes and server nodes
   std::unordered_map<std::string, NodeInfo> nodes_info_;
   std::mutex assign_rank_id_mutex_;

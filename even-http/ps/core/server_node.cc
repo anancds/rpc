@@ -171,7 +171,7 @@ void ServerNode::InitClientToScheduler() {
       default:
         MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
-    NotifyMessageReceive(message);
+    NotifyMessageArrival(message);
   });
 
   client_to_scheduler_->Init();

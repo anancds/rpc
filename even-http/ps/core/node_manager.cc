@@ -19,7 +19,7 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-void NodeManager::InitNodesNum() { total_node_num_ = ClusterConfig::server_num() + ClusterConfig::worker_num(); }
+void NodeManager::InitNodeNum() { total_node_num_ = ClusterConfig::server_num() + ClusterConfig::worker_num(); }
 
 int NodeManager::NextRankId(const RegisterMessage &register_message) {
   std::lock_guard<std::mutex> lock(assign_rank_id_mutex_);
@@ -36,7 +36,7 @@ int NodeManager::NextRankId(const RegisterMessage &register_message) {
     const std::string &ip = register_message.ip();
     uint32_t port = register_message.port();
 
-    rank_id = ++current_server_rank_id_;
+    rank_id = ++next_server_rank_id_;
     NodeInfo node_info;
     node_info.node_role_ = NodeRole::SERVER;
     node_info.node_id_ = node_id;
@@ -48,7 +48,7 @@ int NodeManager::NextRankId(const RegisterMessage &register_message) {
                  << " assign rank id:" << rank_id;
 
   } else if (register_message.role() == NodeRole::WORKER) {
-    rank_id = ++current_worker_rank_id_;
+    rank_id = ++next_worker_rank_id_;
     NodeInfo node_info;
     node_info.node_role_ = NodeRole::WORKER;
     node_info.node_id_ = node_id;
@@ -70,10 +70,10 @@ void NodeManager::UpdateHeartbeat(const std::string &node_id) {
 }
 
 std::vector<ServersMeta> NodeManager::FetchServersMeta() {
-  std::vector<class ServersMeta> servers_meta_list;
+  std::vector<ServersMeta> servers_meta_list;
   for (auto it = nodes_info_.begin(); it != nodes_info_.end(); ++it) {
     if (it->second.node_role_ == NodeRole::SERVER) {
-      class ServersMeta servers_meta;
+      ServersMeta servers_meta;
       servers_meta.set_rank_id(it->second.rank_id_);
       servers_meta.set_ip(it->second.ip_);
       servers_meta.set_port(it->second.port_);
@@ -113,7 +113,7 @@ void NodeManager::UpdateClusterState() {
   }
 }
 
-void NodeManager::UpdateClusterTimeout() {
+void NodeManager::CheckClusterTimeout() {
   if (total_node_num_ != nodes_info_.size()) {
     MS_LOG(WARNING) << "The cluster is not ready after " << ClusterConfig::cluster_available_timeout()
                     << " seconds,so finish the cluster, and change total node number from " << total_node_num_ << " to "
@@ -123,7 +123,7 @@ void NodeManager::UpdateClusterTimeout() {
   }
 }
 
-void NodeManager::FinishNodesStateFlush(const FinishMessage &finish_message) {
+void NodeManager::UpdateFinishNodesState(const FinishMessage &finish_message) {
   finish_nodes_id_.insert(finish_message.node_id());
 }
 

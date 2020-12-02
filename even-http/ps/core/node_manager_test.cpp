@@ -24,8 +24,6 @@ void NodeManagerTest::StartScheduler() {
   //  }
 }
 
-void NodeManagerTest::StopScheduler() { scheduler_node_->Stop(); }
-
 void NodeManagerTest::StartServer() {
   server_node_ = std::make_unique<ServerNode>();
   server_node_->set_callback([&](const NodeEvent &event) {
@@ -47,8 +45,6 @@ void NodeManagerTest::StartServer() {
   server_node_->Finish();
   server_node_->Stop();
 }
-
-void NodeManagerTest::StopServer() { server_node_->Stop(); }
 
 void NodeManagerTest::StartClient() {
   worker_node_ = std::make_unique<WorkerNode>();
@@ -76,19 +72,6 @@ void NodeManagerTest::StartClient() {
   worker_node_->Finish();
   worker_node_->Stop();
 }
-
-void NodeManagerTest::StopClient() { worker_node_->Stop(); }
-
-int NodeManagerTest::WorkerRankToID(int rank) { return rank * 2 + 9; }
-
-int NodeManagerTest::ServerRankToID(int rank) { return rank * 2 + 8; }
-
-const std::vector<int> &NodeManagerTest::GetNodeIDs(int node_id) const {
-  const auto it = node_ids_.find(node_id);
-  return it->second;
-}
-
-int NodeManagerTest::IDtoRank(int id) { return std::max((id - 8) / 2, 0); }
 
 }  // namespace core
 }  // namespace ps

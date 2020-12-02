@@ -153,7 +153,7 @@ void Node::SendMessageAsync(const std::shared_ptr<TcpClient> &client, const Comm
   client->SendMessage(message);
 }
 
-void Node::NotifyMessageReceive(const CommMessage &message) {
+void Node::NotifyMessageArrival(const CommMessage &message) {
   const MessageMeta &message_meta = message.pb_meta();
   uint64_t request_id = message_meta.request_id();
 

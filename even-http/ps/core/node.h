@@ -76,7 +76,7 @@ class Node {
   void WaitForDisconnect();
   void SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
   void SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
-  void NotifyMessageReceive(const CommMessage &message);
+  void NotifyMessageArrival(const CommMessage &message);
 
   NodeInfo node_info_;
   std::atomic<bool> is_ready_;

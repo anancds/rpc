@@ -23,7 +23,6 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-//这个作为node的成员变量，或者工具类,去掉start和stop
 
 class NodeManagerTest {
  public:
@@ -37,24 +36,13 @@ class NodeManagerTest {
   virtual ~NodeManagerTest() = default;
 
   void StartScheduler();
-  void StopScheduler();
   void StartServer();
-  void StopServer();
   void StartClient();
-  void StopClient();
-
-  // 下面的函数是不是应该放到commutil，否则和node.h相互依赖了
-  static int WorkerRankToID(int rank);
-  static int ServerRankToID(int rank);
-  const std::vector<int> &GetNodeIDs(int node_id) const;
-  static int IDtoRank(int id);
-  int my_rank() const;
 
  protected:
   NodeManagerTest() = default;
 
  private:
-  std::unordered_map<int, std::vector<int>> node_ids_;
   std::unique_ptr<WorkerNode> worker_node_{nullptr};
   std::unique_ptr<SchedulerNode> scheduler_node_{nullptr};
   std::unique_ptr<ServerNode> server_node_{nullptr};
