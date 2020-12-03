@@ -48,6 +48,7 @@
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
+#include "ps/core/cluster_config.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -60,6 +61,7 @@ class CommUtil {
   static void GetAvailableInterfaceAndIP(std::string *interface, std::string *ip);
   static std::string GenerateUUID();
   static std::string NodeRoleToString(const NodeRole &role);
+  static bool CheckRoleAndRankId(const enum NodeRole &node_role, const uint32_t &rank_id);
 
  private:
   static std::random_device rd;

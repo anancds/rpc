@@ -55,7 +55,7 @@ class ServerNode : public Node {
   using RequestHandler =
     std::function<void(const TcpServer &server, const TcpConnection &conn, const CommMessage &message)>;
 
-  void Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message);
+  void Send(const enum NodeRole &node_role, const uint32_t &rank_id, CommMessage &message);
   void set_handler(const RequestHandler &handler);
   void Response(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
 

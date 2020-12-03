@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <utility>
 #include <condition_variable>
+#include <tuple>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
@@ -51,9 +52,9 @@ class WorkerNode : public Node {
   void Stop() override;
   void Finish() override;
 
-  uint64_t Send(const enum NodeRole &node_role, uint32_t rank_id, CommMessage &message);
-
-  void SendForData();
+  void Send(const enum NodeRole &node_role, const uint32_t &rank_id, CommMessage &message);
+  void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, CommMessage &>> &data);
+  void BroadCast(CommMessage &message);
 
  private:
   void Register();

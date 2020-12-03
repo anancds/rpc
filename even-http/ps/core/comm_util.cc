@@ -121,7 +121,17 @@ std::string CommUtil::NodeRoleToString(const NodeRole &role) {
       MS_LOG(EXCEPTION) << "The node role:" << role << " is illegal!";
   }
 }
-
+bool CommUtil::CheckRoleAndRankId(const enum NodeRole &node_role, const uint32_t &rank_id) {
+  if (node_role != NodeRole::SERVER) {
+    MS_LOG(ERROR) << "The node role should be SERVER!";
+    return false;
+  }
+  if (rank_id > ClusterConfig::server_num() - 1) {
+    MS_LOG(ERROR) << "The rank id:" << rank_id << " is illegal!";
+    return false;
+  }
+  return true;
+}
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore

@@ -53,15 +53,17 @@ void ServerNode::Start() {
   MS_LOG(INFO) << "Start the node is successful!";
 }
 
-void ServerNode::Send(const enum NodeRole &node_role, uint32_t rank_id, const CommMessage &message) {
-  if (node_role != NodeRole::SERVER) {
-    MS_LOG(EXCEPTION) << "The node role should be SERVER!";
+void ServerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, CommMessage &message) {
+  if (!CommUtil::CheckRoleAndRankId(node_role, rank_id)) {
+    MS_LOG(ERROR) << "The node role or rank_id is illegal!";
   }
-  if (rank_id > ClusterConfig::server_num() - 1) {
-    MS_LOG(EXCEPTION) << "The rank id:" << rank_id << " is illegal!";
-  }
+
+  MessageMeta message_meta;
+  message_meta.set_cmd(NodeCommand::SEND_DATA);
+  *message.mutable_pb_meta() = {message_meta};
+
   auto client = GetOrCreateTcpClient(rank_id);
-  client->SendMessage(message);
+  SendMessageSync(client, message);
 }
 
 void ServerNode::Register(const std::shared_ptr<TcpClient> &client) {

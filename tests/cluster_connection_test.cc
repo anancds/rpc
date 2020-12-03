@@ -31,7 +31,7 @@ namespace core {
 class TestClusterConnection : public UT::Common {
  public:
   TestClusterConnection() : scheduler_node_(nullptr), server_node_(nullptr), client_node_(nullptr) {}
-  virtual ~TestClusterConnection() = default;
+  ~TestClusterConnection() override = default;
 
   void SetUp() override {
     ClusterConfig::Init(1, 1, std::make_unique<std::string>("127.0.0.1"), 9999);
