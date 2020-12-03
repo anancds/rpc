@@ -21,11 +21,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
-#include <set>
 #include <string>
 #include <vector>
 #include <thread>
-#include <map>
 #include <unordered_map>
 #include <utility>
 #include <condition_variable>
@@ -58,7 +56,7 @@ class WorkerNode : public Node {
 
  private:
   void Register();
-  void ProcessRegister(const CommMessage &message);
+  void ProcessRegisterResp(const CommMessage &message);
   void ProcessData(const CommMessage &message);
   const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
 

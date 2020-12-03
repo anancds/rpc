@@ -21,12 +21,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
-#include <set>
 #include <string>
 #include <vector>
 #include <thread>
-#include <map>
-#include <unordered_map>
 #include <mutex>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"

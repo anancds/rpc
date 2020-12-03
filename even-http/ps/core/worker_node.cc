@@ -113,7 +113,7 @@ void WorkerNode::BroadCast(CommMessage &message) {
   Wait(request_id);
 }
 
-void WorkerNode::ProcessRegister(const CommMessage &message) {
+void WorkerNode::ProcessRegisterResp(const CommMessage &message) {
   RegisterRespMessage register_resp_message;
   register_resp_message.ParseFromString(message.data());
   if (register_resp_message.node_id() != node_info_.node_id_) {
@@ -173,7 +173,7 @@ void WorkerNode::InitClientToScheduler() {
         ProcessHeartbeatResp(message);
         break;
       case NodeCommand::REGISTER:
-        ProcessRegister(message);
+        ProcessRegisterResp(message);
         break;
       case NodeCommand::FETCH_SERVER:
         ProcessFetchServersResp(message);
