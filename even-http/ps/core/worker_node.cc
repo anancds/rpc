@@ -33,7 +33,6 @@ void WorkerNode::Start() {
   MS_LOG(INFO) << "Start worker node!";
   InitNode();
   InitClientToScheduler();
-  // 注册接口也应该是同步接口
   Register();
   Heartbeat(client_to_scheduler_);
 
@@ -50,7 +49,6 @@ void WorkerNode::Start() {
 void WorkerNode::Register() {
   MessageMeta message_meta;
   message_meta.set_cmd(NodeCommand::REGISTER);
-  message_meta.set_request_id(++next_request_id_);
 
   RegisterMessage register_message;
   register_message.set_node_id(node_info_.node_id_);
@@ -59,7 +57,7 @@ void WorkerNode::Register() {
   CommMessage comm_message;
   *comm_message.mutable_pb_meta() = {message_meta};
   comm_message.set_data(register_message.SerializeAsString());
-  client_to_scheduler_->SendMessage(comm_message);
+  SendMessageSync(client_to_scheduler_, comm_message);
   MS_LOG(INFO) << "The worker node id:" << node_info_.node_id_
                << "is registering to scheduler, the request id is:" << message_meta.request_id();
 }
