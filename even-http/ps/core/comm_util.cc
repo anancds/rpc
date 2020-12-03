@@ -28,7 +28,7 @@ namespace mindspore {
 namespace ps {
 namespace core {
 std::random_device CommUtil::rd;
-std::mt19937 CommUtil::gen(rd());
+std::mt19937_64 CommUtil::gen(rd());
 std::uniform_int_distribution<> CommUtil::dis = std::uniform_int_distribution<>{0, 15};
 std::uniform_int_distribution<> CommUtil::dis2 = std::uniform_int_distribution<>{8, 11};
 
@@ -86,24 +86,24 @@ std::string CommUtil::GenerateUUID() {
   std::stringstream ss;
   int i;
   ss << std::hex;
-  for (i = 0; i < 8; i++) {
+  for (i = 0; i < kGroup1RandomLength; i++) {
     ss << dis(gen);
   }
   ss << "-";
-  for (i = 0; i < 4; i++) {
+  for (i = 0; i < kGroup2RandomLength; i++) {
     ss << dis(gen);
   }
   ss << "-4";
-  for (i = 0; i < 3; i++) {
+  for (i = 0; i < kGroup2RandomLength - 1; i++) {
     ss << dis(gen);
   }
   ss << "-";
   ss << dis2(gen);
-  for (i = 0; i < 3; i++) {
+  for (i = 0; i < kGroup3RandomLength - 1; i++) {
     ss << dis(gen);
   }
   ss << "-";
-  for (i = 0; i < 12; i++) {
+  for (i = 0; i < kGroup4RandomLength; i++) {
     ss << dis(gen);
   }
   return ss.str();
