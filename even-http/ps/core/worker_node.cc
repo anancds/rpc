@@ -22,9 +22,20 @@ namespace core {
 WorkerNode::~WorkerNode() {
   MS_LOG(INFO) << "Stop worker node!";
   if (!is_already_stopped_.load()) {
+    is_ready_ = true;
+    is_timeout_ = true;
     client_to_scheduler_->Stop();
+    if (!connected_nodes_.empty()) {
+      for (auto &connected_node : connected_nodes_) {
+        connected_node.second->Stop();
+      }
+    }
+    client_to_scheduler_->StopEventBase();
     if (worker_thread_->joinable()) {
       worker_thread_->join();
+    }
+    if (heart_beat_thread_->joinable()) {
+      heart_beat_thread_->join();
     }
     is_already_stopped_ = true;
   }
@@ -102,7 +113,6 @@ void WorkerNode::BroadCast(CommMessage &message) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(server_rank_ids_.size(), 0);
   for (auto it = server_rank_ids_.begin(); it != server_rank_ids_.end(); ++it) {
-
     MessageMeta message_meta;
     message_meta.set_cmd(NodeCommand::SEND_DATA);
     message_meta.set_request_id(request_id);
@@ -201,6 +211,11 @@ void WorkerNode::Stop() {
     is_ready_ = true;
     is_timeout_ = true;
     client_to_scheduler_->Stop();
+    if (!connected_nodes_.empty()) {
+      for (auto &connected_node : connected_nodes_) {
+        connected_node.second->Stop();
+      }
+    }
     client_to_scheduler_->StopEventBase();
     if (worker_thread_->joinable()) {
       worker_thread_->join();

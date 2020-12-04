@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <utility>
 #include <condition_variable>
+#include <algorithm>
 #include <tuple>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
