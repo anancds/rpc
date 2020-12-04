@@ -12,7 +12,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "network_manager.h"
 #include "ps/core/node.h"
 #include "ps/core/scheduler_node.h"
 #include "ps/core/worker_node.h"

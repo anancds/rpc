@@ -51,7 +51,6 @@ void Node::ProcessHeartbeatResp(const CommMessage &message) {
   }
   is_finish_ = heartbeat_resp_message.is_cluster_finish();
   if (is_finish_.load()) {
-    // todo 这里应该要立即再发送次心跳
     wait_finish_cond_.notify_all();
     MS_LOG(DEBUG) << "The node id:" << node_info_.node_id_ << " is finish!";
   }
