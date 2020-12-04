@@ -67,7 +67,7 @@ class CommUtil {
   static void GetAvailableInterfaceAndIP(std::string *interface, std::string *ip);
   static std::string GenerateUUID();
   static std::string NodeRoleToString(const NodeRole &role);
-  static bool CheckRoleAndRankId(const enum NodeRole &node_role, const uint32_t &rank_id);
+  static bool ValidateRankId(const enum NodeRole &node_role, const uint32_t &rank_id);
 
  private:
   static std::random_device rd;

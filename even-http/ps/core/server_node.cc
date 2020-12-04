@@ -37,7 +37,7 @@ ServerNode::~ServerNode() {
 void ServerNode::Start() {
   MS_LOG(INFO) << "Start server node!";
   Init();
-  InitNode();
+  Initialize();
   InitClientToScheduler();
   Register(client_to_scheduler_);
   Heartbeat(client_to_scheduler_);
@@ -51,19 +51,6 @@ void ServerNode::Start() {
     MS_LOG(INFO) << "Fetch servers successful!";
   }
   MS_LOG(INFO) << "Start the node is successful!";
-}
-
-void ServerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, CommMessage &message) {
-  if (!CommUtil::CheckRoleAndRankId(node_role, rank_id)) {
-    MS_LOG(ERROR) << "The node role or rank_id is illegal!";
-  }
-
-  MessageMeta message_meta;
-  message_meta.set_cmd(NodeCommand::SEND_DATA);
-  *message.mutable_pb_meta() = {message_meta};
-
-  auto client = GetOrCreateTcpClient(rank_id);
-  SendMessageSync(client, message);
 }
 
 void ServerNode::Register(const std::shared_ptr<TcpClient> &client) {
@@ -104,22 +91,6 @@ void ServerNode::ProcessRegister(const CommMessage &message) {
   MS_LOG(INFO) << "The server node id is:" << node_info_.node_id_ << ", and the rank id is:" << node_info_.rank_id_;
 }
 
-const std::shared_ptr<TcpClient> &ServerNode::GetOrCreateTcpClient(const int &rank_id) {
-  std::lock_guard<std::mutex> lock(client_mutex_);
-  if (connected_nodes_.find(rank_id) != connected_nodes_.end()) {
-    return connected_nodes_[rank_id];
-  } else {
-    if (server_rank_ids_.find(rank_id) == server_rank_ids_.end()) {
-      MS_LOG(EXCEPTION) << "Server node Fetch servers failed!";
-    }
-    std::string ip = server_rank_ids_[rank_id].first;
-    uint16_t port = server_rank_ids_[rank_id].second;
-    auto client = std::make_shared<TcpClient>(ip, port);
-    connected_nodes_[rank_id] = client;
-    return connected_nodes_[rank_id];
-  }
-}
-
 void ServerNode::Init() {
   std::string interface;
   std::string server_ip;
@@ -131,7 +102,7 @@ void ServerNode::Init() {
         ProcessSendData(server, conn, message);
         break;
       default:
-        MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
+        MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
   });
   server_->Init();
@@ -142,7 +113,7 @@ void ServerNode::Init() {
   server_thread_->detach();
 }
 
-void ServerNode::InitNode() {
+void ServerNode::Initialize() {
   is_already_stopped_ = false;
   node_info_.node_id_ = CommUtil::GenerateUUID();
   node_info_.node_role_ = NodeRole::SERVER;
@@ -171,7 +142,7 @@ void ServerNode::InitClientToScheduler() {
         MS_LOG(INFO) << "The Node id:" << node_info_.node_id_ << " receive a finish message response!";
         break;
       default:
-        MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
+        MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
     NotifyMessageArrival(message);
   });

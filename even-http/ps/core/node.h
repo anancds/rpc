@@ -59,12 +59,14 @@ class Node {
   virtual void Start() = 0;
   virtual void Stop() = 0;
   virtual void Finish() = 0;
-  void set_callback(const OnNodeEventMessage &on_node_event_message);
 
+  void set_callback(const OnNodeEventMessage &on_node_event_message);
   std::string node_id() const;
   uint32_t rank_id() const;
-
   void Wait(uint64_t request_id);
+
+  void Send(const enum NodeRole &node_role, const uint32_t &rank_id, CommMessage &message);
+  void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, CommMessage &>> &data);
 
  protected:
   void Heartbeat(const std::shared_ptr<TcpClient> &client);
@@ -77,6 +79,8 @@ class Node {
   void SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
   void SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
   void NotifyMessageArrival(const CommMessage &message);
+  const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
+  void ProcessSendDataResp(const CommMessage &message);
 
   NodeInfo node_info_;
   std::atomic<bool> is_ready_;
@@ -91,6 +95,8 @@ class Node {
 
   // rank_id-><ip, port>
   std::unordered_map<int, std::pair<std::string, uint16_t>> server_rank_ids_;
+  // rank_id->tcpclient
+  std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
 
   // timestamp-><expected responses, actual responses>
   std::unordered_map<uint64_t, std::pair<uint32_t, uint32_t>> message_tracker_;
@@ -101,6 +107,7 @@ class Node {
   std::mutex wait_start_mutex_;
   std::condition_variable wait_start_cond_;
   std::mutex finish_mutex_;
+  std::mutex client_mutex_;
 };
 }  // namespace core
 }  // namespace ps

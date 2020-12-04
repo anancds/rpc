@@ -38,7 +38,7 @@ SchedulerNode::~SchedulerNode() {
 void SchedulerNode::Start() {
   MS_LOG(INFO) << "Start scheduler node!";
   Init();
-  InitNode();
+  Initialize();
   StartClusterStateFlushTimer();
   WaitForStart();
   MS_LOG(INFO) << "The scheduler is ready!";
@@ -61,7 +61,7 @@ void SchedulerNode::ProcessHeartBeat(const TcpServer &server, const TcpConnectio
   const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
 }
 
-void SchedulerNode::InitNode() {
+void SchedulerNode::Initialize() {
   is_already_stopped_ = false;
   node_info_.node_id_ = CommUtil::GenerateUUID();
   node_info_.node_role_ = NodeRole::SCHEDULER;

@@ -51,7 +51,7 @@ class SchedulerNode : public Node {
   void Finish() override;
 
  private:
-  void InitNode();
+  void Initialize();
   void Init();
   void ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);

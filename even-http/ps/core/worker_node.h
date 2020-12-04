@@ -51,27 +51,17 @@ class WorkerNode : public Node {
   void Stop() override;
   void Finish() override;
 
-  void Send(const enum NodeRole &node_role, const uint32_t &rank_id, CommMessage &message);
-  void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, CommMessage &>> &data);
-  void BroadCast(CommMessage &message);
+  void BroadcastToServers(CommMessage &message);
 
  private:
   void Register();
   void ProcessRegisterResp(const CommMessage &message);
-  void ProcessData(const CommMessage &message);
-  const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
 
-  void InitNode();
+  void Initialize();
   void InitClientToScheduler();
-
 
   std::shared_ptr<TcpClient> client_to_scheduler_;
   std::unique_ptr<std::thread> worker_thread_;
-
-  // rank_id->tcpclient
-  std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
-  std::mutex client_mutex_;
-
 };
 }  // namespace core
 }  // namespace ps

@@ -54,16 +54,14 @@ class ServerNode : public Node {
   using RequestHandler =
     std::function<void(const TcpServer &server, const TcpConnection &conn, const CommMessage &message)>;
 
-  void Send(const enum NodeRole &node_role, const uint32_t &rank_id, CommMessage &message);
   void set_handler(const RequestHandler &handler);
   void Response(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
 
  private:
   void Register(const std::shared_ptr<TcpClient> &client);
   void ProcessRegister(const CommMessage &message);
-  const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
   void Init();
-  void InitNode();
+  void Initialize();
   void InitClientToScheduler();
   void ProcessSendData(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
 
@@ -71,8 +69,6 @@ class ServerNode : public Node {
   std::shared_ptr<TcpServer> server_;
   std::unique_ptr<std::thread> client_to_scheduler_thread_;
   std::unique_ptr<std::thread> server_thread_;
-  // rank_id->tcpclient
-  std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
   std::mutex client_mutex_;
   RequestHandler request_handler_;
 };

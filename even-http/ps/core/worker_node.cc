@@ -41,8 +41,8 @@ WorkerNode::~WorkerNode() {
   }
 }
 void WorkerNode::Start() {
-  MS_LOG(INFO) << "Start worker node!";
-  InitNode();
+  MS_LOG(INFO) << "Starting worker node!";
+  Initialize();
   InitClientToScheduler();
   Register();
   Heartbeat(client_to_scheduler_);
@@ -54,7 +54,7 @@ void WorkerNode::Start() {
     FetchServers(client_to_scheduler_);
     MS_LOG(INFO) << "Fetch servers successful!";
   }
-  MS_LOG(INFO) << "Start the node is successful!";
+  MS_LOG(INFO) << "The Worker node has successfully started.";
 }
 
 void WorkerNode::Register() {
@@ -73,43 +73,7 @@ void WorkerNode::Register() {
                << "is registering to scheduler, the request id is:" << message_meta.request_id();
 }
 
-void WorkerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, CommMessage &message) {
-  if (!CommUtil::CheckRoleAndRankId(node_role, rank_id)) {
-    MS_LOG(ERROR) << "The node role or rank_id is illegal!";
-  }
-
-  MessageMeta message_meta;
-  message_meta.set_cmd(NodeCommand::SEND_DATA);
-  *message.mutable_pb_meta() = {message_meta};
-
-  auto client = GetOrCreateTcpClient(rank_id);
-  SendMessageSync(client, message);
-}
-
-void WorkerNode::Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, CommMessage &>> &data) {
-  uint64_t request_id = ++next_request_id_;
-  message_tracker_[request_id] = std::make_pair(data.size(), 0);
-  for (auto it = data.begin(); it != data.end(); ++it) {
-    NodeRole node_role;
-    uint32_t rank_id;
-    CommMessage comm_message;
-    std::tie(node_role, rank_id, comm_message) = *it;
-
-    if (!CommUtil::CheckRoleAndRankId(node_role, rank_id)) {
-      MS_LOG(ERROR) << "The node role or rank_id is illegal!";
-    }
-
-    MessageMeta message_meta;
-    message_meta.set_cmd(NodeCommand::SEND_DATA);
-    message_meta.set_request_id(request_id);
-    *comm_message.mutable_pb_meta() = {message_meta};
-    auto client = GetOrCreateTcpClient(rank_id);
-    client->SendMessage(comm_message);
-  }
-  Wait(request_id);
-}
-
-void WorkerNode::BroadCast(CommMessage &message) {
+void WorkerNode::BroadcastToServers(CommMessage &message) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(server_rank_ids_.size(), 0);
   for (auto it = server_rank_ids_.begin(); it != server_rank_ids_.end(); ++it) {
@@ -136,36 +100,7 @@ void WorkerNode::ProcessRegisterResp(const CommMessage &message) {
   MS_LOG(INFO) << "The client node id is:" << node_info_.node_id_ << ", and the rank id is:" << node_info_.rank_id_;
 }
 
-void WorkerNode::ProcessData(const CommMessage &message) {}
-
-const std::shared_ptr<TcpClient> &WorkerNode::GetOrCreateTcpClient(const int &rank_id) {
-  std::lock_guard<std::mutex> lock(client_mutex_);
-  if (connected_nodes_.find(rank_id) != connected_nodes_.end()) {
-    return connected_nodes_[rank_id];
-  } else {
-    if (server_rank_ids_.find(rank_id) == server_rank_ids_.end()) {
-      MS_LOG(EXCEPTION) << "Worker node Fetch servers failed!";
-    }
-    std::string ip = server_rank_ids_[rank_id].first;
-    uint16_t port = server_rank_ids_[rank_id].second;
-    auto client = std::make_shared<TcpClient>(ip, port);
-    client->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
-      switch (message.pb_meta().cmd()) {
-        case NodeCommand::SEND_DATA:
-          ProcessData(message);
-          break;
-        default:
-          MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
-      }
-      NotifyMessageArrival(message);
-    });
-    client->Init();
-    connected_nodes_[rank_id] = client;
-    return connected_nodes_[rank_id];
-  }
-}
-
-void WorkerNode::InitNode() {
+void WorkerNode::Initialize() {
   is_already_stopped_ = false;
   node_info_.node_id_ = CommUtil::GenerateUUID();
   node_info_.node_role_ = NodeRole::WORKER;
@@ -192,7 +127,7 @@ void WorkerNode::InitClientToScheduler() {
         MS_LOG(INFO) << "The Node id:" << node_info_.node_id_ << " receive a finish message response!";
         break;
       default:
-        MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
+        MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
     NotifyMessageArrival(message);
   });
