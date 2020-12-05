@@ -15,7 +15,8 @@ set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
 file(GLOB_RECURSE PROTO_FILES "protos/*.proto")
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
 
-set(HTTP_SRC comm_util.cc
+set(HTTP_SRC
+        comm_util.cc
         node_manager_test.cpp
         scheduler_manager.cpp
         server_manager.cpp
@@ -32,7 +33,8 @@ set(HTTP_SRC comm_util.cc
         http_server.cc
         http_message_handler.cc
         )
-set(HTTP_HEADER comm_util.h
+set(HTTP_HEADER
+        comm_util.h
         message.h node.h
         node_manager_test.h
         scheduler_manager.h
@@ -48,7 +50,7 @@ set(HTTP_HEADER comm_util.h
 
 foreach (_target
         example_old scheduler_example
-        client_example server_example client_test server_test)
+        client_example server_example client_test server_test protobuf_serialize_test)
     add_executable(${_target} "${_target}.cpp"
             ${HTTP_SRC}
             ${HTTP_HEADER}
