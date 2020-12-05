@@ -90,7 +90,7 @@ void SchedulerNode::Init() {
         ProcessFetchServers(server, conn, message);
         break;
       default:
-        MS_LOG(INFO) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
+        MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
   });
 

@@ -115,14 +115,15 @@ void Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, CommMes
   SendMessageSync(client, message);
 }
 
-void Node::Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, CommMessage &>> &data) {
+void Node::Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const void *, size_t>> &data) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(data.size(), 0);
   for (auto it = data.begin(); it != data.end(); ++it) {
     NodeRole node_role;
     uint32_t rank_id;
-    CommMessage comm_message;
-    std::tie(node_role, rank_id, comm_message) = *it;
+    const void *message;
+    size_t len;
+    std::tie(node_role, rank_id, message, len) = *it;
 
     if (!CommUtil::ValidateRankId(node_role, rank_id)) {
       MS_LOG(ERROR) << "The node role or rank_id is illegal!";
@@ -131,7 +132,11 @@ void Node::Send(const std::vector<std::tuple<const enum NodeRole &, const uint32
     MessageMeta message_meta;
     message_meta.set_cmd(NodeCommand::SEND_DATA);
     message_meta.set_request_id(request_id);
+
+    CommMessage comm_message;
     *comm_message.mutable_pb_meta() = {message_meta};
+    comm_message.set_data(message, len);
+
     auto client = GetOrCreateTcpClient(rank_id);
     client->SendMessage(comm_message);
   }
@@ -223,9 +228,7 @@ const std::shared_ptr<TcpClient> &Node::GetOrCreateTcpClient(const int &rank_id)
   }
 }
 
-void Node::ProcessSendDataResp(const CommMessage &message) {
-
-}
+void Node::ProcessSendDataResp(const CommMessage &message) {}
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore

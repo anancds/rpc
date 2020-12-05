@@ -32,11 +32,11 @@ void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
 
   while (num > 0) {
     if (remaining_length_ == 0) {
-      for (int i = 0; i < 4 && num > 0; ++i) {
+      for (int i = 0; i < 8 && num > 0; ++i) {
         header_[++header_index_] = *(buffer_data + i);
         --num;
-        if (header_index_ == 3) {
-          message_length_ = *reinterpret_cast<const uint32_t *>(header_);
+        if (header_index_ == 7) {
+          message_length_ = *reinterpret_cast<const size_t *>(header_);
           remaining_length_ = message_length_;
           message_buffer_.reset(new unsigned char[remaining_length_]);
           buffer_data += (i + 1);
@@ -46,7 +46,7 @@ void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
     }
 
     if (remaining_length_ > 0 && num > 0) {
-      uint32_t copy_len = remaining_length_ <= num ? remaining_length_ : num;
+      size_t copy_len = remaining_length_ <= num ? remaining_length_ : num;
       remaining_length_ -= copy_len;
       num -= copy_len;
 

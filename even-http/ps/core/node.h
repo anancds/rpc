@@ -65,7 +65,7 @@ class Node {
   void Wait(uint64_t request_id);
 
   void Send(const enum NodeRole &node_role, const uint32_t &rank_id, CommMessage &message);
-  void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, CommMessage &>> &data);
+  void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const void *, size_t>> &data);
 
  protected:
   void Heartbeat(const std::shared_ptr<TcpClient> &client);

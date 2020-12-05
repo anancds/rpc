@@ -67,14 +67,29 @@ void NodeManagerTest::StartClient() {
   *kv_message.mutable_keys() = {keys.begin(), keys.end()};
   *kv_message.mutable_values() = {values.begin(), values.end()};
 
-  auto start1 = std::chrono::high_resolution_clock::now();
-  comm_message.set_data(kv_message.SerializeAsString());
+  size_t buf_size = kv_message.ByteSizeLong();
+//  std::vector<unsigned char> serialized(buf_size);
 
+
+  char *meta_buf = new char[buf_size + 1];
+  auto start1 = std::chrono::high_resolution_clock::now();
+  CommMessage comm_message1;
+  kv_message.SerializeToArray(meta_buf, static_cast<int>(buf_size));
+  comm_message.set_data(meta_buf, buf_size);
   auto end1 = std::chrono::high_resolution_clock::now();
-  MS_LOG(INFO) << "serialize, cost:" << (end1 - start1).count() / 1e6 << "ms";
+  MS_LOG(INFO) << "serialize1, cost:" << (end1 - start1).count() / 1e6 << "ms";
+
+  auto start2 = std::chrono::high_resolution_clock::now();
+  std::string test = kv_message.SerializeAsString();
+  auto end2 = std::chrono::high_resolution_clock::now();
+  MS_LOG(INFO) << "serialize2, cost:" << (end2 - start2).count() / 1e6 << "ms";
+  comm_message.set_data(test);
+  auto end3 = std::chrono::high_resolution_clock::now();
+  MS_LOG(INFO) << "set data33, cost:" << (end3 - start2).count() / 1e6 << "ms";
+
   MS_LOG(INFO) << "send data!";
   auto start = std::chrono::high_resolution_clock::now();
-  worker_node_->Send(NodeRole::SERVER, 0, comm_message);
+  worker_node_->Send(NodeRole::SERVER, 0, meta_buf, buf_size);
   auto end = std::chrono::high_resolution_clock::now();
   MS_LOG(INFO) << "send ok, cost:" << (end - start).count() / 1e6 << "ms";
 //  auto start1 = std::chrono::high_resolution_clock::now();
