@@ -21,7 +21,6 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
-#include <map>
 #include <memory>
 #include <string>
 #include <thread>
@@ -29,6 +28,7 @@
 #include <vector>
 #include <condition_variable>
 #include <utility>
+#include <tuple>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
@@ -64,8 +64,8 @@ class Node {
   uint32_t rank_id() const;
   void Wait(uint64_t request_id);
 
-  void Send(const enum NodeRole &node_role, const uint32_t &rank_id, CommMessage &message);
-  void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const void *, size_t>> &data);
+  virtual void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message);
+  virtual void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &>> &data);
 
  protected:
   void Heartbeat(const std::shared_ptr<TcpClient> &client);
@@ -97,7 +97,7 @@ class Node {
   // rank_id->tcpclient
   std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
 
-  // timestamp-><expected responses, actual responses>
+  // request_id-><expected responses, actual responses>
   std::unordered_map<uint64_t, std::pair<uint32_t, uint32_t>> message_tracker_;
   std::mutex message_mutex_;
   std::condition_variable message_tracker_cond_;
@@ -107,6 +107,10 @@ class Node {
   std::condition_variable wait_start_cond_;
   std::mutex finish_mutex_;
   std::mutex client_mutex_;
+
+  // request_id -> CommMessage
+  std::unordered_map<uint64_t, CommMessage> receive_messages_;
+  //  std::unordered_map<uint64_t, Callback> callbacks_;
 };
 }  // namespace core
 }  // namespace ps

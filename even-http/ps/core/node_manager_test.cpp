@@ -60,7 +60,6 @@ void NodeManagerTest::StartClient() {
     }
   });
   worker_node_->Start();
-  CommMessage comm_message;
   KVMessage kv_message;
   std::vector<int> keys(100000000, 1);
   std::vector<int> values(100000000, 2);
@@ -68,13 +67,13 @@ void NodeManagerTest::StartClient() {
   *kv_message.mutable_values() = {values.begin(), values.end()};
 
   auto start1 = std::chrono::high_resolution_clock::now();
-  comm_message.set_data(kv_message.SerializeAsString());
+  const auto &message = kv_message.SerializeAsString();
 
   auto end1 = std::chrono::high_resolution_clock::now();
   MS_LOG(INFO) << "serialize, cost:" << (end1 - start1).count() / 1e6 << "ms";
   MS_LOG(INFO) << "send data!";
   auto start = std::chrono::high_resolution_clock::now();
-  worker_node_->Send(NodeRole::SERVER, 0, comm_message);
+  worker_node_->Send(NodeRole::SERVER, 0, message);
   auto end = std::chrono::high_resolution_clock::now();
   MS_LOG(INFO) << "send ok, cost:" << (end - start).count() / 1e6 << "ms";
 //  auto start1 = std::chrono::high_resolution_clock::now();

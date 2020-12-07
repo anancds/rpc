@@ -102,28 +102,30 @@ void Node::Wait(uint64_t request_id) {
   });
 }
 
-void Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, CommMessage &message) {
+void Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(ERROR) << "The node role or rank_id is illegal!";
   }
 
   MessageMeta message_meta;
   message_meta.set_cmd(NodeCommand::SEND_DATA);
-  *message.mutable_pb_meta() = {message_meta};
 
+  CommMessage comm_message;
+  *comm_message.mutable_pb_meta() = {message_meta};
+  comm_message.set_data(message);
   auto client = GetOrCreateTcpClient(rank_id);
-  SendMessageSync(client, message);
+  SendMessageSync(client, comm_message);
 }
 
-void Node::Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const void *, size_t>> &data) {
+void Node::Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &>> &data) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(data.size(), 0);
   for (auto it = data.begin(); it != data.end(); ++it) {
     NodeRole node_role;
     uint32_t rank_id;
-    const void *message;
+    std::string message;
     size_t len;
-    std::tie(node_role, rank_id, message, len) = *it;
+    std::tie(node_role, rank_id, message) = *it;
 
     if (!CommUtil::ValidateRankId(node_role, rank_id)) {
       MS_LOG(ERROR) << "The node role or rank_id is illegal!";
@@ -135,7 +137,7 @@ void Node::Send(const std::vector<std::tuple<const enum NodeRole &, const uint32
 
     CommMessage comm_message;
     *comm_message.mutable_pb_meta() = {message_meta};
-    comm_message.set_data(message, len);
+    comm_message.set_data(message);
 
     auto client = GetOrCreateTcpClient(rank_id);
     client->SendMessage(comm_message);
@@ -228,7 +230,10 @@ const std::shared_ptr<TcpClient> &Node::GetOrCreateTcpClient(const int &rank_id)
   }
 }
 
-void Node::ProcessSendDataResp(const CommMessage &message) {}
+void Node::ProcessSendDataResp(const CommMessage &message) {
+  const MessageMeta &message_meta = message.pb_meta();
+  receive_messages_[message_meta.request_id()] = message;
+}
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
