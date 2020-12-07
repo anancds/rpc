@@ -25,6 +25,7 @@ enum NodeCommand {
   HEARTBEAT = 2;
   SEND_DATA = 3;
   FETCH_SERVER = 4;
+  FINISH = 5;
 }
 
 enum NodeRole {
@@ -38,6 +39,10 @@ message MessageMeta {
   NodeCommand cmd = 1;
   // the request id of this message
   uint64 request_id = 2;
+  // the role of the current node: worker,server,scheduler
+  NodeRole role = 3;
+  // the current Node rank id,the worker node range is:[0,numOfWorker-1], the server node range is:[0, numOfServer-1]
+  int32 rank_id = 4;
 }
 
 message RegisterMessage {
@@ -65,6 +70,7 @@ message HeartbeatRespMessage {
   // Is the entire system ready to use.
   bool is_cluster_ready = 1;
   bool is_cluster_finish = 2;
+  bool is_cluster_timeout = 3;
 }
 
 message FetchServersRespMessage {
@@ -76,6 +82,11 @@ message ServersMeta {
   string ip = 2;
   int32 port = 3;
 
+}
+
+message FinishMessage {
+  // the current Node unique id:0,1,2...
+  string node_id = 1;
 }
 
 message CommMessage {

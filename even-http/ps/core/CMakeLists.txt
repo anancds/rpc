@@ -45,6 +45,7 @@ set(HTTP_HEADER
         worker_manager.h
         cluster_config.h
         scheduler_node.h
+        node_manager.h
         server_node.h
         worker_node.h)
 

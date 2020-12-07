@@ -54,6 +54,7 @@ class Node {
   virtual ~Node() = default;
 
   using OnNodeEventMessage = std::function<void(const NodeEvent &event)>;
+  using MessageCallback = std::function<void()>;
 
   virtual void Start() = 0;
   virtual void Stop() = 0;
@@ -66,7 +67,10 @@ class Node {
 
   virtual void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message);
   virtual void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &>> &data);
-  virtual void BroadcastToServers(const std::string &message);
+  virtual void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+                    CommMessage &comm_message);
+  virtual void Send(
+    const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &, CommMessage &>> &data);
 
  protected:
   void Heartbeat(const std::shared_ptr<TcpClient> &client);
@@ -81,6 +85,8 @@ class Node {
   void NotifyMessageArrival(const CommMessage &message);
   const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
   void ProcessSendDataResp(const CommMessage &message);
+  void RunMessageCallback(const uint64_t &request_id);
+  void set_message_callback(const uint64_t &request_id, const MessageCallback &message_callback);
 
   NodeInfo node_info_;
   std::atomic<bool> is_ready_;
@@ -93,14 +99,12 @@ class Node {
 
   OnNodeEventMessage on_node_event_message_;
 
-  // rank_id-><ip, port>
-  std::unordered_map<int, std::pair<std::string, uint16_t>> server_rank_ids_;
   // rank_id->tcpclient
   std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
 
   // request_id-><expected responses, actual responses>
   std::unordered_map<uint64_t, std::pair<uint32_t, uint32_t>> message_tracker_;
-  std::mutex message_mutex_;
+  std::mutex message_tracker_mutex_;
   std::condition_variable message_tracker_cond_;
   std::mutex wait_finish_mutex_;
   std::condition_variable wait_finish_cond_;
@@ -109,9 +113,12 @@ class Node {
   std::mutex finish_mutex_;
   std::mutex client_mutex_;
 
-  // request_id -> CommMessage
-  std::unordered_map<uint64_t, CommMessage> receive_messages_;
-  //  std::unordered_map<uint64_t, Callback> callbacks_;
+  // request_id -> <rank_id, CommMessage>
+  std::unordered_map<uint64_t, std::unordered_map<uint32_t, CommMessage>> receive_messages_;
+  std::mutex receive_messages_mutex_;
+  // request_id -> MessageCallback
+  std::unordered_map<uint64_t, MessageCallback> message_callbacks_;
+  std::mutex message_callbacks_mutex_;
 };
 }  // namespace core
 }  // namespace ps

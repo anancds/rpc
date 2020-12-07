@@ -51,6 +51,8 @@ class ServerNode : public Node {
   void Stop() override;
   void Finish() override;
 
+  void BroadcastToServers(const std::string &message);
+
   using RequestHandler =
     std::function<void(const TcpServer &server, const TcpConnection &conn, const CommMessage &message)>;
 
@@ -71,6 +73,8 @@ class ServerNode : public Node {
   std::unique_ptr<std::thread> server_thread_;
   std::mutex client_mutex_;
   RequestHandler request_handler_;
+  // rank_id-><ip, port>
+  std::unordered_map<int, std::pair<std::string, uint16_t>> server_rank_ids_;
 };
 }  // namespace core
 }  // namespace ps

@@ -91,11 +91,10 @@ void Node::set_callback(const OnNodeEventMessage &on_node_event_message) {
 }
 
 void Node::Wait(uint64_t request_id) {
-  std::unique_lock<std::mutex> lock(message_mutex_);
+  std::unique_lock<std::mutex> lock(message_tracker_mutex_);
   message_tracker_cond_.wait(lock, [&] {
     bool ret = message_tracker_[request_id].first == message_tracker_[request_id].second;
     if (ret) {
-      MS_LOG(INFO) << "Message tracker remove request id:" << request_id;
       message_tracker_.erase(request_id);
     }
     return ret;
@@ -145,10 +144,37 @@ void Node::Send(const std::vector<std::tuple<const enum NodeRole &, const uint32
   Wait(request_id);
 }
 
-void Node::BroadcastToServers(const std::string &message) {
+void Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+                CommMessage &comm_message) {
+  if (!CommUtil::ValidateRankId(node_role, rank_id)) {
+    MS_LOG(ERROR) << "The node role or rank_id is illegal!";
+  }
+
+  MessageMeta message_meta;
+  message_meta.set_cmd(NodeCommand::SEND_DATA);
+
+  CommMessage comm_message;
+  *comm_message.mutable_pb_meta() = {message_meta};
+  comm_message.set_data(message);
+  auto client = GetOrCreateTcpClient(rank_id);
+  SendMessageSync(client, comm_message);
+}
+
+void Node::Send(
+  const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &, CommMessage &>> &data) {
   uint64_t request_id = ++next_request_id_;
-  message_tracker_[request_id] = std::make_pair(server_rank_ids_.size(), 0);
-  for (auto it = server_rank_ids_.begin(); it != server_rank_ids_.end(); ++it) {
+  message_tracker_[request_id] = std::make_pair(data.size(), 0);
+  for (auto it = data.begin(); it != data.end(); ++it) {
+    NodeRole node_role;
+    uint32_t rank_id;
+    std::string message;
+    size_t len;
+    std::tie(node_role, rank_id, message) = *it;
+
+    if (!CommUtil::ValidateRankId(node_role, rank_id)) {
+      MS_LOG(ERROR) << "The node role or rank_id is illegal!";
+    }
+
     MessageMeta message_meta;
     message_meta.set_cmd(NodeCommand::SEND_DATA);
     message_meta.set_request_id(request_id);
@@ -156,11 +182,14 @@ void Node::BroadcastToServers(const std::string &message) {
     CommMessage comm_message;
     *comm_message.mutable_pb_meta() = {message_meta};
     comm_message.set_data(message);
-    auto client = GetOrCreateTcpClient((*it).first);
+
+    auto client = GetOrCreateTcpClient(rank_id);
     client->SendMessage(comm_message);
   }
   Wait(request_id);
 }
+
+
 
 void Node::Disconnect(const std::shared_ptr<TcpClient> &client) {
   MessageMeta meta;
@@ -203,6 +232,9 @@ void Node::SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommM
   message_tracker_[request_id] = std::make_pair(1, 0);
   const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
   client->SendMessage(message);
+  set_message_callback(request_id, []() {
+
+  });
   Wait(request_id);
 }
 
@@ -213,6 +245,7 @@ void Node::SendMessageAsync(const std::shared_ptr<TcpClient> &client, const Comm
 }
 
 void Node::NotifyMessageArrival(const CommMessage &message) {
+  std::lock_guard<std::mutex> lock(message_tracker_mutex_);
   const MessageMeta &message_meta = message.pb_meta();
   uint64_t request_id = message_meta.request_id();
 
@@ -248,8 +281,46 @@ const std::shared_ptr<TcpClient> &Node::GetOrCreateTcpClient(const int &rank_id)
 }
 
 void Node::ProcessSendDataResp(const CommMessage &message) {
+  std::lock_guard<std::mutex> lock(receive_messages_mutex_);
   const MessageMeta &message_meta = message.pb_meta();
-  receive_messages_[message_meta.request_id()] = message;
+  const uint32_t &rank_id = message_meta.rank_id();
+  const uint64_t request_id = message_meta.request_id();
+  auto it = receive_messages_.find(request_id);
+  if (it != receive_messages_.end()) {
+    it->second.insert(std::make_pair(rank_id, message));
+  } else {
+    std::unordered_map<uint32_t, CommMessage> res;
+    res.insert(std::make_pair(rank_id, message));
+    receive_messages_[request_id] = res;
+  }
+
+  RunMessageCallback(request_id);
+}
+
+void Node::RunMessageCallback(const uint64_t &request_id) {
+  message_callbacks_mutex_.lock();
+  if (message_tracker_[request_id].first == message_tracker_[request_id].second - 1) {
+    auto it = message_callbacks_.find(request_id);
+    if (it != message_callbacks_.end()) {
+      message_callbacks_mutex_.unlock();
+
+      if (it->second) {
+        it->second();
+      }
+
+      message_callbacks_mutex_.lock();
+      message_callbacks_.erase(it);
+    }
+  }
+  message_callbacks_mutex_.unlock();
+}
+
+void Node::set_message_callback(const uint64_t &request_id, const MessageCallback &message_callback) {
+  if (!message_callback) {
+    return;
+  }
+  std::lock_guard<std::mutex> lock(message_callbacks_mutex_);
+  message_callbacks_[request_id] = message_callback;
 }
 }  // namespace core
 }  // namespace ps

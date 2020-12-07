@@ -12,6 +12,7 @@ set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_client.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/comm_util.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/cluster_config.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node_manager.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/scheduler_node.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/server_node.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/worker_node.cc

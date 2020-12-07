@@ -51,6 +51,7 @@ class WorkerNode : public Node {
   void Stop() override;
   void Finish() override;
 
+  void BroadcastToServers(const std::string &message);
 
  private:
   void Register();
@@ -61,6 +62,8 @@ class WorkerNode : public Node {
 
   std::shared_ptr<TcpClient> client_to_scheduler_;
   std::unique_ptr<std::thread> worker_thread_;
+  // rank_id-><ip, port>
+  std::unordered_map<int, std::pair<std::string, uint16_t>> server_rank_ids_;
 };
 }  // namespace core
 }  // namespace ps

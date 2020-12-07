@@ -54,7 +54,10 @@ class SchedulerNode : public Node {
 
   void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message) override;
   void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &>> &data) override;
-  void BroadcastToServers(const std::string &message) override;
+  void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+                    CommMessage &comm_message);
+  void Send(
+    const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &, CommMessage &>> &data);
 
  private:
   void Initialize();
