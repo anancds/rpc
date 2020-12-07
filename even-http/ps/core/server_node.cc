@@ -74,6 +74,7 @@ void ServerNode::Register(const std::shared_ptr<TcpClient> &client) {
 
 void ServerNode::set_handler(const RequestHandler &handler) { request_handler_ = handler; }
 
+// todo 需要加上rank_id和role
 void ServerNode::Response(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   const_cast<TcpServer &>(server).SendMessage(conn, message);
 }

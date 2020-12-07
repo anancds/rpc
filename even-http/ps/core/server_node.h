@@ -73,8 +73,6 @@ class ServerNode : public Node {
   std::unique_ptr<std::thread> server_thread_;
   std::mutex client_mutex_;
   RequestHandler request_handler_;
-  // rank_id-><ip, port>
-  std::unordered_map<int, std::pair<std::string, uint16_t>> server_rank_ids_;
 };
 }  // namespace core
 }  // namespace ps

@@ -145,34 +145,58 @@ void Node::Send(const std::vector<std::tuple<const enum NodeRole &, const uint32
 }
 
 void Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                CommMessage &comm_message) {
+                CommMessage *comm_message_resp) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
-    MS_LOG(ERROR) << "The node role or rank_id is illegal!";
+    MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
+
+  uint64_t request_id = ++next_request_id_;
+  message_tracker_[request_id] = std::make_pair(1, 0);
+  set_message_callback(request_id, [&]() {
+    receive_messages_mutex_.lock();
+    auto res = receive_messages_[request_id];
+    comm_message_resp = &res[rank_id];
+    receive_messages_.erase(request_id);
+    receive_messages_mutex_.unlock();
+  });
 
   MessageMeta message_meta;
   message_meta.set_cmd(NodeCommand::SEND_DATA);
+  message_meta.set_request_id(request_id);
 
   CommMessage comm_message;
   *comm_message.mutable_pb_meta() = {message_meta};
   comm_message.set_data(message);
   auto client = GetOrCreateTcpClient(rank_id);
-  SendMessageSync(client, comm_message);
+  client->SendMessage(comm_message);
+  Wait(request_id);
 }
 
 void Node::Send(
-  const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &, CommMessage &>> &data) {
+  const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &, CommMessage *>> &data) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(data.size(), 0);
+  set_message_callback(request_id, [&]() {
+    receive_messages_mutex_.lock();
+    auto res = receive_messages_[request_id];
+    for (auto it = data.begin(); it!= data.end(); ++it) {
+      auto [_1, rank_id, _3, comm_message_resp] = *it;
+      comm_message_resp = &res[rank_id];
+    }
+    receive_messages_.erase(request_id);
+    receive_messages_mutex_.unlock();
+  });
+
   for (auto it = data.begin(); it != data.end(); ++it) {
     NodeRole node_role;
     uint32_t rank_id;
     std::string message;
     size_t len;
-    std::tie(node_role, rank_id, message) = *it;
+    CommMessage *comm_message_resp;
+    std::tie(node_role, rank_id, message, comm_message_resp) = *it;
 
     if (!CommUtil::ValidateRankId(node_role, rank_id)) {
-      MS_LOG(ERROR) << "The node role or rank_id is illegal!";
+      MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
     }
 
     MessageMeta message_meta;
@@ -188,8 +212,6 @@ void Node::Send(
   }
   Wait(request_id);
 }
-
-
 
 void Node::Disconnect(const std::shared_ptr<TcpClient> &client) {
   MessageMeta meta;

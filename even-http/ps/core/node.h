@@ -29,6 +29,7 @@
 #include <condition_variable>
 #include <utility>
 #include <tuple>
+#include <type_traits>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
@@ -68,9 +69,9 @@ class Node {
   virtual void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message);
   virtual void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &>> &data);
   virtual void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                    CommMessage &comm_message);
+                    CommMessage *comm_message_resp);
   virtual void Send(
-    const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &, CommMessage &>> &data);
+    const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &, CommMessage *>> &data);
 
  protected:
   void Heartbeat(const std::shared_ptr<TcpClient> &client);
@@ -99,6 +100,8 @@ class Node {
 
   OnNodeEventMessage on_node_event_message_;
 
+  // rank_id-><ip, port>
+  std::unordered_map<int, std::pair<std::string, uint16_t>> server_rank_ids_;
   // rank_id->tcpclient
   std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
 
