@@ -42,16 +42,19 @@ namespace core {
 class SchedulerNode : public Node {
  public:
   SchedulerNode()
-      : server_(nullptr), scheduler_thread_(nullptr),
-        state_flush_thread_(nullptr), cluster_available_thread_(nullptr) {}
+      : server_(nullptr),
+        scheduler_thread_(nullptr),
+        state_flush_thread_(nullptr),
+        cluster_available_thread_(nullptr) {}
   ~SchedulerNode() override;
 
   void Start() override;
   void Stop() override;
   void Finish() override;
 
-  void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message);
-  void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &>> &data);
+  void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message) override;
+  void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &>> &data) override;
+  void BroadcastToServers(const std::string &message) override;
 
  private:
   void Initialize();

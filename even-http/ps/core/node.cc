@@ -145,6 +145,23 @@ void Node::Send(const std::vector<std::tuple<const enum NodeRole &, const uint32
   Wait(request_id);
 }
 
+void Node::BroadcastToServers(const std::string &message) {
+  uint64_t request_id = ++next_request_id_;
+  message_tracker_[request_id] = std::make_pair(server_rank_ids_.size(), 0);
+  for (auto it = server_rank_ids_.begin(); it != server_rank_ids_.end(); ++it) {
+    MessageMeta message_meta;
+    message_meta.set_cmd(NodeCommand::SEND_DATA);
+    message_meta.set_request_id(request_id);
+
+    CommMessage comm_message;
+    *comm_message.mutable_pb_meta() = {message_meta};
+    comm_message.set_data(message);
+    auto client = GetOrCreateTcpClient((*it).first);
+    client->SendMessage(comm_message);
+  }
+  Wait(request_id);
+}
+
 void Node::Disconnect(const std::shared_ptr<TcpClient> &client) {
   MessageMeta meta;
   meta.set_cmd(NodeCommand::FINISH);

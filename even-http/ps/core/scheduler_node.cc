@@ -200,12 +200,18 @@ void SchedulerNode::Finish() {
     return is_finish_.load();
   });
 }
+
 void SchedulerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message) {
   MS_LOG(EXCEPTION) << "The scheduler node is not supported send data to other nodes!";
 }
+
 void SchedulerNode::Send(
   const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &>> &data) {
   MS_LOG(EXCEPTION) << "The scheduler node is not supported send data to other nodes!";
+}
+
+void SchedulerNode::BroadcastToServers(const std::string &message) {
+  MS_LOG(EXCEPTION) << "The scheduler node is not supported broadcast data to other nodes!";
 }
 }  // namespace core
 }  // namespace ps

@@ -66,6 +66,7 @@ class Node {
 
   virtual void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message);
   virtual void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &>> &data);
+  virtual void BroadcastToServers(const std::string &message);
 
  protected:
   void Heartbeat(const std::shared_ptr<TcpClient> &client);
