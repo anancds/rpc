@@ -40,14 +40,16 @@ WorkerNode::~WorkerNode() {
     is_already_stopped_ = true;
   }
 }
-void WorkerNode::Start() {
+bool WorkerNode::Start(const uint32_t &timeout) {
   MS_LOG(INFO) << "Starting worker node!";
   Initialize();
-  InitClientToScheduler();
   Register();
   Heartbeat(client_to_scheduler_);
 
-  WaitForStart();
+  if (!WaitForStart(timeout)) {
+    MS_LOG(ERROR) << "Start Worker node timeout!";
+    return false;
+  }
   MS_LOG(INFO) << "The node is ready to fetch servers!";
 
   if (!is_timeout_.load()) {
@@ -55,6 +57,7 @@ void WorkerNode::Start() {
     MS_LOG(INFO) << "Fetch servers successful!";
   }
   MS_LOG(INFO) << "The Worker node has successfully started.";
+  return true;
 }
 
 void WorkerNode::Register() {
@@ -68,7 +71,9 @@ void WorkerNode::Register() {
   CommMessage comm_message;
   *comm_message.mutable_pb_meta() = {message_meta};
   comm_message.set_data(register_message.SerializeAsString());
-  SendMessageSync(client_to_scheduler_, comm_message);
+  if (!SendMessageSync(client_to_scheduler_, comm_message)) {
+    MS_LOG(EXCEPTION) << "Worker node register timeout!";
+  }
   MS_LOG(INFO) << "The worker node id:" << node_info_.node_id_
                << "is registering to scheduler, the request id is:" << message_meta.request_id();
 }
@@ -92,6 +97,7 @@ void WorkerNode::Initialize() {
   node_info_.node_role_ = NodeRole::WORKER;
   MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                << ", the node id is:" << node_info_.node_id_;
+  InitClientToScheduler();
 }
 
 void WorkerNode::InitClientToScheduler() {
@@ -126,7 +132,7 @@ void WorkerNode::InitClientToScheduler() {
   worker_thread_->detach();
 }
 
-void WorkerNode::Stop() {
+bool WorkerNode::Stop() {
   MS_LOG(INFO) << "Stop worker node!";
   if (!is_already_stopped_.load()) {
     is_ready_ = true;
@@ -146,17 +152,18 @@ void WorkerNode::Stop() {
     }
     is_already_stopped_ = true;
   }
+  return true;
 }
 
-void WorkerNode::Finish() {
+bool WorkerNode::Finish(const uint32_t &timeout) {
   std::lock_guard<std::mutex> lock(finish_mutex_);
   if (is_already_finished_) {
     MS_LOG(INFO) << "Worker node already finish!";
-    return;
+    return true;
   }
   MS_LOG(INFO) << "Finish worker node!";
-  Disconnect(client_to_scheduler_);
   is_already_finished_ = true;
+  return Disconnect(client_to_scheduler_, timeout);
 }
 
 bool WorkerNode::BroadcastToServers(const std::string &message) {

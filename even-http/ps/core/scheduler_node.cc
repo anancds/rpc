@@ -35,13 +35,16 @@ SchedulerNode::~SchedulerNode() {
   }
 }
 
-void SchedulerNode::Start() {
+bool SchedulerNode::Start(const uint32_t &timeout) {
   MS_LOG(INFO) << "Start scheduler node!";
-  Init();
   Initialize();
   StartClusterStateFlushTimer();
-  WaitForStart();
+  if (!WaitForStart(timeout)) {
+    MS_LOG(ERROR) << "Start Scheduler node timeout!";
+    return false;
+  }
   MS_LOG(INFO) << "The scheduler is ready!";
+  return true;
 }
 
 void SchedulerNode::ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
@@ -62,6 +65,7 @@ void SchedulerNode::ProcessHeartBeat(const TcpServer &server, const TcpConnectio
 }
 
 void SchedulerNode::Initialize() {
+  Init();
   is_already_stopped_ = false;
   node_info_.node_id_ = CommUtil::GenerateUUID();
   node_info_.node_role_ = NodeRole::SCHEDULER;
@@ -175,7 +179,7 @@ void SchedulerNode::StartClusterStateFlushTimer() {
   state_flush_thread_->detach();
 }
 
-void SchedulerNode::Stop() {
+bool SchedulerNode::Stop() {
   MS_LOG(INFO) << "Stop scheduler node!";
   if (!is_already_stopped_) {
     is_already_stopped_ = true;
@@ -188,35 +192,40 @@ void SchedulerNode::Stop() {
     }
     is_ready_ = true;
   }
+  return true;
 }
 
-void SchedulerNode::Finish() {
+bool SchedulerNode::Finish(const uint32_t &timeout) {
   MS_LOG(INFO) << "Finish scheduler node!";
   std::unique_lock<std::mutex> lock(wait_finish_mutex_);
-  wait_finish_cond_.wait(lock, [&] {
+  wait_finish_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
     if (is_finish_.load()) {
       MS_LOG(INFO) << "The scheduler finish success!";
     }
     return is_finish_.load();
   });
+  if (!is_finish_.load()) {
+    return false;
+  }
+  return true;
 }
 
-void SchedulerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+bool SchedulerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
                          const uint32_t &timeout) {
   MS_LOG(EXCEPTION) << "The scheduler node is not supported send data to other nodes!";
 }
 
-void SchedulerNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
+bool SchedulerNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
                          const std::vector<std::string> &data, const uint32_t &timeout) {
   MS_LOG(EXCEPTION) << "The scheduler node is not supported send data to other nodes!";
 }
 
-void SchedulerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+bool SchedulerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
                          CommMessage *comm_message, const uint32_t &timeout) {
   MS_LOG(EXCEPTION) << "The scheduler node is not supported send data to other nodes!";
 }
 
-void SchedulerNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
+bool SchedulerNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
                          const std::vector<std::string> &data, std::vector<CommMessage *> *comm_message_resp,
                          const uint32_t &timeout) {
   MS_LOG(EXCEPTION) << "The scheduler node is not supported send data to other nodes!";

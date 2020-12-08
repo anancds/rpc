@@ -34,15 +34,15 @@ ServerNode::~ServerNode() {
   }
 }
 
-void ServerNode::Start() {
+bool ServerNode::Start(const uint32_t &timeout) {
   MS_LOG(INFO) << "Start server node!";
-  Init();
   Initialize();
-  InitClientToScheduler();
   Register(client_to_scheduler_);
   Heartbeat(client_to_scheduler_);
 
-  WaitForStart();
+  if (!WaitForStart(timeout)) {
+    MS_LOG(EXCEPTION) << "Start Worker node timeout!";
+  }
   MS_LOG(INFO) << "The cluster is ready to use!";
 
   if (!is_timeout_) {
@@ -66,7 +66,9 @@ void ServerNode::Register(const std::shared_ptr<TcpClient> &client) {
   CommMessage comm_message;
   *comm_message.mutable_pb_meta() = {message_meta};
   comm_message.set_data(register_message.SerializeAsString());
-  SendMessageSync(client, comm_message);
+  if (!SendMessageSync(client, comm_message)) {
+    MS_LOG(EXCEPTION) << "Server node register timeout!";
+  }
 
   MS_LOG(INFO) << "The server node id:" << node_info_.node_id_
                << "is registering to scheduler, the request id is:" << message_meta.request_id();
@@ -115,6 +117,7 @@ void ServerNode::Init() {
 }
 
 void ServerNode::Initialize() {
+  Init();
   is_already_stopped_ = false;
   node_info_.node_id_ = CommUtil::GenerateUUID();
   node_info_.node_role_ = NodeRole::SERVER;
@@ -122,6 +125,7 @@ void ServerNode::Initialize() {
   node_info_.port_ = server_->BoundPort();
   MS_LOG(INFO) << "The node role:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                << " is generate uuid is:" << node_info_.node_id_;
+  InitClientToScheduler();
 }
 
 void ServerNode::InitClientToScheduler() {
@@ -162,7 +166,7 @@ void ServerNode::ProcessSendData(const TcpServer &server, const TcpConnection &c
   }
 }
 
-void ServerNode::Stop() {
+bool ServerNode::Stop() {
   MS_LOG(INFO) << "Stop server node!";
   if (!is_already_stopped_.load()) {
     server_->Stop();
@@ -179,18 +183,17 @@ void ServerNode::Stop() {
     }
     is_already_stopped_ = true;
   }
+  return true;
 }
 
-void ServerNode::Finish() {
+bool ServerNode::Finish(const uint32_t &timeout) {
   std::lock_guard<std::mutex> lock(finish_mutex_);
   if (is_already_finished_) {
     MS_LOG(INFO) << "Server node already finish!";
-    return;
+    return true;
   }
-  MS_LOG(INFO) << "Finish server node begin !";
-  Disconnect(client_to_scheduler_);
   is_already_finished_ = true;
-  MS_LOG(INFO) << "Finish server node end!";
+  return Disconnect(client_to_scheduler_, timeout);
 }
 
 bool ServerNode::BroadcastToServers(const std::string &message) {

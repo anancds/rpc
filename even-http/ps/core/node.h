@@ -56,9 +56,9 @@ class Node {
   using OnNodeEventMessage = std::function<void(const NodeEvent &event)>;
   using MessageCallback = std::function<void()>;
 
-  virtual void Start() = 0;
-  virtual void Stop() = 0;
-  virtual void Finish() = 0;
+  virtual bool Start(const uint32_t &timeout = 30) = 0;
+  virtual bool Stop() = 0;
+  virtual bool Finish(const uint32_t &timeout = 30) = 0;
 
   void set_callback(const OnNodeEventMessage &on_node_event_message);
   std::string node_id() const;
@@ -80,9 +80,9 @@ class Node {
   void ProcessHeartbeatResp(const CommMessage &message);
   void FetchServers(const std::shared_ptr<TcpClient> &client);
   void ProcessFetchServersResp(const CommMessage &message);
-  void Disconnect(const std::shared_ptr<TcpClient> &client);
-  void WaitForStart();
-  void WaitForDisconnect();
+  bool Disconnect(const std::shared_ptr<TcpClient> &client, const uint32_t &timeout);
+  bool WaitForStart(const uint32_t &timeout);
+  bool WaitForDisconnect(const uint32_t &timeout);
   bool SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message,
                        const uint32_t &timeout = 3);
   void SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);

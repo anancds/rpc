@@ -69,7 +69,7 @@ void Node::FetchServers(const std::shared_ptr<TcpClient> &client) {
   CommMessage message;
   *message.mutable_pb_meta() = {meta};
   if (!SendMessageSync(client, message)) {
-    MS_LOG(EXCEPTION) << "Fetch servers address failed!";
+    MS_LOG(EXCEPTION) << "Fetch servers address timeout!";
   }
 }
 
@@ -222,7 +222,7 @@ bool Node::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids
   return Wait(request_id, timeout);
 }
 
-void Node::Disconnect(const std::shared_ptr<TcpClient> &client) {
+bool Node::Disconnect(const std::shared_ptr<TcpClient> &client, const uint32_t &timeout) {
   MessageMeta meta;
   meta.set_cmd(NodeCommand::FINISH);
 
@@ -232,30 +232,40 @@ void Node::Disconnect(const std::shared_ptr<TcpClient> &client) {
   CommMessage message;
   *message.mutable_pb_meta() = {meta};
   message.set_data(finish_message.SerializeAsString());
-  SendMessageSync(client, message);
+  if (!SendMessageSync(client, message)) {
+    MS_LOG(EXCEPTION) << "Disconnect timeout!";
+  }
   MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " send finish message!";
-  WaitForDisconnect();
+  return WaitForDisconnect(timeout);
 }
 
-void Node::WaitForStart() {
+bool Node::WaitForStart(const uint32_t &timeout) {
   std::unique_lock<std::mutex> lock(wait_start_mutex_);
-  wait_start_cond_.wait(lock, [&] {
+  wait_start_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
     bool res = is_ready_.load();
     if (res) {
       MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is success start!";
     }
     return res;
   });
+  if (!is_ready_.load()) {
+    return false;
+  }
+  return true;
 }
 
-void Node::WaitForDisconnect() {
+bool Node::WaitForDisconnect(const uint32_t &timeout) {
   std::unique_lock<std::mutex> lock(wait_finish_mutex_);
-  wait_finish_cond_.wait(lock, [&] {
+  wait_finish_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
     if (is_finish_.load()) {
       MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is success finish!";
     }
     return is_finish_.load();
   });
+  if (!is_finish_.load()) {
+    return false;
+  }
+  return true;
 }
 
 bool Node::SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message,

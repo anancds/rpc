@@ -48,17 +48,18 @@ class SchedulerNode : public Node {
         cluster_available_thread_(nullptr) {}
   ~SchedulerNode() override;
 
-  void Start() override;
-  void Stop() override;
-  void Finish() override;
+  bool Start(const uint32_t &timeout = 30) override;
+  bool Stop() override;
+  bool Finish(const uint32_t &timeout = 30) override;
 
-  void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,const uint32_t &timeout = 3) override;
-  void Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-            const std::vector<std::string> &data,const uint32_t &timeout = 3) override;
-  void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-            CommMessage *comm_message,const uint32_t &timeout = 3);
-  void Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
-            std::vector<CommMessage *> *comm_message_resp,const uint32_t &timeout = 3);
+  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+            const uint32_t &timeout = 3) override;
+  bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
+            const uint32_t &timeout = 3) override;
+  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+            CommMessage *comm_message, const uint32_t &timeout = 3);
+  bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
+            std::vector<CommMessage *> *comm_message_resp, const uint32_t &timeout = 3);
 
  private:
   void Initialize();
