@@ -214,8 +214,9 @@ void SchedulerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id
                          CommMessage *comm_message) {
   MS_LOG(EXCEPTION) << "The scheduler node is not supported send data to other nodes!";
 }
+
 void SchedulerNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                         const std::vector<std::string> &data, const std::vector<CommMessage *> comm_message_resp) {
+                         const std::vector<std::string> &data, std::vector<CommMessage *> *comm_message_resp) {
   MS_LOG(EXCEPTION) << "The scheduler node is not supported send data to other nodes!";
 }
 }  // namespace core

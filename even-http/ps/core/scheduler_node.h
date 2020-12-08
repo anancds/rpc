@@ -58,7 +58,7 @@ class SchedulerNode : public Node {
   void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
             CommMessage *comm_message);
   void Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
-            const std::vector<CommMessage *> comm_message_resp);
+            std::vector<CommMessage *> *comm_message_resp);
 
  private:
   void Initialize();
