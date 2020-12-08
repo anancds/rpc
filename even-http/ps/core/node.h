@@ -66,11 +66,12 @@ class Node {
   void Wait(uint64_t request_id);
 
   virtual void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message);
-  virtual void Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &>> &data);
+  virtual void Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
+                    const std::vector<std::string> &data);
   virtual void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
                     CommMessage *comm_message_resp);
-  virtual void Send(
-    const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &, CommMessage *>> &data);
+  virtual void Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
+                    const std::vector<std::string> &data, const std::vector<CommMessage *> comm_message_resp);
 
  protected:
   void Heartbeat(const std::shared_ptr<TcpClient> &client);
@@ -99,8 +100,8 @@ class Node {
 
   OnNodeEventMessage on_node_event_message_;
 
-  // rank_id-><ip, port>
-  std::unordered_map<int, std::pair<std::string, uint16_t>> nodes_address_;
+  // <NodeRole,rank_id>-><ip, port>
+  std::map<std::pair<NodeRole, uint32_t>, std::pair<std::string, uint16_t>> nodes_address_;
   // rank_id->tcpclient
   std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
 

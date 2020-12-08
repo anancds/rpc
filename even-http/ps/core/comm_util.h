@@ -68,6 +68,7 @@ class CommUtil {
   static std::string GenerateUUID();
   static std::string NodeRoleToString(const NodeRole &role);
   static bool ValidateRankId(const enum NodeRole &node_role, const uint32_t &rank_id);
+  static bool CheckTwoVectorsSize(const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data);
 
  private:
   static std::random_device rd;

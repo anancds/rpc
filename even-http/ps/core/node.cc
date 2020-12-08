@@ -76,7 +76,7 @@ void Node::ProcessFetchServersResp(const CommMessage &message) {
   fetch_servers_resp_message.ParseFromString(message.data());
 
   for (const auto &it : fetch_servers_resp_message.servers_meta()) {
-    nodes_address_[it.rank_id()] = std::make_pair(it.ip(), it.port());
+    nodes_address_[std::make_pair(NodeRole::SERVER, it.rank_id())] = std::make_pair(it.ip(), it.port());
   }
 
   MS_LOG(DEBUG) << "The all server host size is:" << nodes_address_.size();
@@ -103,7 +103,7 @@ void Node::Wait(uint64_t request_id) {
 
 void Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
-    MS_LOG(ERROR) << "The node role or rank_id is illegal!";
+    MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
 
   MessageMeta message_meta;
@@ -116,18 +116,19 @@ void Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const s
   SendMessageSync(client, comm_message);
 }
 
-void Node::Send(const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &>> &data) {
+void Node::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
+                const std::vector<std::string> &data) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(data.size(), 0);
-  for (auto it = data.begin(); it != data.end(); ++it) {
-    NodeRole node_role;
-    uint32_t rank_id;
-    std::string message;
-    size_t len;
-    std::tie(node_role, rank_id, message) = *it;
 
-    if (!CommUtil::ValidateRankId(node_role, rank_id)) {
-      MS_LOG(ERROR) << "The node role or rank_id is illegal!";
+  if (!CommUtil::CheckTwoVectorsSize(rank_ids, data)) {
+    MS_LOG(EXCEPTION) << "The number of rank ids is not equal to the number of data!";
+  }
+  size_t len = rank_ids.size();
+  for (auto it = 0; it < len; ++it) {
+
+    if (!CommUtil::ValidateRankId(node_role, rank_ids.at(it))) {
+      MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
     }
 
     MessageMeta message_meta;
@@ -136,9 +137,9 @@ void Node::Send(const std::vector<std::tuple<const enum NodeRole &, const uint32
 
     CommMessage comm_message;
     *comm_message.mutable_pb_meta() = {message_meta};
-    comm_message.set_data(message);
+    comm_message.set_data(data.at(it));
 
-    auto client = GetOrCreateTcpClient(rank_id);
+    auto client = GetOrCreateTcpClient(rank_ids.at(it));
     client->SendMessage(comm_message);
   }
   Wait(request_id);
@@ -173,13 +174,14 @@ void Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const s
 }
 
 void Node::Send(
-  const std::vector<std::tuple<const enum NodeRole &, const uint32_t &, const std::string &, CommMessage *>> &data) {
+  const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
+  const std::vector<std::string> &data, const std::vector<CommMessage *> comm_message_resp) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(data.size(), 0);
   set_message_callback(request_id, [&]() {
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
-    for (auto it = data.begin(); it!= data.end(); ++it) {
+    for (auto it = data.begin(); it != data.end(); ++it) {
       auto [_1, rank_id, _3, comm_message_resp] = *it;
       comm_message_resp = &res[rank_id];
     }
@@ -280,11 +282,11 @@ const std::shared_ptr<TcpClient> &Node::GetOrCreateTcpClient(const int &rank_id)
   if (connected_nodes_.find(rank_id) != connected_nodes_.end()) {
     return connected_nodes_[rank_id];
   } else {
-    if (nodes_address_.find(rank_id) == nodes_address_.end()) {
+    if (nodes_address_.find(std::make_pair(NodeRole::SERVER, rank_id)) == nodes_address_.end()) {
       MS_LOG(EXCEPTION) << "Worker node Fetch servers failed!";
     }
-    std::string ip = nodes_address_[rank_id].first;
-    uint16_t port = nodes_address_[rank_id].second;
+    std::string ip = nodes_address_[std::make_pair(NodeRole::SERVER, rank_id)].first;
+    uint16_t port = nodes_address_[std::make_pair(NodeRole::SERVER, rank_id)].second;
     auto client = std::make_shared<TcpClient>(ip, port);
     client->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
       switch (message.pb_meta().cmd()) {

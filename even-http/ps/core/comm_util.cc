@@ -123,10 +123,15 @@ std::string CommUtil::NodeRoleToString(const NodeRole &role) {
 }
 bool CommUtil::ValidateRankId(const enum NodeRole &node_role, const uint32_t &rank_id) {
   if (node_role == NodeRole::SERVER && (rank_id > ClusterConfig::server_num() - 1)) {
-    MS_LOG(ERROR) << "The node role server with the rank id:" << rank_id << " is illegal!";
     return false;
   } else if (node_role == NodeRole::WORKER && (rank_id > ClusterConfig::worker_num() - 1)) {
-    MS_LOG(ERROR) << "The node role worker with the rank id:" << rank_id << " is illegal!";
+    return false;
+  }
+  return true;
+}
+
+static bool CheckTwoVectorsSize(const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data) {
+  if (rank_ids.size() != data.size()) {
     return false;
   }
   return true;

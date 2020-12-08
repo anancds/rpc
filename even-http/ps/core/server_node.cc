@@ -204,7 +204,7 @@ void ServerNode::BroadcastToServers(const std::string &message) {
     CommMessage comm_message;
     *comm_message.mutable_pb_meta() = {message_meta};
     comm_message.set_data(message);
-    auto client = GetOrCreateTcpClient((*it).first);
+    auto client = GetOrCreateTcpClient((*it).first.second);
     client->SendMessage(comm_message);
   }
   Wait(request_id);
