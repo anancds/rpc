@@ -68,7 +68,9 @@ void Node::FetchServers(const std::shared_ptr<TcpClient> &client) {
 
   CommMessage message;
   *message.mutable_pb_meta() = {meta};
-  SendMessageSync(client, message);
+  if (!SendMessageSync(client, message)) {
+    MS_LOG(EXCEPTION) << "Fetch servers address failed!";
+  }
 }
 
 void Node::ProcessFetchServersResp(const CommMessage &message) {
@@ -90,18 +92,26 @@ void Node::set_callback(const OnNodeEventMessage &on_node_event_message) {
   on_node_event_message_ = on_node_event_message;
 }
 
-void Node::Wait(uint64_t request_id) {
+bool Node::Wait(uint64_t request_id, const uint32_t &timeout) {
   std::unique_lock<std::mutex> lock(message_tracker_mutex_);
-  message_tracker_cond_.wait(lock, [&] {
+  message_tracker_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
     bool ret = message_tracker_[request_id].first == message_tracker_[request_id].second;
     if (ret) {
-      message_tracker_.erase(request_id);
+      if (message_tracker_.find(request_id) != message_tracker_.end()) {
+        message_tracker_.erase(request_id);
+      }
     }
     return ret;
   });
+  if (message_tracker_.find(request_id) != message_tracker_.end()) {
+    message_tracker_.erase(request_id);
+    return false;
+  }
+  return true;
 }
 
-void Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message) {
+bool Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+                const uint32_t &timeout) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
@@ -113,15 +123,15 @@ void Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const s
   *comm_message.mutable_pb_meta() = {message_meta};
   comm_message.set_data(message);
   auto client = GetOrCreateTcpClient(rank_id);
-  SendMessageSync(client, comm_message);
+  return SendMessageSync(client, comm_message);
 }
 
-void Node::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                const std::vector<std::string> &data) {
+bool Node::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
+                const uint32_t &timeout) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(data.size(), 0);
 
-  if (!CommUtil::CheckTwoVectorsSize(rank_ids, data)) {
+  if (rank_ids.size() != data.size()) {
     MS_LOG(EXCEPTION) << "The number of rank ids is not equal to the number of data!";
   }
   size_t len = rank_ids.size();
@@ -141,11 +151,11 @@ void Node::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids
     auto client = GetOrCreateTcpClient(rank_ids.at(it));
     client->SendMessage(comm_message);
   }
-  Wait(request_id);
+  return Wait(request_id, timeout);
 }
 
-void Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                CommMessage *comm_message_resp) {
+bool Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+                CommMessage *comm_message_resp, const uint32_t &timeout) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
@@ -169,15 +179,15 @@ void Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const s
   comm_message.set_data(message);
   auto client = GetOrCreateTcpClient(rank_id);
   client->SendMessage(comm_message);
-  Wait(request_id);
+  return Wait(request_id, timeout);
 }
 
-void Node::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
-                std::vector<CommMessage *> *comm_message_resp) {
+bool Node::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
+                std::vector<CommMessage *> *comm_message_resp, const uint32_t &timeout) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(data.size(), 0);
 
-  if (!CommUtil::CheckTwoVectorsSize(rank_ids, data) || !CommUtil::CheckTwoVectorsSize(rank_ids, *comm_message_resp)) {
+  if (rank_ids.size() != data.size() || rank_ids.size() != (*comm_message_resp).size()) {
     MS_LOG(EXCEPTION) << "The number of rank ids, data, comm_message_resp should be equal!";
   }
 
@@ -209,7 +219,7 @@ void Node::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids
     auto client = GetOrCreateTcpClient(rank_ids.at(it));
     client->SendMessage(comm_message);
   }
-  Wait(request_id);
+  return Wait(request_id, timeout);
 }
 
 void Node::Disconnect(const std::shared_ptr<TcpClient> &client) {
@@ -248,15 +258,13 @@ void Node::WaitForDisconnect() {
   });
 }
 
-void Node::SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message) {
+bool Node::SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message,
+                           const uint32_t &timeout) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(1, 0);
   const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
   client->SendMessage(message);
-  set_message_callback(request_id, []() {
-
-  });
-  Wait(request_id);
+  return Wait(request_id, timeout);
 }
 
 void Node::SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message) {

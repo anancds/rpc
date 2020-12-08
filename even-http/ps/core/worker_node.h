@@ -51,7 +51,7 @@ class WorkerNode : public Node {
   void Stop() override;
   void Finish() override;
 
-  void BroadcastToServers(const std::string &message);
+  bool BroadcastToServers(const std::string &message);
 
  private:
   void Register();

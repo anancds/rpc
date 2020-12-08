@@ -73,8 +73,6 @@ void WorkerNode::Register() {
                << "is registering to scheduler, the request id is:" << message_meta.request_id();
 }
 
-
-
 void WorkerNode::ProcessRegisterResp(const CommMessage &message) {
   RegisterRespMessage register_resp_message;
   register_resp_message.ParseFromString(message.data());
@@ -161,7 +159,7 @@ void WorkerNode::Finish() {
   is_already_finished_ = true;
 }
 
-void WorkerNode::BroadcastToServers(const std::string &message) {
+bool WorkerNode::BroadcastToServers(const std::string &message) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(nodes_address_.size(), 0);
   for (auto it = nodes_address_.begin(); it != nodes_address_.end(); ++it) {
@@ -175,7 +173,7 @@ void WorkerNode::BroadcastToServers(const std::string &message) {
     auto client = GetOrCreateTcpClient((*it).first.second);
     client->SendMessage(comm_message);
   }
-  Wait(request_id);
+  return Wait(request_id);
 }
 }  // namespace core
 }  // namespace ps

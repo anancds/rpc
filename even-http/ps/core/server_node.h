@@ -51,7 +51,7 @@ class ServerNode : public Node {
   void Stop() override;
   void Finish() override;
 
-  void BroadcastToServers(const std::string &message);
+  bool BroadcastToServers(const std::string &message);
 
   using RequestHandler =
     std::function<void(const TcpServer &server, const TcpConnection &conn, const CommMessage &message)>;

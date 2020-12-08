@@ -193,7 +193,7 @@ void ServerNode::Finish() {
   MS_LOG(INFO) << "Finish server node end!";
 }
 
-void ServerNode::BroadcastToServers(const std::string &message) {
+bool ServerNode::BroadcastToServers(const std::string &message) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(nodes_address_.size(), 0);
   for (auto it = nodes_address_.begin(); it != nodes_address_.end(); ++it) {
@@ -207,7 +207,7 @@ void ServerNode::BroadcastToServers(const std::string &message) {
     auto client = GetOrCreateTcpClient((*it).first.second);
     client->SendMessage(comm_message);
   }
-  Wait(request_id);
+  return Wait(request_id);
 }
 }  // namespace core
 }  // namespace ps

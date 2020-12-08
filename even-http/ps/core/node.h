@@ -63,15 +63,17 @@ class Node {
   void set_callback(const OnNodeEventMessage &on_node_event_message);
   std::string node_id() const;
   uint32_t rank_id() const;
-  void Wait(uint64_t request_id);
+  bool Wait(uint64_t request_id, const uint32_t &timeout = 3);
 
-  virtual void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message);
-  virtual void Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                    const std::vector<std::string> &data);
-  virtual void Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                    CommMessage *comm_message_resp);
-  virtual void Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                    const std::vector<std::string> &data, std::vector<CommMessage *> *comm_message_resp);
+  virtual bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+                    const uint32_t &timeout = 3);
+  virtual bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
+                    const std::vector<std::string> &data, const uint32_t &timeout = 3);
+  virtual bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+                    CommMessage *const comm_message_resp, const uint32_t &timeout = 3);
+  virtual bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
+                    const std::vector<std::string> &data, std::vector<CommMessage *> *comm_message_resp,
+                    const uint32_t &timeout = 3);
 
  protected:
   void Heartbeat(const std::shared_ptr<TcpClient> &client);
@@ -81,7 +83,8 @@ class Node {
   void Disconnect(const std::shared_ptr<TcpClient> &client);
   void WaitForStart();
   void WaitForDisconnect();
-  void SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
+  bool SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message,
+                       const uint32_t &timeout = 3);
   void SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
   void NotifyMessageArrival(const CommMessage &message);
   const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);

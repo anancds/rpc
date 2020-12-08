@@ -55,6 +55,8 @@ void testMap() {
 
 
 int main(int /*argc*/, char ** /*argv*/) {
+  size_t size = 1;
+  std::vector<int> lengths{static_cast<int>(size)};
   testMap();
   StartServer();
   CommMessage message;

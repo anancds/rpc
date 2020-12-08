@@ -69,14 +69,6 @@ class CommUtil {
   static std::string NodeRoleToString(const NodeRole &role);
   static bool ValidateRankId(const enum NodeRole &node_role, const uint32_t &rank_id);
 
-  template <typename T, typename S>
-  static bool CheckTwoVectorsSize(const std::vector<T> &rank_ids, const std::vector<S> &data) {
-    if (rank_ids.size() != data.size()) {
-      return false;
-    }
-    return true;
-  }
-
  private:
   static std::random_device rd;
   static std::mt19937_64 gen;
