@@ -29,7 +29,6 @@
 #include <condition_variable>
 #include <utility>
 #include <tuple>
-#include <type_traits>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
@@ -101,7 +100,7 @@ class Node {
   OnNodeEventMessage on_node_event_message_;
 
   // rank_id-><ip, port>
-  std::unordered_map<int, std::pair<std::string, uint16_t>> server_rank_ids_;
+  std::unordered_map<int, std::pair<std::string, uint16_t>> nodes_address_;
   // rank_id->tcpclient
   std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
 

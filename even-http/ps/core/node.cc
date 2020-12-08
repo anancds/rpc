@@ -76,10 +76,10 @@ void Node::ProcessFetchServersResp(const CommMessage &message) {
   fetch_servers_resp_message.ParseFromString(message.data());
 
   for (const auto &it : fetch_servers_resp_message.servers_meta()) {
-    server_rank_ids_[it.rank_id()] = std::make_pair(it.ip(), it.port());
+    nodes_address_[it.rank_id()] = std::make_pair(it.ip(), it.port());
   }
 
-  MS_LOG(DEBUG) << "The all server host size is:" << server_rank_ids_.size();
+  MS_LOG(DEBUG) << "The all server host size is:" << nodes_address_.size();
 }
 
 std::string Node::node_id() const { return node_info_.node_id_; }
@@ -280,11 +280,11 @@ const std::shared_ptr<TcpClient> &Node::GetOrCreateTcpClient(const int &rank_id)
   if (connected_nodes_.find(rank_id) != connected_nodes_.end()) {
     return connected_nodes_[rank_id];
   } else {
-    if (server_rank_ids_.find(rank_id) == server_rank_ids_.end()) {
+    if (nodes_address_.find(rank_id) == nodes_address_.end()) {
       MS_LOG(EXCEPTION) << "Worker node Fetch servers failed!";
     }
-    std::string ip = server_rank_ids_[rank_id].first;
-    uint16_t port = server_rank_ids_[rank_id].second;
+    std::string ip = nodes_address_[rank_id].first;
+    uint16_t port = nodes_address_[rank_id].second;
     auto client = std::make_shared<TcpClient>(ip, port);
     client->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
       switch (message.pb_meta().cmd()) {

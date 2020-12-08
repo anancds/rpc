@@ -163,8 +163,8 @@ void WorkerNode::Finish() {
 
 void WorkerNode::BroadcastToServers(const std::string &message) {
   uint64_t request_id = ++next_request_id_;
-  message_tracker_[request_id] = std::make_pair(server_rank_ids_.size(), 0);
-  for (auto it = server_rank_ids_.begin(); it != server_rank_ids_.end(); ++it) {
+  message_tracker_[request_id] = std::make_pair(nodes_address_.size(), 0);
+  for (auto it = nodes_address_.begin(); it != nodes_address_.end(); ++it) {
     MessageMeta message_meta;
     message_meta.set_cmd(NodeCommand::SEND_DATA);
     message_meta.set_request_id(request_id);
