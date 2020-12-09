@@ -94,17 +94,10 @@ void Node::set_callback(const OnNodeEventMessage &on_node_event_message) {
 
 bool Node::Wait(uint64_t request_id, const uint32_t &timeout) {
   std::unique_lock<std::mutex> lock(message_tracker_mutex_);
-  message_tracker_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
+  bool res = message_tracker_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
     bool ret = message_tracker_[request_id].first == message_tracker_[request_id].second;
-    if (ret) {
-      message_tracker_.erase(request_id);
-    }
     return ret;
   });
-  bool res = true;
-  if (message_tracker_.find(request_id) != message_tracker_.end()) {
-    res = false;
-  }
   message_tracker_.erase(request_id);
   return res;
 }
@@ -239,31 +232,25 @@ bool Node::Disconnect(const std::shared_ptr<TcpClient> &client, const uint32_t &
 
 bool Node::WaitForStart(const uint32_t &timeout) {
   std::unique_lock<std::mutex> lock(wait_start_mutex_);
-  wait_start_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
+  bool res = wait_start_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
     bool res = is_ready_.load();
     if (res) {
       MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is success start!";
     }
     return res;
   });
-  if (!is_ready_.load()) {
-    return false;
-  }
-  return true;
+  return res;
 }
 
 bool Node::WaitForDisconnect(const uint32_t &timeout) {
   std::unique_lock<std::mutex> lock(wait_finish_mutex_);
-  wait_finish_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
+  bool res = wait_finish_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
     if (is_finish_.load()) {
       MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " is success finish!";
     }
     return is_finish_.load();
   });
-  if (!is_finish_.load()) {
-    return false;
-  }
-  return true;
+  return res;
 }
 
 bool Node::SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message,

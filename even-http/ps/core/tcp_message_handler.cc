@@ -23,7 +23,6 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-
 void TcpMessageHandler::SetCallback(const messageReceive &message_receive) { message_callback_ = message_receive; }
 
 void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
@@ -32,10 +31,10 @@ void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
 
   while (num > 0) {
     if (remaining_length_ == 0) {
-      for (int i = 0; i < 8 && num > 0; ++i) {
+      for (int i = 0; i < kHeaderLen && num > 0; ++i) {
         header_[++header_index_] = *(buffer_data + i);
         --num;
-        if (header_index_ == 7) {
+        if (header_index_ == kHeaderLen - 1) {
           message_length_ = *reinterpret_cast<const size_t *>(header_);
           remaining_length_ = message_length_;
           message_buffer_.reset(new unsigned char[remaining_length_]);
@@ -71,7 +70,6 @@ void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
     }
   }
 }
-
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore

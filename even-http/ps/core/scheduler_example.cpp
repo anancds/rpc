@@ -17,20 +17,17 @@ using namespace mindspore::ps::core;
 static void StartServer() {
   ClusterConfig::Init(1, 1, std::make_unique<std::string>("127.0.0.1"), 9999);
   NodeManagerTest::Get()->StartScheduler();
-
 }
 
 void test() {
-  std::unordered_map<int , int> map;
-  map.insert(std::make_pair(1,1));
+  std::unordered_map<int, int> map;
+  map.insert(std::make_pair(1, 1));
   uint32_t a = 2;
   if (map.size() == a) {
   }
 }
 
-void testUUID() {
-  std::cout << CommUtil::GenerateUUID() << std::endl;
-}
+void testUUID() { std::cout << CommUtil::GenerateUUID() << std::endl; }
 
 void testMap() {
   std::unordered_map<int, std::unordered_map<int, int>> map;
@@ -38,8 +35,8 @@ void testMap() {
   if (it != map.end()) {
     it->second.insert(std::make_pair(2, 2));
   } else {
-    std::unordered_map<int,int> res;
-    res.insert(std::make_pair(1,1));
+    std::unordered_map<int, int> res;
+    res.insert(std::make_pair(1, 1));
     map[1] = res;
   }
   std::cout << map[1].size() << std::endl;
@@ -48,15 +45,27 @@ void testMap() {
   if (it1 != map.end()) {
     it1->second.insert(std::make_pair(2, 2));
   } else {
-    it1->second.insert(std::make_pair(3,3));
+    it1->second.insert(std::make_pair(3, 3));
   }
   std::cout << map[1].size() << std::endl;
 }
 
+void test_size_t() {
+  size_t size = 408;
+  char res[100] = {0};
+  memcpy_s(res, 4,&size, 4);
+  memcpy_s(res + 4, 4,&size + 4, 4);
+  size_t *test = reinterpret_cast<size_t *>(res);
+  std::cout << *test << std::endl;
+  std::cout << *reinterpret_cast<size_t *>(res) << std::endl;
+
+  memcpy_s(res, 4,&size +4, 4);
+
+}
 
 int main(int /*argc*/, char ** /*argv*/) {
-  size_t size = 1;
-  std::vector<int> lengths{static_cast<int>(size)};
+
+  test_size_t();
   testMap();
   StartServer();
   CommMessage message;
