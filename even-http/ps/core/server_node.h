@@ -47,9 +47,9 @@ class ServerNode : public Node {
         server_thread_(nullptr) {}
   ~ServerNode() override;
 
-  bool Start(const uint32_t &timeout = 30) override;
+  bool Start(const uint32_t &timeout = kTimeoutInSeconds) override;
   bool Stop() override;
-  bool Finish(const uint32_t &timeout = 30) override;
+  bool Finish(const uint32_t &timeout = kTimeoutInSeconds) override;
 
   bool BroadcastToServers(const std::string &message);
 

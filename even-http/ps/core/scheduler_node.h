@@ -48,9 +48,9 @@ class SchedulerNode : public Node {
         cluster_available_thread_(nullptr) {}
   ~SchedulerNode() override;
 
-  bool Start(const uint32_t &timeout = 30) override;
+  bool Start(const uint32_t &timeout = kTimeoutInSeconds) override;
   bool Stop() override;
-  bool Finish(const uint32_t &timeout = 30) override;
+  bool Finish(const uint32_t &timeout = kTimeoutInSeconds) override;
 
   bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
             const uint32_t &timeout = 3) override;

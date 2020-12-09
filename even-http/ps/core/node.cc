@@ -97,17 +97,16 @@ bool Node::Wait(uint64_t request_id, const uint32_t &timeout) {
   message_tracker_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
     bool ret = message_tracker_[request_id].first == message_tracker_[request_id].second;
     if (ret) {
-      if (message_tracker_.find(request_id) != message_tracker_.end()) {
-        message_tracker_.erase(request_id);
-      }
+      message_tracker_.erase(request_id);
     }
     return ret;
   });
+  bool res = true;
   if (message_tracker_.find(request_id) != message_tracker_.end()) {
-    message_tracker_.erase(request_id);
-    return false;
+    res = false;
   }
-  return true;
+  message_tracker_.erase(request_id);
+  return res;
 }
 
 bool Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
@@ -134,8 +133,7 @@ bool Node::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids
   if (rank_ids.size() != data.size()) {
     MS_LOG(EXCEPTION) << "The number of rank ids is not equal to the number of data!";
   }
-  size_t len = rank_ids.size();
-  for (auto it = 0; it < len; ++it) {
+  for (size_t it = 0; it < rank_ids.size(); ++it) {
     if (!CommUtil::ValidateRankId(node_role, rank_ids.at(it))) {
       MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
     }
@@ -196,14 +194,14 @@ bool Node::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids
   set_message_callback(request_id, [&]() {
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
-    for (auto it = 0; it < len; ++it) {
+    for (size_t it = 0; it < len; ++it) {
       comm_message_resp->at(it) = &res[rank_ids.at(it)];
     }
     receive_messages_.erase(request_id);
     receive_messages_mutex_.unlock();
   });
 
-  for (auto it = 0; it < len; ++it) {
+  for (size_t it = 0; it < len; ++it) {
     if (!CommUtil::ValidateRankId(node_role, rank_ids.at(it))) {
       MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
     }

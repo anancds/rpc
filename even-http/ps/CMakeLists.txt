@@ -14,6 +14,6 @@ foreach (_target
             ${HTTP_SRC}
             ${HTTP_HEADER})
     target_link_libraries(${_target}
-
+            rpc-log
             )
 endforeach ()

@@ -41,6 +41,8 @@
 namespace mindspore {
 namespace ps {
 namespace core {
+constexpr int kTimeoutInSeconds = 30;
+constexpr int kCommTimeoutInSeconds = 3;
 class Node {
  public:
   Node()
@@ -56,24 +58,24 @@ class Node {
   using OnNodeEventMessage = std::function<void(const NodeEvent &event)>;
   using MessageCallback = std::function<void()>;
 
-  virtual bool Start(const uint32_t &timeout = 30) = 0;
+  virtual bool Start(const uint32_t &timeout = kTimeoutInSeconds) = 0;
   virtual bool Stop() = 0;
-  virtual bool Finish(const uint32_t &timeout = 30) = 0;
+  virtual bool Finish(const uint32_t &timeout = kTimeoutInSeconds) = 0;
 
   void set_callback(const OnNodeEventMessage &on_node_event_message);
   std::string node_id() const;
   uint32_t rank_id() const;
-  bool Wait(uint64_t request_id, const uint32_t &timeout = 3);
+  bool Wait(uint64_t request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
 
   virtual bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                    const uint32_t &timeout = 3);
+                    const uint32_t &timeout = kCommTimeoutInSeconds);
   virtual bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                    const std::vector<std::string> &data, const uint32_t &timeout = 3);
+                    const std::vector<std::string> &data, const uint32_t &timeout = kCommTimeoutInSeconds);
   virtual bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                    CommMessage *const comm_message_resp, const uint32_t &timeout = 3);
+                    CommMessage *const comm_message_resp, const uint32_t &timeout = kCommTimeoutInSeconds);
   virtual bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
                     const std::vector<std::string> &data, std::vector<CommMessage *> *comm_message_resp,
-                    const uint32_t &timeout = 3);
+                    const uint32_t &timeout = kCommTimeoutInSeconds);
 
  protected:
   void Heartbeat(const std::shared_ptr<TcpClient> &client);
@@ -84,7 +86,7 @@ class Node {
   bool WaitForStart(const uint32_t &timeout);
   bool WaitForDisconnect(const uint32_t &timeout);
   bool SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message,
-                       const uint32_t &timeout = 3);
+                       const uint32_t &timeout = kCommTimeoutInSeconds);
   void SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
   void NotifyMessageArrival(const CommMessage &message);
   const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);

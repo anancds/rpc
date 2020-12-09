@@ -47,9 +47,9 @@ class WorkerNode : public Node {
   WorkerNode() : client_to_scheduler_(nullptr), worker_thread_(nullptr) {}
   ~WorkerNode() override;
 
-  bool Start(const uint32_t &timeout = 30) override;
+  bool Start(const uint32_t &timeout = kTimeoutInSeconds) override;
   bool Stop() override;
-  bool Finish(const uint32_t &timeout = 30) override;
+  bool Finish(const uint32_t &timeout = kTimeoutInSeconds) override;
 
   bool BroadcastToServers(const std::string &message);
 
