@@ -13,21 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-syntax = "proto3";
-package mindspore.ps.core;
-option optimize_for = LITE_RUNTIME;
 
-enum PSCommand {
-  PUSH = 0;
-  PULL = 1;
+#include "common_test.h"
+#include "ps/embedding_table_shard.h"
+
+namespace mindspore {
+namespace ps {
+class TestEmbeddingTableShard : public UT::Common {
+ public:
+  TestEmbeddingTableShard() = default;
+  virtual ~TestEmbeddingTableShard() = default;
+
+  void SetUp() override {}
+  void TearDown() override {}
+};
+
+TEST_F(TestEmbeddingTableShard, EmbeddingTableThrowException) {
+  EmbeddingTableShard embedding_table_shard(1, 0);
+  ASSERT_THROW(embedding_table_shard.begin(), std::exception);
 }
-
-message KVMessage {
-  PSCommand command = 1;
-  repeated int32 keys = 2;
-  repeated float values = 3;
-}
-
-message EmbeddingTableMeta {
-
-}
+}  // namespace ps
+}  // namespace mindspore

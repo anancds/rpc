@@ -132,8 +132,8 @@ TEST_F(TestTcpMessageHandler, 8_Header_4080_Data_8_Header_4080_data) {
   std::string data(4077, 'a');
   CommMessage message;
   message.set_data(data);
-  uint32_t buf_size = message.ByteSizeLong();
-  char result[4096];
+  size_t buf_size = message.ByteSizeLong();
+  char result[4096] = {0};
   int ret = memcpy_s(result, kHeaderLen, &buf_size, kHeaderLen);
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";

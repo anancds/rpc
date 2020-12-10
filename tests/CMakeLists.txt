@@ -16,7 +16,10 @@ set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_client.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/scheduler_node.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/server_node.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/worker_node.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node_manager_test.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node_manager_test.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/embedding_table_shard.cc
+
+        )
 
 add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_message_handler.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_server.cc
@@ -52,96 +55,32 @@ target_link_libraries(unit_tests
         event_pthreads
         )
 
-add_executable(tcp_kv_server tcp_kv_server_test.cc ${PROTO_SRCS} ${PROTO_HDRS})
 
+foreach (_target
+        tcp_kv_server_test tcp_client_tests
+        common_util_test tcp_message_handler_test cluster_connection_test cluster_connection_failed_test embedding_table_shard_test)
+    add_executable(${_target} "${_target}.cc"
+            ${PROTO_SRCS}
+            ${PROTO_HDRS})
+    target_link_libraries(${_target}
+            unittest
+            tcp
+            rpc-log
+            GTest::GTest
+            GTest::Main
+            GMock::GMock
+            GMock::Main
+            event event_core Threads::Threads
+            ${_PROTOBUF_LIBPROTOBUF}
+            event_pthreads)
+endforeach ()
 
-target_link_libraries(tcp_kv_server
-        unittest
-        tcp
-        rpc-log
-        GTest::GTest
-        GTest::Main
-        GMock::GMock
-        GMock::Main
-        event event_core Threads::Threads
-        ${_PROTOBUF_LIBPROTOBUF}
-        event_pthreads
+add_test(test_all unit_tests
+        tcp_kv_server_test
+        tcp_client_tests
+        common_util_test
+        tcp_message_handler_test
+        cluster_connection_test
+        cluster_connection_failed_test
+        embedding_table_shard_test
         )
-
-add_executable(tcp_client tcp_client_tests.cpp ${PROTO_SRCS} ${PROTO_HDRS})
-
-target_link_libraries(tcp_client
-        unittest
-        tcp
-        rpc-log
-        GTest::GTest
-        GTest::Main
-        GMock::GMock
-        GMock::Main
-        event event_core Threads::Threads
-        ${_PROTOBUF_LIBPROTOBUF}
-        event_pthreads
-        )
-
-add_executable(comm_util common_util_test.cpp ${PROTO_SRCS} ${PROTO_HDRS})
-
-target_link_libraries(comm_util
-        unittest
-        tcp
-        rpc-log
-        GTest::GTest
-        GTest::Main
-        GMock::GMock
-        GMock::Main
-        event event_core Threads::Threads
-        ${_PROTOBUF_LIBPROTOBUF}
-        event_pthreads
-        )
-
-add_executable(message_handler tcp_message_handler_test.cc ${PROTO_SRCS} ${PROTO_HDRS})
-
-target_link_libraries(message_handler
-        unittest
-        tcp
-        rpc-log
-        GTest::GTest
-        GTest::Main
-        GMock::GMock
-        GMock::Main
-        event event_core Threads::Threads
-        event_pthreads
-        ${_PROTOBUF_LIBPROTOBUF}
-        )
-
-add_executable(cluster_connection cluster_connection_test.cc ${PROTO_SRCS} ${PROTO_HDRS})
-
-target_link_libraries(cluster_connection
-        unittest
-        tcp
-        rpc-log
-        GTest::GTest
-        GTest::Main
-        GMock::GMock
-        GMock::Main
-        event event_core Threads::Threads
-        event_pthreads
-        ${_PROTOBUF_LIBPROTOBUF}
-        )
-
-
-add_executable(cluster_connection_fail cluster_connection_failed_test.cc ${PROTO_SRCS} ${PROTO_HDRS})
-
-target_link_libraries(cluster_connection_fail
-        unittest
-        tcp
-        rpc-log
-        GTest::GTest
-        GTest::Main
-        GMock::GMock
-        GMock::Main
-        event event_core Threads::Threads
-        event_pthreads
-        ${_PROTOBUF_LIBPROTOBUF}
-        )
-
-add_test(test_all unit_tests tcp_client tcp_server tcp_kv_server comm_util message_handler cluster_connection cluster_connection_fail)
