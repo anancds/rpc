@@ -33,18 +33,16 @@ void NodeManagerTest::StartServer() {
       //      server_node_->Stop();
     }
   });
-  server_node_->set_handler([&](const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+  server_node_->set_handler([&](const TcpServer &server, const TcpConnection &conn, const MessageMeta &message_meta,
+                                const std::string &message) {
     KVMessage kv_message;
-//    kv_message.ParseFromString(message.data());
-//    MS_LOG(INFO) << "size:" << kv_message.keys_size();
+    //    kv_message.ParseFromString(message.data());
+    //    MS_LOG(INFO) << "size:" << kv_message.keys_size();
 
-    CommMessage comm_message;
-    *comm_message.mutable_pb_meta() = {message.pb_meta()};
-    server_node_->Response(server, conn, comm_message);
+    server_node_->Response(server, conn, message_meta, message);
   });
   server_node_->Start();
 
-  MS_LOG(INFO) << "2222222222222222222222222222222222222!";
   server_node_->Finish();
   server_node_->Stop();
 }
@@ -80,6 +78,7 @@ void NodeManagerTest::StartClient() {
   auto start2 = std::chrono::high_resolution_clock::now();
   worker_node_->Send(NodeRole::SERVER, 0, message, &comm_message);
   std::cout << comm_message.pb_meta().role() << std::endl;
+  std::cout << comm_message.pb_meta().rank_id() << std::endl;
   auto end2 = std::chrono::high_resolution_clock::now();
   MS_LOG(INFO) << "send ok, cost:" << (end2 - start2).count() / 1e6 << "ms";
   worker_node_->Finish();

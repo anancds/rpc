@@ -149,6 +149,7 @@ bool Node::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids
 
 bool Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
                 CommMessage *comm_message_resp, const uint32_t &timeout) {
+  MS_EXCEPTION_IF_NULL(comm_message_resp);
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
@@ -158,7 +159,7 @@ bool Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const s
   set_message_callback(request_id, [&]() {
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
-    comm_message_resp = &res[rank_id];
+    *comm_message_resp = res[rank_id];
     receive_messages_.erase(request_id);
     receive_messages_mutex_.unlock();
   });
@@ -296,6 +297,7 @@ const std::shared_ptr<TcpClient> &Node::GetOrCreateTcpClient(const int &rank_id)
       switch (message.pb_meta().cmd()) {
         case NodeCommand::SEND_DATA:
           ProcessSendDataResp(message);
+          RunMessageCallback(message.pb_meta().request_id());
           break;
         default:
           MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
@@ -321,13 +323,11 @@ void Node::ProcessSendDataResp(const CommMessage &message) {
     res.insert(std::make_pair(rank_id, message));
     receive_messages_[request_id] = res;
   }
-
-  RunMessageCallback(request_id);
 }
 
 void Node::RunMessageCallback(const uint64_t &request_id) {
   message_callbacks_mutex_.lock();
-  if (message_tracker_[request_id].first == message_tracker_[request_id].second - 1) {
+  if (message_tracker_[request_id].first == message_tracker_[request_id].second + 1) {
     auto it = message_callbacks_.find(request_id);
     if (it != message_callbacks_.end()) {
       message_callbacks_mutex_.unlock();

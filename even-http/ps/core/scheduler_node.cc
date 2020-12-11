@@ -198,13 +198,12 @@ bool SchedulerNode::Stop() {
 bool SchedulerNode::Finish(const uint32_t &timeout) {
   MS_LOG(INFO) << "Finish scheduler node!";
   std::unique_lock<std::mutex> lock(wait_finish_mutex_);
-  bool res = wait_finish_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
+  wait_finish_cond_.wait(lock, [&] {
     if (is_finish_.load()) {
       MS_LOG(INFO) << "The scheduler finish success!";
     }
     return is_finish_.load();
   });
-  return res;
 }
 
 bool SchedulerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,

@@ -76,9 +76,16 @@ void ServerNode::Register(const std::shared_ptr<TcpClient> &client) {
 
 void ServerNode::set_handler(const RequestHandler &handler) { request_handler_ = handler; }
 
-// todo 需要加上rank_id和role
-void ServerNode::Response(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
-  const_cast<TcpServer &>(server).SendMessage(conn, message);
+void ServerNode::Response(const TcpServer &server, const TcpConnection &conn, const MessageMeta &message_meta,
+                          const std::string &message) {
+  auto &meta = const_cast<MessageMeta &>(message_meta);
+  meta.set_role(node_info_.node_role_);
+  meta.set_rank_id(node_info_.rank_id_);
+  CommMessage comm_message;
+  *comm_message.mutable_pb_meta() = {meta};
+  comm_message.set_data(message);
+
+  const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
 }
 
 void ServerNode::ProcessRegister(const CommMessage &message) {
@@ -162,7 +169,7 @@ void ServerNode::InitClientToScheduler() {
 
 void ServerNode::ProcessSendData(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   if (request_handler_) {
-    request_handler_(server, conn, message);
+    request_handler_(server, conn, message.pb_meta(), message.data());
   }
 }
 
