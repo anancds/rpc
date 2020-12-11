@@ -88,6 +88,8 @@ std::string Node::node_id() const { return node_info_.node_id_; }
 
 uint32_t Node::rank_id() const { return node_info_.rank_id_; }
 
+NodeRole Node::role() const { return node_info_.node_role_; }
+
 void Node::set_callback(const OnNodeEventMessage &on_node_event_message) {
   on_node_event_message_ = on_node_event_message;
 }
@@ -164,6 +166,8 @@ bool Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const s
   MessageMeta message_meta;
   message_meta.set_cmd(NodeCommand::SEND_DATA);
   message_meta.set_request_id(request_id);
+  message_meta.set_rank_id(node_info_.rank_id_);
+  message_meta.set_role(node_info_.node_role_);
 
   CommMessage comm_message;
   *comm_message.mutable_pb_meta() = {message_meta};

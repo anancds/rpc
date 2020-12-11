@@ -68,18 +68,20 @@ void NodeManagerTest::StartClient() {
 
   auto start1 = std::chrono::high_resolution_clock::now();
   const auto &message = kv_message.SerializeAsString();
-
   auto end1 = std::chrono::high_resolution_clock::now();
   MS_LOG(INFO) << "serialize, cost:" << (end1 - start1).count() / 1e6 << "ms";
-  MS_LOG(INFO) << "send data!";
+
   auto start = std::chrono::high_resolution_clock::now();
   worker_node_->Send(NodeRole::SERVER, 0, message);
   auto end = std::chrono::high_resolution_clock::now();
   MS_LOG(INFO) << "send ok, cost:" << (end - start).count() / 1e6 << "ms";
-//  auto start1 = std::chrono::high_resolution_clock::now();
-//  worker_node_->Send(NodeRole::SERVER, 0, comm_message);
-//  auto end1 = std::chrono::high_resolution_clock::now();
-//  MS_LOG(INFO) << "send ok, cost:" << (end1 - start1).count() / 1e6 << "ms";
+
+  CommMessage comm_message;
+  auto start2 = std::chrono::high_resolution_clock::now();
+  worker_node_->Send(NodeRole::SERVER, 0, message, &comm_message);
+  std::cout << comm_message.pb_meta().role() << std::endl;
+  auto end2 = std::chrono::high_resolution_clock::now();
+  MS_LOG(INFO) << "send ok, cost:" << (end2 - start2).count() / 1e6 << "ms";
   worker_node_->Finish();
   worker_node_->Stop();
 }

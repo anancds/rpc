@@ -65,8 +65,8 @@ void test_size_t() {
 
 int main(int /*argc*/, char ** /*argv*/) {
 
-  test_size_t();
-  testMap();
+//  test_size_t();
+//  testMap();
   StartServer();
   CommMessage message;
   //  while (true) {

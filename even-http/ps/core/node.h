@@ -62,10 +62,12 @@ class Node {
   virtual bool Stop() = 0;
   virtual bool Finish(const uint32_t &timeout = kTimeoutInSeconds) = 0;
 
-  void set_callback(const OnNodeEventMessage &on_node_event_message);
   std::string node_id() const;
   uint32_t rank_id() const;
+  NodeRole role() const;
+
   bool Wait(uint64_t request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
+  void set_callback(const OnNodeEventMessage &on_node_event_message);
 
   virtual bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
                     const uint32_t &timeout = kCommTimeoutInSeconds);
