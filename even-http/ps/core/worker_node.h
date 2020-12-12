@@ -41,7 +41,6 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-
 class WorkerNode : public Node {
  public:
   WorkerNode() : client_to_scheduler_(nullptr), worker_thread_(nullptr) {}
@@ -58,7 +57,7 @@ class WorkerNode : public Node {
   void ProcessRegisterResp(const CommMessage &message);
 
   void Initialize();
-  void InitClientToScheduler();
+  bool InitClientToScheduler();
 
   std::shared_ptr<TcpClient> client_to_scheduler_;
   std::unique_ptr<std::thread> worker_thread_;

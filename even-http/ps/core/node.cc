@@ -180,6 +180,7 @@ bool Node::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const s
 
 bool Node::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
                 std::vector<CommMessage *> *comm_message_resp, const uint32_t &timeout) {
+  MS_EXCEPTION_IF_NULL(comm_message_resp);
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(data.size(), 0);
 

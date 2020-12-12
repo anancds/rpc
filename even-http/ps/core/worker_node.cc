@@ -97,10 +97,13 @@ void WorkerNode::Initialize() {
   node_info_.node_role_ = NodeRole::WORKER;
   MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                << ", the node id is:" << node_info_.node_id_;
-  InitClientToScheduler();
+  if (!InitClientToScheduler()) {
+    MS_LOG(EXCEPTION) << "Worker node init client timeout!";
+  }
+  MS_LOG(INFO) << "Worker node init client successful!";
 }
 
-void WorkerNode::InitClientToScheduler() {
+bool WorkerNode::InitClientToScheduler() {
   std::string scheduler_host = ClusterConfig::scheduler_host();
   uint16_t scheduler_port = ClusterConfig::scheduler_port();
   client_to_scheduler_ = std::make_shared<TcpClient>(scheduler_host, scheduler_port);
@@ -130,6 +133,13 @@ void WorkerNode::InitClientToScheduler() {
     client_to_scheduler_->Start();
   });
   worker_thread_->detach();
+
+  client_to_scheduler_->set_disconnected_callback([&]() {
+    std::this_thread::sleep_for(std::chrono::milliseconds(ClusterConfig::connect_interval()));
+    client_to_scheduler_->Stop();
+    client_to_scheduler_->Init();
+  });
+  return client_to_scheduler_->WaitConnected();
 }
 
 bool WorkerNode::Stop() {

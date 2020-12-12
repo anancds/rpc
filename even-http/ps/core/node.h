@@ -29,6 +29,7 @@
 #include <condition_variable>
 #include <utility>
 #include <tuple>
+#include <map>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"

@@ -26,6 +26,7 @@
 #include <thread>
 #include <map>
 #include <unordered_map>
+#include <utility>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
@@ -65,7 +66,7 @@ class ServerNode : public Node {
   void ProcessRegister(const CommMessage &message);
   void Init();
   void Initialize();
-  void InitClientToScheduler();
+  bool InitClientToScheduler();
   void ProcessSendData(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
 
   std::shared_ptr<TcpClient> client_to_scheduler_;

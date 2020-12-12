@@ -51,6 +51,7 @@ bool ServerNode::Start(const uint32_t &timeout) {
     MS_LOG(INFO) << "Fetch servers successful!";
   }
   MS_LOG(INFO) << "Start the node is successful!";
+  return true;
 }
 
 void ServerNode::Register(const std::shared_ptr<TcpClient> &client) {
@@ -132,10 +133,13 @@ void ServerNode::Initialize() {
   node_info_.port_ = server_->BoundPort();
   MS_LOG(INFO) << "The node role:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                << " is generate uuid is:" << node_info_.node_id_;
-  InitClientToScheduler();
+  if (!InitClientToScheduler()) {
+    MS_LOG(EXCEPTION) << "Server node init client timeout!";
+  }
+  MS_LOG(INFO) << "Server node init client successful!";
 }
 
-void ServerNode::InitClientToScheduler() {
+bool ServerNode::InitClientToScheduler() {
   std::string scheduler_host = ClusterConfig::scheduler_host();
   uint16_t scheduler_port = ClusterConfig::scheduler_port();
   client_to_scheduler_ = std::make_unique<TcpClient>(scheduler_host, scheduler_port);
@@ -165,6 +169,13 @@ void ServerNode::InitClientToScheduler() {
     client_to_scheduler_->Start();
   });
   client_to_scheduler_thread_->detach();
+
+  client_to_scheduler_->set_disconnected_callback([&]() {
+    std::this_thread::sleep_for(std::chrono::milliseconds(ClusterConfig::connect_interval()));
+    client_to_scheduler_->Stop();
+    client_to_scheduler_->Init();
+  });
+  return client_to_scheduler_->WaitConnected();
 }
 
 void ServerNode::ProcessSendData(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
