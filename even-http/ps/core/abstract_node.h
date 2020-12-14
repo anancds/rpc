@@ -31,7 +31,7 @@ class AbstractNode : public Node {
   AbstractNode() : heart_beat_thread_(nullptr), client_to_scheduler_thread_(nullptr), client_to_scheduler_(nullptr) {}
   ~AbstractNode() override = default;
 
-  bool BroadcastToServers(const std::string &message);
+  bool BroadcastToServers(const std::string &message, const uint32_t &timeout = kCommTimeoutInSeconds);
   void set_event_callback(const OnNodeEventMessage &on_node_event_message);
 
  protected:

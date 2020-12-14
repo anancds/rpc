@@ -24,8 +24,8 @@
 #include <utility>
 #include <algorithm>
 
-#include "../../../build/even-http/ps/core/comm.pb.h"
-#include "../../../build/even-http/ps/core/ps.pb.h"
+#include "proto/comm.pb.h"
+#include "proto/ps.pb.h"
 #include "ps/core/cluster_config.h"
 #include "ps/core/tcp_client.h"
 #include "ps/core/tcp_server.h"

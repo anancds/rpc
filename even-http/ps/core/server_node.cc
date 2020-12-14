@@ -104,6 +104,7 @@ void ServerNode::Initialize() {
   }
   MS_LOG(INFO) << "Server node init client successful!";
 }
+
 void ServerNode::ProcessSendData(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   if (request_handler_) {
     request_handler_(server, conn, message.pb_meta(), message.data());

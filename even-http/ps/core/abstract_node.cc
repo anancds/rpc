@@ -53,7 +53,7 @@ void AbstractNode::ProcessRegisterResp(const CommMessage &message) {
   MS_LOG(INFO) << "The node id is:" << node_info_.node_id_ << ", and the rank id is:" << node_info_.rank_id_;
 }
 
-bool AbstractNode::BroadcastToServers(const std::string &message) {
+bool AbstractNode::BroadcastToServers(const std::string &message, const uint32_t &timeout) {
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(nodes_address_.size(), 0);
   for (auto it = nodes_address_.begin(); it != nodes_address_.end(); ++it) {
@@ -67,7 +67,7 @@ bool AbstractNode::BroadcastToServers(const std::string &message) {
     auto client = GetOrCreateTcpClient((*it).first.second);
     client->SendMessage(comm_message);
   }
-  return Wait(request_id);
+  return Wait(request_id, timeout);
 }
 
 void AbstractNode::set_event_callback(const OnNodeEventMessage &on_node_event_message) {
@@ -90,7 +90,9 @@ void AbstractNode::Heartbeat(const std::shared_ptr<TcpClient> &client) {
       CommMessage message;
       *message.mutable_pb_meta() = {meta};
       message.set_data(heartbeat_message.SerializeAsString());
-      SendMessageAsync(client, message);
+      if (!SendMessageSync(client, message)) {
+        MS_LOG(ERROR) << "The node id:" << node_info_.node_id_ << " Send heartbeat timeout!";
+      }
     }
   });
   heart_beat_thread_->detach();
