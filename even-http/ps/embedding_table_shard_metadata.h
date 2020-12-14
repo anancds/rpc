@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef RPC_EMBEDDINGTABLESHARD_H
-#define RPC_EMBEDDINGTABLESHARD_H
+#ifndef MINDSPORE_CCSRC_PS_EMBEDDING_TABLE_SHARD_METADATA_H_
+#define MINDSPORE_CCSRC_PS_EMBEDDING_TABLE_SHARD_METADATA_H_
 
 #include <iostream>
 #include "utils/log_adapter.h"
@@ -24,8 +24,7 @@ namespace mindspore {
 namespace ps {
 class EmbeddingTableShardMetadata {
  public:
-  explicit EmbeddingTableShardMetadata(uint64_t begin, uint64_t end)
-      : begin_(begin), end_(end) {}
+  explicit EmbeddingTableShardMetadata(uint64_t begin, uint64_t end) : begin_(begin), end_(end) {}
   virtual ~EmbeddingTableShardMetadata() = default;
 
   uint64_t begin() const;
@@ -33,11 +32,9 @@ class EmbeddingTableShardMetadata {
   uint64_t size() const;
 
  private:
-  void CheckRange() const;
-
   uint64_t begin_;
   uint64_t end_;
 };
 }  // namespace ps
 }  // namespace mindspore
-#endif  // RPC_EMBEDDINGTABLESHARD_H
+#endif  // MINDSPORE_CCSRC_PS_EMBEDDING_TABLE_SHARD_METADATA_H_
