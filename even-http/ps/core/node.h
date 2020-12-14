@@ -52,8 +52,7 @@ class Node {
         is_timeout_(false),
         is_already_stopped_(true),
         is_already_finished_(false),
-        next_request_id_(0),
-        heart_beat_thread_(nullptr) {}
+        next_request_id_(0) {}
   virtual ~Node() = default;
 
   using OnNodeEventMessage = std::function<void(const NodeEvent &event)>;

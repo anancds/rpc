@@ -25,8 +25,6 @@ uint32_t Node::rank_id() const { return node_info_.rank_id_; }
 
 NodeRole Node::role() const { return node_info_.node_role_; }
 
-
-
 bool Node::Wait(uint64_t request_id, const uint32_t &timeout) {
   std::unique_lock<std::mutex> lock(message_tracker_mutex_);
   bool res = message_tracker_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {

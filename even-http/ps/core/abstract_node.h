@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef RPC_ABSTRACT_NODE_H
-#define RPC_ABSTRACT_NODE_H
+#ifndef MINDSPORE_CCSRC_PS_CORE_ABSTRACT_NODE_H_
+#define MINDSPORE_CCSRC_PS_CORE_ABSTRACT_NODE_H_
+
+#include <utility>
+#include <string>
+#include <memory>
 
 #include "ps/core/node.h"
 
@@ -49,4 +53,4 @@ class AbstractNode : public Node {
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
-#endif  // RPC_ABSTRACT_NODE_H
+#endif  // MINDSPORE_CCSRC_PS_CORE_ABSTRACT_NODE_H_

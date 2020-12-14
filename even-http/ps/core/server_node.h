@@ -17,12 +17,10 @@
 #ifndef MINDSPORE_CCSRC_PS_CORE_SERVER_NODE_H_
 #define MINDSPORE_CCSRC_PS_CORE_SERVER_NODE_H_
 
-#include <atomic>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <vector>
 #include <thread>
 #include <utility>
 
@@ -60,7 +58,6 @@ class ServerNode : public AbstractNode {
 
   std::shared_ptr<TcpServer> server_;
   std::unique_ptr<std::thread> server_thread_;
-  std::mutex client_mutex_;
   RequestHandler request_handler_;
 };
 }  // namespace core

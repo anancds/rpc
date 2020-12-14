@@ -17,16 +17,12 @@
 #ifndef MINDSPORE_CCSRC_PS_CORE_CLIENT_NODE_H_
 #define MINDSPORE_CCSRC_PS_CORE_CLIENT_NODE_H_
 
-#include <atomic>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <vector>
-#include <thread>
 #include <utility>
 #include <algorithm>
-#include <tuple>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
