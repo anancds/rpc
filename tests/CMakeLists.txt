@@ -59,7 +59,7 @@ target_link_libraries(unit_tests
 foreach (_target
         tcp_kv_server_test tcp_client_tests
         common_util_test tcp_message_handler_test cluster_connection_test cluster_connection_failed_test
-        embedding_table_shard_test
+        embedding_table_shard_metadata_test
         cluster_config_test
         )
     add_executable(${_target} "${_target}.cc"

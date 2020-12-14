@@ -10,12 +10,6 @@ namespace core {
 
 void NodeManagerTest::StartScheduler() {
   scheduler_node_ = std::make_unique<SchedulerNode>();
-  //  scheduler_node_->set_callback([&](const NodeEvent &event){
-  //    if (event == NodeEvent::NODE_TIMEOUT) {
-  //      scheduler_node_->Finish();
-  //      scheduler_node_->Stop();
-  //    }
-  //  });
   scheduler_node_->Start();
   scheduler_node_->Finish();
   scheduler_node_->Stop();
@@ -26,7 +20,7 @@ void NodeManagerTest::StartScheduler() {
 
 void NodeManagerTest::StartServer() {
   server_node_ = std::make_unique<ServerNode>();
-  server_node_->set_callback([&](const NodeEvent &event) {
+  server_node_->set_event_callback([&](const NodeEvent &event) {
     if (event == NodeEvent::NODE_TIMEOUT) {
       MS_LOG(INFO) << "111111111111111111111111111111!";
       //      server_node_->Finish();
@@ -49,7 +43,7 @@ void NodeManagerTest::StartServer() {
 
 void NodeManagerTest::StartClient() {
   worker_node_ = std::make_unique<WorkerNode>();
-  worker_node_->set_callback([&](const NodeEvent &event) {
+  worker_node_->set_event_callback([&](const NodeEvent &event) {
     if (event == NodeEvent::NODE_TIMEOUT) {
       MS_LOG(INFO) << "NODE_TIMEOUT, finish!";
       std::this_thread::sleep_for(std::chrono::milliseconds(50000));

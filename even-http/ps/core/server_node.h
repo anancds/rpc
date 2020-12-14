@@ -31,26 +31,20 @@
 #include "ps/core/cluster_config.h"
 #include "ps/core/tcp_client.h"
 #include "ps/core/tcp_server.h"
-#include "ps/core/node.h"
+#include "ps/core/abstract_node.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
-class ServerNode : public Node {
+class ServerNode : public AbstractNode {
  public:
-  ServerNode()
-      : client_to_scheduler_(nullptr),
-        server_(nullptr),
-        client_to_scheduler_thread_(nullptr),
-        server_thread_(nullptr) {}
+  ServerNode() : server_(nullptr), server_thread_(nullptr) {}
   ~ServerNode() override;
 
   bool Start(const uint32_t &timeout = kTimeoutInSeconds) override;
   bool Stop() override;
   bool Finish(const uint32_t &timeout = kTimeoutInSeconds) override;
-
-  bool BroadcastToServers(const std::string &message);
 
   using RequestHandler = std::function<void(const TcpServer &server, const TcpConnection &conn,
                                             const MessageMeta message_meta, const std::string &message)>;
@@ -60,16 +54,11 @@ class ServerNode : public Node {
                 const std::string &message);
 
  private:
-  void Register(const std::shared_ptr<TcpClient> &client);
-  void ProcessRegister(const CommMessage &message);
-  void Init();
+  void CreateTcpServer();
   void Initialize();
-  bool InitClientToScheduler();
   void ProcessSendData(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
 
-  std::shared_ptr<TcpClient> client_to_scheduler_;
   std::shared_ptr<TcpServer> server_;
-  std::unique_ptr<std::thread> client_to_scheduler_thread_;
   std::unique_ptr<std::thread> server_thread_;
   std::mutex client_mutex_;
   RequestHandler request_handler_;

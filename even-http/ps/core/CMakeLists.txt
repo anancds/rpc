@@ -32,6 +32,7 @@ set(HTTP_SRC
         node_manager.cc
         http_server.cc
         http_message_handler.cc
+        abstract_node.cc
         )
 set(HTTP_HEADER
         comm_util.h
@@ -47,7 +48,9 @@ set(HTTP_HEADER
         scheduler_node.h
         node_manager.h
         server_node.h
-        worker_node.h)
+        worker_node.h
+        abstract_node.h
+        )
 
 foreach (_target
         example_old scheduler_example

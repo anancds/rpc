@@ -68,7 +68,6 @@ class Node {
   NodeRole role() const;
 
   bool Wait(uint64_t request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
-  void set_callback(const OnNodeEventMessage &on_node_event_message);
 
   virtual bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
                     const uint32_t &timeout = kCommTimeoutInSeconds);
@@ -81,21 +80,15 @@ class Node {
                     const uint32_t &timeout = kCommTimeoutInSeconds);
 
  protected:
-  void Heartbeat(const std::shared_ptr<TcpClient> &client);
-  void ProcessHeartbeatResp(const CommMessage &message);
-  void FetchServers(const std::shared_ptr<TcpClient> &client);
-  void ProcessFetchServersResp(const CommMessage &message);
-  bool Disconnect(const std::shared_ptr<TcpClient> &client, const uint32_t &timeout);
   bool WaitForStart(const uint32_t &timeout);
-  bool WaitForDisconnect(const uint32_t &timeout);
   bool SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message,
                        const uint32_t &timeout = kCommTimeoutInSeconds);
   void SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
-  void NotifyMessageArrival(const CommMessage &message);
   const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
   void ProcessSendDataResp(const CommMessage &message);
   void RunMessageCallback(const uint64_t &request_id);
   void set_message_callback(const uint64_t &request_id, const MessageCallback &message_callback);
+  void NotifyMessageArrival(const CommMessage &message);
 
   NodeInfo node_info_;
   std::atomic<bool> is_ready_;
@@ -104,9 +97,6 @@ class Node {
   std::atomic<bool> is_already_stopped_;
   std::atomic<bool> is_already_finished_;
   std::atomic_uint64_t next_request_id_;
-  std::unique_ptr<std::thread> heart_beat_thread_;
-
-  OnNodeEventMessage on_node_event_message_;
 
   // <NodeRole,rank_id>-><ip, port>
   std::map<std::pair<NodeRole, uint32_t>, std::pair<std::string, uint16_t>> nodes_address_;
@@ -134,5 +124,4 @@ class Node {
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
-
 #endif  // MINDSPORE_CCSRC_PS_CORE_NODE_H_

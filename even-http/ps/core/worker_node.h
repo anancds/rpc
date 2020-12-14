@@ -24,9 +24,7 @@
 #include <string>
 #include <vector>
 #include <thread>
-#include <unordered_map>
 #include <utility>
-#include <condition_variable>
 #include <algorithm>
 #include <tuple>
 
@@ -35,32 +33,23 @@
 #include "ps/core/cluster_config.h"
 #include "ps/core/tcp_client.h"
 #include "ps/core/tcp_server.h"
-#include "ps/core/node.h"
+#include "ps/core/abstract_node.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
-class WorkerNode : public Node {
+class WorkerNode : public AbstractNode {
  public:
-  WorkerNode() : client_to_scheduler_(nullptr), worker_thread_(nullptr) {}
+  WorkerNode() = default;
   ~WorkerNode() override;
 
   bool Start(const uint32_t &timeout = kTimeoutInSeconds) override;
   bool Stop() override;
   bool Finish(const uint32_t &timeout = kTimeoutInSeconds) override;
 
-  bool BroadcastToServers(const std::string &message);
-
  private:
-  void Register();
-  void ProcessRegisterResp(const CommMessage &message);
-
   void Initialize();
-  bool InitClientToScheduler();
-
-  std::shared_ptr<TcpClient> client_to_scheduler_;
-  std::unique_ptr<std::thread> worker_thread_;
 };
 }  // namespace core
 }  // namespace ps
