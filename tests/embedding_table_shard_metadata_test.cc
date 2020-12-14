@@ -15,26 +15,26 @@
  */
 
 #include "common_test.h"
-#include "ps/embedding_table_shard.h"
+#include "ps/embedding_table_shard_metadata.h"
 
 namespace mindspore {
 namespace ps {
-class TestEmbeddingTableShard : public UT::Common {
+class TestEmbeddingTableShardMetadata : public UT::Common {
  public:
-  TestEmbeddingTableShard() = default;
-  virtual ~TestEmbeddingTableShard() = default;
+  TestEmbeddingTableShardMetadata() = default;
+  virtual ~TestEmbeddingTableShardMetadata() = default;
 
   void SetUp() override {}
   void TearDown() override {}
 };
 
-TEST_F(TestEmbeddingTableShard, EmbeddingTableThrowException) {
-  EmbeddingTableShard embedding_table_shard(1, 0);
+TEST_F(TestEmbeddingTableShardMetadata, EmbeddingTableThrowException) {
+  EmbeddingTableShardMetadata embedding_table_shard(1, 0);
   ASSERT_THROW(embedding_table_shard.begin(), std::exception);
 }
 
-TEST_F(TestEmbeddingTableShard, EmbeddingTable) {
-  EmbeddingTableShard embedding_table_shard(1, 100);
+TEST_F(TestEmbeddingTableShardMetadata, EmbeddingTable) {
+  EmbeddingTableShardMetadata embedding_table_shard(1, 100);
   EXPECT_EQ(embedding_table_shard.begin(), 1);
   EXPECT_EQ(embedding_table_shard.end(), 100);
   EXPECT_EQ(embedding_table_shard.size(), 99);

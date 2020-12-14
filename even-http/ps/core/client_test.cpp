@@ -59,6 +59,7 @@ int main(int /*argc*/, char ** /*argv*/) {
   std::vector<int> values{3, 4};
   *kv_message.mutable_keys() = {keys.begin(), keys.end()};
   *kv_message.mutable_values() = {values.begin(), values.end()};
+  kv_message.set_command(PSCommand::PUSH);
 
   comm_message.set_data(kv_message.SerializeAsString());
   client_->SendMessage(comm_message);

@@ -17,7 +17,7 @@ set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_client.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/server_node.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/worker_node.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node_manager_test.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/embedding_table_shard.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/embedding_table_shard_metadata.cc
 
         )
 
@@ -58,7 +58,10 @@ target_link_libraries(unit_tests
 
 foreach (_target
         tcp_kv_server_test tcp_client_tests
-        common_util_test tcp_message_handler_test cluster_connection_test cluster_connection_failed_test embedding_table_shard_test)
+        common_util_test tcp_message_handler_test cluster_connection_test cluster_connection_failed_test
+        embedding_table_shard_test
+        cluster_config_test
+        )
     add_executable(${_target} "${_target}.cc"
             ${PROTO_SRCS}
             ${PROTO_HDRS})

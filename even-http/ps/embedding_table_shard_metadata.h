@@ -22,11 +22,11 @@
 
 namespace mindspore {
 namespace ps {
-class EmbeddingTableShard {
+class EmbeddingTableShardMetadata {
  public:
-  explicit EmbeddingTableShard(uint64_t begin, uint64_t end)
-      : embedding_table_begin_(begin), embedding_table_end_(end) {}
-  virtual ~EmbeddingTableShard() = default;
+  explicit EmbeddingTableShardMetadata(uint64_t begin, uint64_t end)
+      : begin_(begin), end_(end) {}
+  virtual ~EmbeddingTableShardMetadata() = default;
 
   uint64_t begin() const;
   uint64_t end() const;
@@ -35,8 +35,8 @@ class EmbeddingTableShard {
  private:
   void CheckRange() const;
 
-  uint64_t embedding_table_begin_;
-  uint64_t embedding_table_end_;
+  uint64_t begin_;
+  uint64_t end_;
 };
 }  // namespace ps
 }  // namespace mindspore

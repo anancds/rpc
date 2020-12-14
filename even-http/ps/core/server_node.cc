@@ -45,10 +45,10 @@ bool ServerNode::Start(const uint32_t &timeout) {
   }
   MS_LOG(INFO) << "The cluster is ready to use!";
 
-  if (!is_timeout_) {
-    MS_LOG(INFO) << "The node begin to fetch servers";
+  // If the cluster is ready to use, then Get the address of all the servers
+  if (!is_timeout_.load()) {
     FetchServers(client_to_scheduler_);
-    MS_LOG(INFO) << "Fetch servers successful!";
+    MS_LOG(INFO) << "Server node get all the servers address successful!";
   }
   MS_LOG(INFO) << "Start the node is successful!";
   return true;

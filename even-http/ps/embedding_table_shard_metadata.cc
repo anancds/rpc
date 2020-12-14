@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-#include "embedding_table_shard.h"
+#include "embedding_table_shard_metadata.h"
 
 namespace mindspore {
 namespace ps {
-uint64_t EmbeddingTableShard::begin() const {
+uint64_t EmbeddingTableShardMetadata::begin() const {
   CheckRange();
-  return embedding_table_begin_;
+  return begin_;
 }
 
-uint64_t EmbeddingTableShard::end() const {
+uint64_t EmbeddingTableShardMetadata::end() const {
   CheckRange();
-  return embedding_table_end_;
+  return end_;
 }
 
-uint64_t EmbeddingTableShard::size() const {
+uint64_t EmbeddingTableShardMetadata::size() const {
   CheckRange();
-  return embedding_table_end_ - embedding_table_begin_;
+  return end_ - begin_;
 }
 
-void EmbeddingTableShard::CheckRange() const {
-  if (embedding_table_begin_ > embedding_table_end_) {
-    MS_LOG(EXCEPTION) << "The embedding table shard begin" << embedding_table_begin_
-                      << " should not less than the embedding table shard end" << embedding_table_end_;
+void EmbeddingTableShardMetadata::CheckRange() const {
+  if (begin_ > end_) {
+    MS_LOG(EXCEPTION) << "The embedding table shard begin" << begin_
+                      << " should not less than the embedding table shard end" << end_;
   }
 }
 }  // namespace ps

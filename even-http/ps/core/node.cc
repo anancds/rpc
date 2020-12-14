@@ -328,6 +328,8 @@ void Node::ProcessSendDataResp(const CommMessage &message) {
 
 void Node::RunMessageCallback(const uint64_t &request_id) {
   message_callbacks_mutex_.lock();
+  // When receiving a message's response, Then compare with the desired number of responses,
+  // If they are equal, then call the callback function
   if (message_tracker_[request_id].first == message_tracker_[request_id].second + 1) {
     auto it = message_callbacks_.find(request_id);
     if (it != message_callbacks_.end()) {

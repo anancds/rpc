@@ -24,8 +24,6 @@
 #include <string>
 #include <vector>
 #include <thread>
-#include <map>
-#include <unordered_map>
 #include <utility>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"

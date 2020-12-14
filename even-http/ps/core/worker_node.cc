@@ -52,9 +52,10 @@ bool WorkerNode::Start(const uint32_t &timeout) {
   }
   MS_LOG(INFO) << "The node is ready to fetch servers!";
 
+  // If the cluster is ready to use, then Get the address of all the servers
   if (!is_timeout_.load()) {
     FetchServers(client_to_scheduler_);
-    MS_LOG(INFO) << "Fetch servers successful!";
+    MS_LOG(INFO) << "Worker node get all the servers address successful!";
   }
   MS_LOG(INFO) << "The Worker node has successfully started.";
   return true;
