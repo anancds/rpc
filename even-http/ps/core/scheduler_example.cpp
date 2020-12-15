@@ -7,7 +7,6 @@
 #include <memory>
 #include <thread>
 #include "../../../build/even-http/ps/core/comm.pb.h"
-#include "message.h"
 #include "ps/core/node_manager_test.h"
 #include "tcp_server.h"
 #include "ps/core/node_info.h"
@@ -67,6 +66,8 @@ int main(int /*argc*/, char ** /*argv*/) {
 
 //  test_size_t();
 //  testMap();
+std::cout << sizeof(int) << std::endl;
+std::cout << sizeof(float) << std::endl;
   StartServer();
   CommMessage message;
   //  while (true) {

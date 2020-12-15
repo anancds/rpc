@@ -19,11 +19,9 @@ set(HTTP_SRC
         comm_util.cc
         node_manager_test.cpp
         scheduler_manager.cpp
-        server_manager.cpp
         tcp_client.cc
         tcp_message_handler.cc
         tcp_server.cc
-        worker_manager.cpp
         cluster_config.cc
         node.cc
         scheduler_node.cc
@@ -36,14 +34,12 @@ set(HTTP_SRC
         )
 set(HTTP_HEADER
         comm_util.h
-        message.h node.h
+        node.h
         node_manager_test.h
         scheduler_manager.h
-        server_manager.h
         tcp_client.h
         tcp_message_handler.h
         tcp_server.h
-        worker_manager.h
         cluster_config.h
         scheduler_node.h
         node_manager.h

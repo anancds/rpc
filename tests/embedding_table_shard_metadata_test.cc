@@ -28,11 +28,6 @@ class TestEmbeddingTableShardMetadata : public UT::Common {
   void TearDown() override {}
 };
 
-TEST_F(TestEmbeddingTableShardMetadata, EmbeddingTableThrowException) {
-  EmbeddingTableShardMetadata embedding_table_shard(1, 0);
-  ASSERT_THROW(embedding_table_shard.begin(), std::exception);
-}
-
 TEST_F(TestEmbeddingTableShardMetadata, EmbeddingTable) {
   EmbeddingTableShardMetadata embedding_table_shard(1, 100);
   EXPECT_EQ(embedding_table_shard.begin(), 1);
