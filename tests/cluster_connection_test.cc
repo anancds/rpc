@@ -21,6 +21,7 @@
 #include "ps/core/server_node.h"
 #include "ps/core/tcp_client.h"
 #include "ps/core/tcp_server.h"
+#include "ps/core/abstract_node.h"
 
 #include <memory>
 #include <thread>
@@ -30,36 +31,64 @@ namespace ps {
 namespace core {
 class TestClusterConnection : public UT::Common {
  public:
-  TestClusterConnection() : scheduler_node_(nullptr), server_node_(nullptr), client_node_(nullptr) {}
+  TestClusterConnection()
+      : scheduler_node_(nullptr),
+        server_node_(nullptr),
+        worker_node_(nullptr),
+        scheduler_thread_(nullptr),
+        server_thread_(nullptr),
+        worker_thread_(nullptr) {}
   ~TestClusterConnection() override = default;
 
   void SetUp() override {
     ClusterConfig::Init(1, 1, std::make_unique<std::string>("127.0.0.1"), 9999);
     scheduler_node_ = std::make_unique<SchedulerNode>();
-    std::unique_ptr<std::thread> scheduler_server_thread_(nullptr);
-    scheduler_server_thread_ = std::make_unique<std::thread>([&]() { scheduler_node_->Start(); });
-    scheduler_server_thread_->detach();
+    scheduler_thread_ = std::make_unique<std::thread>([&]() {
+      scheduler_node_->Start();
+      scheduler_node_->Finish();
+      scheduler_node_->Stop();
+    });
+    scheduler_thread_->detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   }
   void TearDown() override {
+    if (scheduler_thread_->joinable()) {
+      scheduler_thread_->join();
+    }
+    if (server_thread_->joinable()) {
+      server_thread_->join();
+    }
+    if (worker_thread_->joinable()) {
+      worker_thread_->join();
+    }
   }
 
   std::unique_ptr<Node> scheduler_node_;
   std::unique_ptr<Node> server_node_;
-  std::unique_ptr<Node> client_node_;
+  std::unique_ptr<Node> worker_node_;
+
+  std::unique_ptr<std::thread> scheduler_thread_;
+  std::unique_ptr<std::thread> server_thread_;
+  std::unique_ptr<std::thread> worker_thread_;
 };
 
 TEST_F(TestClusterConnection, StartServerAndClient) {
   server_node_ = std::make_unique<ServerNode>();
-  std::unique_ptr<std::thread> server_thread_(nullptr);
-  server_thread_ = std::make_unique<std::thread>([&]() { server_node_->Start(); });
+  server_thread_ = std::make_unique<std::thread>([&]() {
+    server_node_->Start();
+    server_node_->Finish();
+    server_node_->Stop();
+  });
   server_thread_->detach();
 
-  client_node_ = std::make_unique<WorkerNode>();
-  std::unique_ptr<std::thread> client_server_thread_(nullptr);
-  client_server_thread_ = std::make_unique<std::thread>([&]() { client_node_->Start(); });
-  client_server_thread_->detach();
-  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  worker_node_ = std::make_unique<WorkerNode>();
+  worker_thread_ = std::make_unique<std::thread>([&]() {
+    worker_node_->Start();
+    worker_node_->Finish();
+    worker_node_->Stop();
+  });
+  worker_thread_->detach();
+  std::this_thread::sleep_for(std::chrono::milliseconds(20000));
 }
 }  // namespace core
 }  // namespace ps

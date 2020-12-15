@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
+#ifndef MINDSPORE_CCSRC_PS_CORE_NODE_INFO_H_
+#define MINDSPORE_CCSRC_PS_CORE_NODE_INFO_H_
+
 #include <string>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
 
-#ifndef RPC_NODE_INFO_H
-#define RPC_NODE_INFO_H
 namespace mindspore {
 namespace ps {
 namespace core {
 
-enum NodeEvent { NODE_TIMEOUT = 0 };
+enum NodeEvent { CLUSTER_TIMEOUT = 0, NODE_TIMEOUT = 1 };
 
 struct NodeInfo {
   NodeInfo() : port_(0), node_role_(NodeRole::SCHEDULER), rank_id_(0) {}

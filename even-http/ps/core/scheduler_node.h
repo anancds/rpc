@@ -41,11 +41,7 @@ namespace core {
 
 class SchedulerNode : public Node {
  public:
-  SchedulerNode()
-      : server_(nullptr),
-        scheduler_thread_(nullptr),
-        state_flush_thread_(nullptr),
-        cluster_available_thread_(nullptr) {}
+  SchedulerNode() : server_(nullptr), scheduler_thread_(nullptr), state_flush_thread_(nullptr) {}
   ~SchedulerNode() override;
 
   bool Start(const uint32_t &timeout = kTimeoutInSeconds) override;
@@ -63,17 +59,16 @@ class SchedulerNode : public Node {
 
  private:
   void Initialize();
-  void Init();
-  void ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
-  void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
-  void StartClusterStateFlushTimer();
-  void ProcessFinish(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
-  void ProcessFetchServers(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void CreateTcpServer();
+  void ProcessHeartBeatCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void ProcessRegisterCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void StartUpdateClusterStateTimer();
+  void ProcessFinishCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void ProcessFetchServersCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
 
   std::unique_ptr<TcpServer> server_;
   std::unique_ptr<std::thread> scheduler_thread_;
   std::unique_ptr<std::thread> state_flush_thread_;
-  std::unique_ptr<std::thread> cluster_available_thread_;
 
   NodeManager node_manager_;
 };

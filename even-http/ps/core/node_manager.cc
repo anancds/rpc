@@ -69,6 +69,11 @@ void NodeManager::UpdateHeartbeat(const std::string &node_id) {
                << ", the node rank id:" << node_info.rank_id_ << " the current time is: " << current_time.tv_sec;
 }
 
+bool NodeManager::CheckNodesFinishState(const std::string &node_id) {
+  heartbeats_finish_nodes_.insert(node_id);
+  return heartbeats_finish_nodes_.size() == nodes_info_.size();
+}
+
 std::vector<ServersMeta> NodeManager::FetchServersMeta() {
   std::vector<ServersMeta> servers_meta_list;
   for (auto it = nodes_info_.begin(); it != nodes_info_.end(); ++it) {
@@ -133,7 +138,9 @@ bool NodeManager::is_cluster_finish() { return is_cluster_finish_.load(); }
 
 bool NodeManager::is_cluster_ready() { return is_cluster_ready_.load(); }
 
-bool NodeManager::is_cluster_timeout() { return is_cluster_timeout_; }
+bool NodeManager::is_cluster_timeout() { return is_cluster_timeout_.load(); }
+
+bool NodeManager::is_node_timeout() { return is_node_timeout_.load(); }
 
 void NodeManager::set_cluster_timeout(bool is_cluster_timeout) { is_cluster_timeout_ = is_cluster_timeout; }
 }  // namespace core

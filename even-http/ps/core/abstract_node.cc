@@ -74,28 +74,33 @@ void AbstractNode::set_event_callback(const OnNodeEventMessage &on_node_event_me
   on_node_event_message_ = on_node_event_message;
 }
 
-void AbstractNode::Heartbeat(const std::shared_ptr<TcpClient> &client) {
+void AbstractNode::StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client) {
   MS_LOG(INFO) << "The node role: " << CommUtil::NodeRoleToString(node_info_.node_role_)
                << ", the node id:" << node_info_.node_id_ << ", the node rank id:" << node_info_.rank_id_
                << " begin send heartbeat to the scheduler!";
   heart_beat_thread_ = std::make_unique<std::thread>([&]() {
     while (!is_finish_.load()) {
       std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval()));
-      MessageMeta meta;
-      meta.set_cmd(NodeCommand::HEARTBEAT);
-
-      HeartbeatMessage heartbeat_message;
-      heartbeat_message.set_node_id(node_info_.node_id_);
-
-      CommMessage message;
-      *message.mutable_pb_meta() = {meta};
-      message.set_data(heartbeat_message.SerializeAsString());
-      if (!SendMessageSync(client, message)) {
-        MS_LOG(ERROR) << "The node id:" << node_info_.node_id_ << " Send heartbeat timeout!";
-      }
+      Heartbeat(client);
     }
   });
   heart_beat_thread_->detach();
+}
+
+void AbstractNode::Heartbeat(const std::shared_ptr<TcpClient> &client, bool is_node_finish) {
+  MessageMeta meta;
+  meta.set_cmd(NodeCommand::HEARTBEAT);
+
+  HeartbeatMessage heartbeat_message;
+  heartbeat_message.set_node_id(node_info_.node_id_);
+  heartbeat_message.set_is_node_finish(is_node_finish);
+
+  CommMessage message;
+  *message.mutable_pb_meta() = {meta};
+  message.set_data(heartbeat_message.SerializeAsString());
+  if (!SendMessageSync(client, message)) {
+    MS_LOG(ERROR) << "The node id:" << node_info_.node_id_ << " Send heartbeat timeout!";
+  }
 }
 
 void AbstractNode::ProcessHeartbeatResp(const CommMessage &message) {
@@ -106,8 +111,9 @@ void AbstractNode::ProcessHeartbeatResp(const CommMessage &message) {
     wait_start_cond_.notify_all();
     MS_LOG(DEBUG) << "The node id:" << node_info_.node_id_ << " is ready!";
   }
-  is_finish_ = heartbeat_resp_message.is_cluster_finish();
-  if (is_finish_.load()) {
+  if (heartbeat_resp_message.is_cluster_finish()) {
+    Heartbeat(client_to_scheduler_, true);
+    is_finish_ = true;
     wait_finish_cond_.notify_all();
     MS_LOG(DEBUG) << "The node id:" << node_info_.node_id_ << " is finish!";
   }
@@ -115,6 +121,10 @@ void AbstractNode::ProcessHeartbeatResp(const CommMessage &message) {
   if (is_timeout_ && on_node_event_message_) {
     is_ready_ = true;
     wait_start_cond_.notify_all();
+    on_node_event_message_(NodeEvent::CLUSTER_TIMEOUT);
+  }
+
+  if (heartbeat_resp_message.is_node_timeout() && on_node_event_message_) {
     on_node_event_message_(NodeEvent::NODE_TIMEOUT);
   }
 }

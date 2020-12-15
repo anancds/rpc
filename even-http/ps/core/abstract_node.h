@@ -37,7 +37,8 @@ class AbstractNode : public Node {
  protected:
   void Register(const std::shared_ptr<TcpClient> &client);
   void ProcessRegisterResp(const CommMessage &message);
-  void Heartbeat(const std::shared_ptr<TcpClient> &client);
+  void StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client);
+  void Heartbeat(const std::shared_ptr<TcpClient> &client, bool is_node_finish = false);
   void ProcessHeartbeatResp(const CommMessage &message);
   void FetchServers(const std::shared_ptr<TcpClient> &client);
   void ProcessFetchServersResp(const CommMessage &message);

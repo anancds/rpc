@@ -21,7 +21,7 @@ void NodeManagerTest::StartScheduler() {
 void NodeManagerTest::StartServer() {
   server_node_ = std::make_unique<ServerNode>();
   server_node_->set_event_callback([&](const NodeEvent &event) {
-    if (event == NodeEvent::NODE_TIMEOUT) {
+    if (event == NodeEvent::CLUSTER_TIMEOUT) {
       MS_LOG(INFO) << "111111111111111111111111111111!";
       //      server_node_->Finish();
       //      server_node_->Stop();
@@ -44,7 +44,7 @@ void NodeManagerTest::StartServer() {
 void NodeManagerTest::StartClient() {
   worker_node_ = std::make_unique<WorkerNode>();
   worker_node_->set_event_callback([&](const NodeEvent &event) {
-    if (event == NodeEvent::NODE_TIMEOUT) {
+    if (event == NodeEvent::CLUSTER_TIMEOUT) {
       MS_LOG(INFO) << "NODE_TIMEOUT, finish!";
       std::this_thread::sleep_for(std::chrono::milliseconds(50000));
       //      worker_node_->Finish();
@@ -53,8 +53,8 @@ void NodeManagerTest::StartClient() {
   });
   worker_node_->Start();
   KVMessage kv_message;
-  std::vector<int> keys(100000000, 1);
-  std::vector<int> values(100000000, 2);
+  std::vector<int> keys(1000000, 1);
+  std::vector<int> values(1000000, 2);
   *kv_message.mutable_keys() = {keys.begin(), keys.end()};
   *kv_message.mutable_values() = {values.begin(), values.end()};
 

@@ -50,7 +50,7 @@ set(HTTP_HEADER
 
 foreach (_target
         example_old scheduler_example
-        client_example server_example client_test server_test protobuf_serialize_test)
+        client_example server_example client_test server_test protobuf_serialize_test fsm)
     add_executable(${_target} "${_target}.cpp"
             ${HTTP_SRC}
             ${HTTP_HEADER}

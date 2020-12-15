@@ -18,7 +18,7 @@ set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_client.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/worker_node.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node_manager_test.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/embedding_table_shard_metadata.cc
-
+        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/abstract_node.cc
         )
 
 add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_message_handler.cc

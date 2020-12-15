@@ -20,10 +20,15 @@ option optimize_for = LITE_RUNTIME;
 enum PSCommand {
   PUSH = 0;
   PULL = 1;
+  INIT_EMBEDDING_TABLE = 2;
 }
 
 message KVMessage {
   PSCommand command = 1;
   repeated int32 keys = 2;
   repeated float values = 3;
+}
+
+message EmbeddingTableMeta {
+
 }

@@ -38,25 +38,32 @@ SchedulerNode::~SchedulerNode() {
 bool SchedulerNode::Start(const uint32_t &timeout) {
   MS_LOG(INFO) << "Start scheduler node!";
   Initialize();
-  StartClusterStateFlushTimer();
+  StartUpdateClusterStateTimer();
   if (!WaitForStart(timeout)) {
     MS_LOG(ERROR) << "Start Scheduler node timeout!";
     return false;
   }
-  MS_LOG(INFO) << "The scheduler is ready!";
+  MS_LOG(INFO) << "Start the scheduler node is successful!";
   return true;
 }
 
-void SchedulerNode::ProcessHeartBeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+void SchedulerNode::ProcessHeartBeatCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   HeartbeatMessage heartbeat_message;
   heartbeat_message.ParseFromString(message.data());
 
   node_manager_.UpdateHeartbeat(heartbeat_message.node_id());
 
+  if (heartbeat_message.is_node_finish() && node_manager_.CheckNodesFinishState(heartbeat_message.node_id())) {
+    MS_LOG(INFO) << "The scheduler node receive all the finish cmd!";
+    is_finish_ = true;
+    wait_finish_cond_.notify_all();
+  }
+
   HeartbeatRespMessage heartbeat_resp_message;
   heartbeat_resp_message.set_is_cluster_ready(node_manager_.is_cluster_ready());
   heartbeat_resp_message.set_is_cluster_finish(node_manager_.is_cluster_finish());
   heartbeat_resp_message.set_is_cluster_timeout(node_manager_.is_cluster_timeout());
+  heartbeat_resp_message.set_is_node_timeout(node_manager_.is_node_timeout());
 
   CommMessage comm_message;
   *comm_message.mutable_pb_meta() = {message.pb_meta()};
@@ -65,7 +72,7 @@ void SchedulerNode::ProcessHeartBeat(const TcpServer &server, const TcpConnectio
 }
 
 void SchedulerNode::Initialize() {
-  Init();
+  CreateTcpServer();
   is_already_stopped_ = false;
   node_info_.node_id_ = CommUtil::GenerateUUID();
   node_info_.node_role_ = NodeRole::SCHEDULER;
@@ -73,7 +80,7 @@ void SchedulerNode::Initialize() {
                << ", the node id is:" << node_info_.node_id_;
 }
 
-void SchedulerNode::Init() {
+void SchedulerNode::CreateTcpServer() {
   node_manager_.InitNodeNum();
 
   std::string scheduler_host = ClusterConfig::scheduler_host();
@@ -82,16 +89,16 @@ void SchedulerNode::Init() {
   server_->SetMessageCallback([&](const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
     switch (message.pb_meta().cmd()) {
       case NodeCommand::HEARTBEAT:
-        ProcessHeartBeat(server, conn, message);
+        ProcessHeartBeatCmd(server, conn, message);
         break;
       case NodeCommand::REGISTER:
-        ProcessRegister(server, conn, message);
+        ProcessRegisterCmd(server, conn, message);
         break;
       case NodeCommand::FINISH:
-        ProcessFinish(server, conn, message);
+        ProcessFinishCmd(server, conn, message);
         break;
       case NodeCommand::FETCH_SERVER:
-        ProcessFetchServers(server, conn, message);
+        ProcessFetchServersCmd(server, conn, message);
         break;
       default:
         MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
@@ -107,7 +114,7 @@ void SchedulerNode::Init() {
   scheduler_thread_->detach();
 }
 
-void SchedulerNode::ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+void SchedulerNode::ProcessRegisterCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   MS_LOG(INFO) << "The scheduler process a register message!";
   RegisterMessage register_message;
   register_message.ParseFromString(message.data());
@@ -130,7 +137,7 @@ void SchedulerNode::ProcessRegister(const TcpServer &server, const TcpConnection
   const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
 }
 
-void SchedulerNode::ProcessFinish(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+void SchedulerNode::ProcessFinishCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   FinishMessage finish_message;
   finish_message.ParseFromString(message.data());
   node_manager_.AddFinishNode(finish_message);
@@ -138,7 +145,7 @@ void SchedulerNode::ProcessFinish(const TcpServer &server, const TcpConnection &
   const_cast<TcpServer &>(server).SendMessage(conn, message);
 }
 
-void SchedulerNode::ProcessFetchServers(const TcpServer &server, const TcpConnection &conn,
+void SchedulerNode::ProcessFetchServersCmd(const TcpServer &server, const TcpConnection &conn,
                                         const CommMessage &message) {
   FetchServersRespMessage fetch_servers_message;
   std::vector<ServersMeta> servers_meta_list = node_manager_.FetchServersMeta();
@@ -151,7 +158,7 @@ void SchedulerNode::ProcessFetchServers(const TcpServer &server, const TcpConnec
   const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
 }
 
-void SchedulerNode::StartClusterStateFlushTimer() {
+void SchedulerNode::StartUpdateClusterStateTimer() {
   MS_LOG(WARNING) << "The scheduler start a heartbeat timer!";
   state_flush_thread_ = std::make_unique<std::thread>([&]() {
     auto start_time = std::chrono::steady_clock::now();
