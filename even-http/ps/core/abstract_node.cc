@@ -80,8 +80,8 @@ void AbstractNode::StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client)
                << " begin send heartbeat to the scheduler!";
   heart_beat_thread_ = std::make_unique<std::thread>([&]() {
     while (!is_finish_.load()) {
-      std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval()));
       Heartbeat(client);
+      std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval()));
     }
   });
   heart_beat_thread_->detach();

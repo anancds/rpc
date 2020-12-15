@@ -63,9 +63,9 @@ class TestClusterConnection : public UT::Common {
     }
   }
 
-  std::unique_ptr<Node> scheduler_node_;
-  std::unique_ptr<Node> server_node_;
-  std::unique_ptr<Node> worker_node_;
+  std::unique_ptr<SchedulerNode> scheduler_node_;
+  std::unique_ptr<ServerNode> server_node_;
+  std::unique_ptr<WorkerNode> worker_node_;
 
   std::unique_ptr<std::thread> scheduler_thread_;
   std::unique_ptr<std::thread> server_thread_;
@@ -75,6 +75,14 @@ class TestClusterConnection : public UT::Common {
 TEST_F(TestClusterConnection, StartServerAndClient) {
   server_node_ = std::make_unique<ServerNode>();
   server_thread_ = std::make_unique<std::thread>([&]() {
+    server_node_->set_handler([&](const TcpServer &server, const TcpConnection &conn, const MessageMeta &message_meta,
+                                  const std::string &message) {
+      KVMessage kv_message;
+      //    kv_message.ParseFromString(message.data());
+      //    MS_LOG(INFO) << "size:" << kv_message.keys_size();
+
+      server_node_->Response(server, conn, message_meta, message);
+    });
     server_node_->Start();
     server_node_->Finish();
     server_node_->Stop();

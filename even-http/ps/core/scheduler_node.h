@@ -41,7 +41,7 @@ namespace core {
 
 class SchedulerNode : public Node {
  public:
-  SchedulerNode() : server_(nullptr), scheduler_thread_(nullptr), state_flush_thread_(nullptr) {}
+  SchedulerNode() : server_(nullptr), scheduler_thread_(nullptr), update_state_thread_(nullptr) {}
   ~SchedulerNode() override;
 
   bool Start(const uint32_t &timeout = kTimeoutInSeconds) override;
@@ -68,7 +68,7 @@ class SchedulerNode : public Node {
 
   std::unique_ptr<TcpServer> server_;
   std::unique_ptr<std::thread> scheduler_thread_;
-  std::unique_ptr<std::thread> state_flush_thread_;
+  std::unique_ptr<std::thread> update_state_thread_;
 
   NodeManager node_manager_;
 };

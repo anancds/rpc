@@ -28,8 +28,8 @@ SchedulerNode::~SchedulerNode() {
     if (scheduler_thread_->joinable()) {
       scheduler_thread_->join();
     }
-    if (state_flush_thread_->joinable()) {
-      state_flush_thread_->join();
+    if (update_state_thread_->joinable()) {
+      update_state_thread_->join();
     }
     is_ready_ = true;
   }
@@ -160,7 +160,7 @@ void SchedulerNode::ProcessFetchServersCmd(const TcpServer &server, const TcpCon
 
 void SchedulerNode::StartUpdateClusterStateTimer() {
   MS_LOG(WARNING) << "The scheduler start a heartbeat timer!";
-  state_flush_thread_ = std::make_unique<std::thread>([&]() {
+  update_state_thread_ = std::make_unique<std::thread>([&]() {
     auto start_time = std::chrono::steady_clock::now();
     while (!is_finish_.load()) {
       // 1. update cluster timeout
@@ -183,7 +183,7 @@ void SchedulerNode::StartUpdateClusterStateTimer() {
       }
     }
   });
-  state_flush_thread_->detach();
+  update_state_thread_->detach();
 }
 
 bool SchedulerNode::Stop() {
@@ -194,8 +194,8 @@ bool SchedulerNode::Stop() {
     if (scheduler_thread_->joinable()) {
       scheduler_thread_->join();
     }
-    if (state_flush_thread_->joinable()) {
-      state_flush_thread_->join();
+    if (update_state_thread_->joinable()) {
+      update_state_thread_->join();
     }
     is_ready_ = true;
   }
