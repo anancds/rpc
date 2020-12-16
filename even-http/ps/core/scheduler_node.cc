@@ -47,8 +47,7 @@ bool SchedulerNode::Start(const uint32_t &timeout) {
   return true;
 }
 
-void SchedulerNode::ProcessHeartBeatCmd(const TcpServer &server, const TcpConnection &conn,
-                                        const CommMessage &message) {
+void SchedulerNode::ProcessHeartbeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   HeartbeatMessage heartbeat_message;
   heartbeat_message.ParseFromString(message.data());
 
@@ -94,16 +93,16 @@ void SchedulerNode::CreateTcpServer() {
   server_->SetMessageCallback([&](const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
     switch (message.pb_meta().cmd()) {
       case NodeCommand::HEARTBEAT:
-        ProcessHeartBeatCmd(server, conn, message);
+        ProcessHeartbeat(server, conn, message);
         break;
       case NodeCommand::REGISTER:
-        ProcessRegisterCmd(server, conn, message);
+        ProcessRegister(server, conn, message);
         break;
       case NodeCommand::FINISH:
-        ProcessFinishCmd(server, conn, message);
+        ProcessFinish(server, conn, message);
         break;
       case NodeCommand::FETCH_SERVER:
-        ProcessFetchServersCmd(server, conn, message);
+        ProcessFetchServers(server, conn, message);
         break;
       default:
         MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
@@ -119,7 +118,7 @@ void SchedulerNode::CreateTcpServer() {
   scheduler_thread_->detach();
 }
 
-void SchedulerNode::ProcessRegisterCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+void SchedulerNode::ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   MS_LOG(INFO) << "The scheduler process a register message!";
   RegisterMessage register_message;
   register_message.ParseFromString(message.data());
@@ -142,7 +141,7 @@ void SchedulerNode::ProcessRegisterCmd(const TcpServer &server, const TcpConnect
   const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
 }
 
-void SchedulerNode::ProcessFinishCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+void SchedulerNode::ProcessFinish(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   FinishMessage finish_message;
   finish_message.ParseFromString(message.data());
   node_manager_.AddFinishNode(finish_message);
@@ -150,8 +149,8 @@ void SchedulerNode::ProcessFinishCmd(const TcpServer &server, const TcpConnectio
   const_cast<TcpServer &>(server).SendMessage(conn, message);
 }
 
-void SchedulerNode::ProcessFetchServersCmd(const TcpServer &server, const TcpConnection &conn,
-                                           const CommMessage &message) {
+void SchedulerNode::ProcessFetchServers(const TcpServer &server, const TcpConnection &conn,
+                                        const CommMessage &message) {
   FetchServersRespMessage fetch_servers_message;
   std::vector<ServersMeta> servers_meta_list = node_manager_.FetchServersMeta();
 
@@ -217,27 +216,6 @@ bool SchedulerNode::Finish(const uint32_t &timeout) {
     return is_finish_.load();
   });
   return true;
-}
-
-bool SchedulerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                         const uint32_t &timeout) {
-  MS_LOG(EXCEPTION) << "The scheduler node is not supported send data to other nodes!";
-}
-
-bool SchedulerNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                         const std::vector<std::string> &data, const uint32_t &timeout) {
-  MS_LOG(EXCEPTION) << "The scheduler node is not supported send data to other nodes!";
-}
-
-bool SchedulerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                         CommMessage *comm_message, const uint32_t &timeout) {
-  MS_LOG(EXCEPTION) << "The scheduler node is not supported send data to other nodes!";
-}
-
-bool SchedulerNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                         const std::vector<std::string> &data, std::vector<CommMessage *> *comm_message_resp,
-                         const uint32_t &timeout) {
-  MS_LOG(EXCEPTION) << "The scheduler node is not supported send data to other nodes!";
 }
 }  // namespace core
 }  // namespace ps

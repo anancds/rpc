@@ -48,23 +48,14 @@ class SchedulerNode : public Node {
   bool Stop() override;
   bool Finish(const uint32_t &timeout = kTimeoutInSeconds) override;
 
-  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-            const uint32_t &timeout = 3) override;
-  bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
-            const uint32_t &timeout = 3) override;
-  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-            CommMessage *comm_message, const uint32_t &timeout = 3);
-  bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
-            std::vector<CommMessage *> *comm_message_resp, const uint32_t &timeout = 3);
-
  private:
   void Initialize();
   void CreateTcpServer();
-  void ProcessHeartBeatCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
-  void ProcessRegisterCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void ProcessHeartbeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   void StartUpdateClusterStateTimer();
-  void ProcessFinishCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
-  void ProcessFetchServersCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void ProcessFinish(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void ProcessFetchServers(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
 
   std::unique_ptr<TcpServer> server_;
   std::unique_ptr<std::thread> scheduler_thread_;
