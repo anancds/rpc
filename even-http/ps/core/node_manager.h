@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef RPC_CLUSTER_MANAGER_H
-#define RPC_CLUSTER_MANAGER_H
+#ifndef MINDSPORE_CCSRC_PS_CORE_NODE_MANAGER_H_
+#define MINDSPORE_CCSRC_PS_CORE_NODE_MANAGER_H_
 
 #include <atomic>
 #include <cstdlib>
@@ -31,8 +31,8 @@
 #include <condition_variable>
 #include <unordered_set>
 
-#include "../../../build/even-http/ps/core/comm.pb.h"
-#include "../../../build/even-http/ps/core/ps.pb.h"
+#include "proto/comm.pb.h"
+#include "proto/ps.pb.h"
 #include "ps/core/node.h"
 #include "utils/log_adapter.h"
 
@@ -42,13 +42,13 @@ namespace core {
 class NodeManager {
  public:
   NodeManager()
-      : is_cluster_ready_(false),
-        is_cluster_finish_(false),
-        is_cluster_timeout_(false),
-        is_node_timeout_(false),
-        total_node_num_(0),
-        next_worker_rank_id_(-1),
-        next_server_rank_id_(-1) {}
+    : is_cluster_ready_(false),
+      is_cluster_finish_(false),
+      is_cluster_timeout_(false),
+      is_node_timeout_(false),
+      total_node_num_(0),
+      next_worker_rank_id_(-1),
+      next_server_rank_id_(-1) {}
   virtual ~NodeManager() = default;
 
   enum ClusterState { STARTING, STARTED, FAILED, STOPPING, STOPPED };
@@ -56,7 +56,8 @@ class NodeManager {
   void InitNodeNum();
   int NextRankId(const RegisterMessage &register_message);
   void UpdateHeartbeat(const std::string &node_id);
-  bool CheckNodesFinishState(const std::string &node_id);
+  void UpdateNodeFinishState(const std::string &node_id);
+  bool CheckNodesFinishState();
   std::vector<ServersMeta> FetchServersMeta();
   void UpdateClusterState();
   void CheckClusterTimeout();
@@ -89,4 +90,4 @@ class NodeManager {
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
-#endif  // RPC_CLUSTER_MANAGER_H
+#endif  // MINDSPORE_CCSRC_PS_CORE_NODE_MANAGER_H_

@@ -69,10 +69,9 @@ void NodeManager::UpdateHeartbeat(const std::string &node_id) {
                << ", the node rank id:" << node_info.rank_id_ << " the current time is: " << current_time.tv_sec;
 }
 
-bool NodeManager::CheckNodesFinishState(const std::string &node_id) {
-  heartbeats_finish_nodes_.insert(node_id);
-  return heartbeats_finish_nodes_.size() == nodes_info_.size();
-}
+void NodeManager::UpdateNodeFinishState(const std::string &node_id) { heartbeats_finish_nodes_.insert(node_id); }
+
+bool NodeManager::CheckNodesFinishState() { return heartbeats_finish_nodes_.size() == nodes_info_.size(); }
 
 std::vector<ServersMeta> NodeManager::FetchServersMeta() {
   std::vector<ServersMeta> servers_meta_list;

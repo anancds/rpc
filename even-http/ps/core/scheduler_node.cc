@@ -47,13 +47,18 @@ bool SchedulerNode::Start(const uint32_t &timeout) {
   return true;
 }
 
-void SchedulerNode::ProcessHeartBeatCmd(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+void SchedulerNode::ProcessHeartBeatCmd(const TcpServer &server, const TcpConnection &conn,
+                                        const CommMessage &message) {
   HeartbeatMessage heartbeat_message;
   heartbeat_message.ParseFromString(message.data());
 
   node_manager_.UpdateHeartbeat(heartbeat_message.node_id());
 
-  if (heartbeat_message.is_node_finish() && node_manager_.CheckNodesFinishState(heartbeat_message.node_id())) {
+  if (heartbeat_message.is_node_finish()) {
+    node_manager_.UpdateNodeFinishState(heartbeat_message.node_id());
+  }
+
+  if (heartbeat_message.is_node_finish() && node_manager_.CheckNodesFinishState()) {
     MS_LOG(INFO) << "The scheduler node receive all the finish cmd!";
     is_finish_ = true;
     wait_finish_cond_.notify_all();
@@ -146,7 +151,7 @@ void SchedulerNode::ProcessFinishCmd(const TcpServer &server, const TcpConnectio
 }
 
 void SchedulerNode::ProcessFetchServersCmd(const TcpServer &server, const TcpConnection &conn,
-                                        const CommMessage &message) {
+                                           const CommMessage &message) {
   FetchServersRespMessage fetch_servers_message;
   std::vector<ServersMeta> servers_meta_list = node_manager_.FetchServersMeta();
 
@@ -211,6 +216,7 @@ bool SchedulerNode::Finish(const uint32_t &timeout) {
     }
     return is_finish_.load();
   });
+  return true;
 }
 
 bool SchedulerNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
