@@ -19,9 +19,7 @@
 #include "ps/core/scheduler_node.h"
 #include "ps/core/worker_node.h"
 #include "ps/core/server_node.h"
-#include "ps/core/tcp_client.h"
 #include "ps/core/tcp_server.h"
-#include "ps/core/abstract_node.h"
 
 #include <memory>
 #include <thread>
@@ -48,7 +46,6 @@ class TestClusterConnection : public UT::Common {
       scheduler_node_->Finish();
       scheduler_node_->Stop();
     });
-    scheduler_thread_->detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   }
   void TearDown() override {
@@ -75,19 +72,13 @@ class TestClusterConnection : public UT::Common {
 TEST_F(TestClusterConnection, StartServerAndClient) {
   server_node_ = std::make_unique<ServerNode>();
   server_thread_ = std::make_unique<std::thread>([&]() {
-    server_node_->set_handler([&](const TcpServer &server, const TcpConnection &conn, const MessageMeta &message_meta,
-                                  const std::string &message) {
-      KVMessage kv_message;
-      //    kv_message.ParseFromString(message.data());
-      //    MS_LOG(INFO) << "size:" << kv_message.keys_size();
-
-      server_node_->Response(server, conn, message_meta, message);
-    });
+    server_node_->set_handler(
+      [&](const TcpServer &server, const TcpConnection &conn, const MessageMeta &message_meta,
+          const std::string &message) { server_node_->Response(server, conn, message_meta, message); });
     server_node_->Start();
     server_node_->Finish();
     server_node_->Stop();
   });
-  server_thread_->detach();
 
   worker_node_ = std::make_unique<WorkerNode>();
   worker_thread_ = std::make_unique<std::thread>([&]() {
@@ -95,8 +86,7 @@ TEST_F(TestClusterConnection, StartServerAndClient) {
     worker_node_->Finish();
     worker_node_->Stop();
   });
-  worker_thread_->detach();
-  std::this_thread::sleep_for(std::chrono::milliseconds(20000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 }
 }  // namespace core
 }  // namespace ps
