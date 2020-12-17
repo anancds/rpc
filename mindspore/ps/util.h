@@ -21,6 +21,7 @@
 #include <string>
 #include <unordered_map>
 #include "utils/log_adapter.h"
+#include "ps/embedding_table_shard_metadata.h"
 
 namespace mindspore {
 namespace ps {

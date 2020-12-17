@@ -48,6 +48,7 @@ set(HTTP_HEADER
         abstract_node.h
         )
 
+add_library(core1 ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})
 foreach (_target
         example_old scheduler_example
         client_example server_example client_test server_test protobuf_serialize_test fsm)

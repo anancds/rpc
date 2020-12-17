@@ -31,8 +31,8 @@
 #include <condition_variable>
 #include <unordered_set>
 
-#include "proto/comm.pb.h"
-#include "proto/ps.pb.h"
+#include "../../../build/even-http/ps/core/comm.pb.h"
+#include "../../../build/even-http/ps/core/ps.pb.h"
 #include "ps/core/node.h"
 #include "utils/log_adapter.h"
 

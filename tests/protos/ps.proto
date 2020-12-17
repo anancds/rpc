@@ -32,3 +32,10 @@ message KVMessage {
 message EmbeddingTableMeta {
 
 }
+
+message EmbeddingTableLookup {
+  PSCommand command = 1;
+  uint64 key = 2;
+  repeated int32 keys = 3;
+  repeated float values = 4;
+}

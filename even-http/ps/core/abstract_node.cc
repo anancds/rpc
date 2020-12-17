@@ -149,7 +149,7 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
 }
 
 bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                        const std::vector<std::string> &data, std::vector<CommMessage *> *comm_message_resp,
+                        const std::vector<std::string> &data, std::vector<CommMessage> *comm_message_resp,
                         const uint32_t &timeout) {
   MS_EXCEPTION_IF_NULL(comm_message_resp);
   uint64_t request_id = ++next_request_id_;
@@ -165,7 +165,7 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
     for (size_t it = 0; it < len; ++it) {
-      comm_message_resp->at(it) = &res[rank_ids.at(it)];
+      comm_message_resp->emplace_back(res[rank_ids.at(it)]);
     }
     receive_messages_.erase(request_id);
     receive_messages_mutex_.unlock();
