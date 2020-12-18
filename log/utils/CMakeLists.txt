@@ -16,8 +16,8 @@ endif ()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED 17)
-set(SRC log_adapter.cc logging_level.cc ms_utils.cc memcpy_s.c memset_s.c)
-set(HDR log_adapter.h overload.h securec.h securectype.h slog.h ms_utils.h)
+set(SRC log_adapter.cc logging_level.cc ms_utils.cc memcpy_s.c memset_s.c memmove_s.c securecutil.c)
+set(HDR log_adapter.h overload.h securec.h securectype.h slog.h ms_utils.h securecutil.h)
 add_library(rpc-log STATIC ${SRC} ${HDR})
 target_link_libraries(rpc-log PRIVATE glog::glog)
 # Export includes

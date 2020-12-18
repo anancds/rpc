@@ -151,8 +151,8 @@ class LogWriter {
       : location_(location), log_level_(log_level), submodule_(submodule), exception_type_(excp_type) {}
   ~LogWriter() = default;
 
-  void operator<(const LogStream &stream) const noexcept __attribute__((visibility("default")));
-  void operator^(const LogStream &stream) const __attribute__((noreturn, visibility("default")));
+  void operator<(const LogStream &stream) const noexcept;
+  void operator^(const LogStream &stream) const ;
 
   static void set_exception_handler(ExceptionHandler exception_handler) { exception_handler_ = exception_handler; }
   static void set_trace_provider(TraceProvider trace_provider) { trace_provider_ = trace_provider; }

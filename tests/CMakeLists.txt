@@ -4,6 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 enable_testing()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../even-http)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../mindspore)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../log)
 
 #set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_client.cc
@@ -72,7 +73,7 @@ foreach (_target
     target_link_libraries(${_target}
             unittest
             core1
-            core3
+            ps
             rpc-log
             GTest::GTest
             GTest::Main
