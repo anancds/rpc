@@ -23,16 +23,16 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-
 class CountDownLatch {
  public:
   explicit CountDownLatch(int count) : count_(count) {}
 
-  void wait();
+  void Wait();
 
-  void countDown();
 
-  int getCount() ;
+  void CountDown();
+
+  int GetCount() ;
 
  private:
   std::mutex mutex_;

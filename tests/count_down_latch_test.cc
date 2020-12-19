@@ -32,13 +32,13 @@ class TestCountDownLatch : public UT::Common {
 
 TEST_F(TestCountDownLatch, CountDownLatch) {
   CountDownLatch count_down_latch(2);
-  ASSERT_EQ(count_down_latch.getCount(), 2);
+  ASSERT_EQ(count_down_latch.GetCount(), 2);
   std::thread count_down_thread([&](){
     std::this_thread::sleep_for(std::chrono::seconds(2));
-    count_down_latch.countDown();
-    count_down_latch.countDown();
+    count_down_latch.CountDown();
+    count_down_latch.CountDown();
   });
-  count_down_latch.wait();
+  count_down_latch.Wait();
   if (count_down_thread.joinable()) {
     count_down_thread.join();
   }

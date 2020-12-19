@@ -19,15 +19,14 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-
-void CountDownLatch::wait() {
+void CountDownLatch::Wait() {
   std::unique_lock<std::mutex> lock(mutex_);
   if (count_ > 0) {
     condition_.wait(lock, [&] { return count_ == 0; });
   }
 }
 
-void CountDownLatch::countDown() {
+void CountDownLatch::CountDown() {
   std::lock_guard<std::mutex> lock(mutex_);
   --count_;
   if (count_ == 0) {
@@ -35,7 +34,7 @@ void CountDownLatch::countDown() {
   }
 }
 
-int CountDownLatch::getCount() {
+int CountDownLatch::GetCount() {
   std::lock_guard<std::mutex> lock(mutex_);
   return count_;
 }
