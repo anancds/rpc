@@ -16,7 +16,7 @@
 
 #include "ps/core/tcp_client.h"
 #include "ps/core/tcp_server.h"
-#include "common_test.h"
+#include "common/common_test.h"
 
 #include <memory>
 #include <thread>

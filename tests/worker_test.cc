@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "common_test.h"
+#include "common/common_test.h"
 #include "ps/embedding_table_shard_metadata.h"
 #include "ps/worker.h"
 

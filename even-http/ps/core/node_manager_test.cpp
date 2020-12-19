@@ -30,7 +30,7 @@ void NodeManagerTest::StartServer() {
   server_node_->set_handler([&](const TcpServer &server, const TcpConnection &conn, const MessageMeta &message_meta,
                                 const std::string &message) {
     KVMessage kv_message;
-    kv_message.ParseFromString(message.data());
+    kv_message.ParseFromString(message);
     MS_LOG(INFO) << "size:" << kv_message.keys_size();
 
     server_node_->Response(server, conn, message_meta, message);

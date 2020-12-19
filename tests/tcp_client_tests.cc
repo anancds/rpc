@@ -1,6 +1,6 @@
 #include <memory>
 #include "ps/core/tcp_client.h"
-#include "common_test.h"
+#include "common/common_test.h"
 
 namespace mindspore {
 namespace ps {

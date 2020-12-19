@@ -15,7 +15,7 @@
  */
 
 #include "ps/core/tcp_message_handler.h"
-#include "common_test.h"
+#include "common/common_test.h"
 
 #include <memory>
 #include <thread>

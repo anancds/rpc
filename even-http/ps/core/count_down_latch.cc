@@ -14,31 +14,30 @@
  * limitations under the License.
  */
 
-#include <memory>
-#include <string>
-
-#include "common/common_test.h"
-#include "ps/core/cluster_config.h"
+#include "ps/core/count_down_latch.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
-class TestClusterConfig : public UT::Common {
- public:
-  TestClusterConfig() = default;
-  virtual ~TestClusterConfig() = default;
 
-  void SetUp() override {}
-  void TearDown() override {}
-};
+void CountDownLatch::wait() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  if (count_ > 0) {
+    condition_.wait(lock, [&] { return count_ == 0; });
+  }
+}
 
-TEST_F(TestClusterConfig, HeartbeatInterval) {
-  ClusterConfig::Init(2, 2, "127.0.0.1", 8080);
-  EXPECT_TRUE(ClusterConfig::heartbeat_interval() == 3);
-  ClusterConfig::set_heartbeat_interval(100);
-  EXPECT_TRUE(ClusterConfig::heartbeat_interval() == 100);
-  EXPECT_STREQ(ClusterConfig::scheduler_host().c_str(), "127.0.0.1");
-  EXPECT_TRUE(ClusterConfig::scheduler_port() == 8080);
+void CountDownLatch::countDown() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  --count_;
+  if (count_ == 0) {
+    condition_.notify_all();
+  }
+}
+
+int CountDownLatch::getCount() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return count_;
 }
 }  // namespace core
 }  // namespace ps

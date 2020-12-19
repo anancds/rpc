@@ -65,6 +65,7 @@ foreach (_target
         embedding_table_shard_metadata_test
         cluster_config_test
         worker_test
+        count_down_latch_test
         )
     add_executable(${_target} "${_target}.cc"
 #            ${PROTO_SRCS}

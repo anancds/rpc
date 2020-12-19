@@ -19,7 +19,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include "gtest/gtest.h"
+#include "../../cmake-build-debug/tests/3rd_party/google-test/googletest-src/googletest/include/gtest/gtest.h"
 namespace UT {
 class Common : public testing::Test {
  public:

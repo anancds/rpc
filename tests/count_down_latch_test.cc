@@ -13,32 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include <memory>
-#include <string>
+#include <thread>
 
 #include "common/common_test.h"
-#include "ps/core/cluster_config.h"
+#include "ps/core/count_down_latch.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
-class TestClusterConfig : public UT::Common {
+class TestCountDownLatch : public UT::Common {
  public:
-  TestClusterConfig() = default;
-  virtual ~TestClusterConfig() = default;
+  TestCountDownLatch() = default;
+  virtual ~TestCountDownLatch() = default;
 
   void SetUp() override {}
   void TearDown() override {}
 };
 
-TEST_F(TestClusterConfig, HeartbeatInterval) {
-  ClusterConfig::Init(2, 2, "127.0.0.1", 8080);
-  EXPECT_TRUE(ClusterConfig::heartbeat_interval() == 3);
-  ClusterConfig::set_heartbeat_interval(100);
-  EXPECT_TRUE(ClusterConfig::heartbeat_interval() == 100);
-  EXPECT_STREQ(ClusterConfig::scheduler_host().c_str(), "127.0.0.1");
-  EXPECT_TRUE(ClusterConfig::scheduler_port() == 8080);
+TEST_F(TestCountDownLatch, CountDownLatch) {
+  CountDownLatch count_down_latch(2);
+  ASSERT_EQ(count_down_latch.getCount(), 2);
+  std::thread count_down_thread([&](){
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    count_down_latch.countDown();
+    count_down_latch.countDown();
+  });
+  count_down_latch.wait();
+  if (count_down_thread.joinable()) {
+    count_down_thread.join();
+  }
 }
 }  // namespace core
 }  // namespace ps

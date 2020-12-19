@@ -14,25 +14,32 @@
  * limitations under the License.
  */
 
-#include "common/common_test.h"
-#include "ps/embedding_table_shard_metadata.h"
+#ifndef RPC_COUNT_DOWN_LATCH_H
+#define RPC_COUNT_DOWN_LATCH_H
+
+#include <mutex>
+#include <condition_variable>
 
 namespace mindspore {
 namespace ps {
-class TestEmbeddingTableShardMetadata : public UT::Common {
+namespace core {
+
+class CountDownLatch {
  public:
-  TestEmbeddingTableShardMetadata() = default;
-  virtual ~TestEmbeddingTableShardMetadata() = default;
+  explicit CountDownLatch(int count) : count_(count) {}
 
-  void SetUp() override {}
-  void TearDown() override {}
+  void wait();
+
+  void countDown();
+
+  int getCount() ;
+
+ private:
+  std::mutex mutex_;
+  std::condition_variable condition_;
+  int count_;
 };
-
-TEST_F(TestEmbeddingTableShardMetadata, EmbeddingTable) {
-  EmbeddingTableShardMetadata embedding_table_shard(1, 100);
-  EXPECT_EQ(embedding_table_shard.begin(), 1);
-  EXPECT_EQ(embedding_table_shard.end(), 100);
-  EXPECT_EQ(embedding_table_shard.size(), 99);
 }
-}  // namespace ps
-}  // namespace mindspore
+}
+}
+#endif  // RPC_COUNT_DOWN_LATCH_H

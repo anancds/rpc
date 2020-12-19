@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "common_test.h"
+#include "common/common_test.h"
 #include "ps/core/node.h"
 #include "ps/core/scheduler_node.h"
 #include "ps/core/worker_node.h"
