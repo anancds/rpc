@@ -18,7 +18,6 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
 set(HTTP_SRC
         comm_util.cc
         node_manager_test.cpp
-        scheduler_manager.cpp
         tcp_client.cc
         tcp_message_handler.cc
         tcp_server.cc
@@ -36,7 +35,6 @@ set(HTTP_HEADER
         comm_util.h
         node.h
         node_manager_test.h
-        scheduler_manager.h
         tcp_client.h
         tcp_message_handler.h
         tcp_server.h
@@ -51,7 +49,7 @@ set(HTTP_HEADER
 add_library(core1 ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})
 foreach (_target
         example_old scheduler_example
-        client_example server_example client_test server_test protobuf_serialize_test fsm)
+        client_example server_example client_test server_test protobuf_serialize_test fsm server_example1)
     add_executable(${_target} "${_target}.cpp"
             ${HTTP_SRC}
             ${HTTP_HEADER}

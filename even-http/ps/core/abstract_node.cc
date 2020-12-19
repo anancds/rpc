@@ -118,7 +118,7 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
 }
 
 bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                        CommMessage *comm_message_resp, const uint32_t &timeout) {
+                        std::shared_ptr<CommMessage> *comm_message_resp, const uint32_t &timeout) {
   MS_EXCEPTION_IF_NULL(comm_message_resp);
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
@@ -149,13 +149,13 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
 }
 
 bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                        const std::vector<std::string> &data, std::vector<CommMessage> *comm_message_resp,
-                        const uint32_t &timeout) {
+                        const std::vector<std::string> &data,
+                        std::vector<std::shared_ptr<CommMessage>> *comm_message_resp, const uint32_t &timeout) {
   MS_EXCEPTION_IF_NULL(comm_message_resp);
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(data.size(), 0);
 
-  if (rank_ids.size() != data.size() || rank_ids.size() != (*comm_message_resp).size()) {
+  if (rank_ids.size() != data.size()) {
     MS_LOG(EXCEPTION) << "The number of rank ids, data, comm_message_resp should be equal!";
   }
 
@@ -165,7 +165,7 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
     for (size_t it = 0; it < len; ++it) {
-      comm_message_resp->emplace_back(res[rank_ids.at(it)]);
+      (*comm_message_resp).push_back(res[rank_ids.at(it)]);
     }
     receive_messages_.erase(request_id);
     receive_messages_mutex_.unlock();
@@ -394,10 +394,10 @@ void AbstractNode::ProcessSendDataResp(const CommMessage &message) {
   const uint64_t request_id = message_meta.request_id();
   auto it = receive_messages_.find(request_id);
   if (it != receive_messages_.end()) {
-    it->second.insert(std::make_pair(rank_id, message));
+    it->second[rank_id] = std::make_shared<CommMessage>(message);
   } else {
-    std::unordered_map<uint32_t, CommMessage> res;
-    res.insert(std::make_pair(rank_id, message));
+    std::unordered_map<uint32_t, std::shared_ptr<CommMessage>> res;
+    res.insert(std::make_pair(rank_id, std::make_shared<CommMessage>(message)));
     receive_messages_[request_id] = res;
   }
 }

@@ -36,6 +36,7 @@ message EmbeddingTableMeta {
   repeated uint64 output_shape = 4;
 }
 
+// 是否需要加message
 message EmbeddingTableLookup {
   PSCommand command = 1;
   uint64 key = 2;

@@ -42,9 +42,9 @@ class AbstractNode : public Node {
   virtual bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
                     const std::vector<std::string> &data, const uint32_t &timeout = kCommTimeoutInSeconds);
   virtual bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                    CommMessage *comm_message_resp, const uint32_t &timeout = kCommTimeoutInSeconds);
+                    std::shared_ptr<CommMessage> *comm_message_resp, const uint32_t &timeout = kCommTimeoutInSeconds);
   virtual bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                    const std::vector<std::string> &data, std::vector<CommMessage> *comm_message_resp,
+                    const std::vector<std::string> &data, std::vector<std::shared_ptr<CommMessage>> *comm_message_resp,
                     const uint32_t &timeout = kCommTimeoutInSeconds);
 
   bool Wait(uint64_t request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
@@ -86,7 +86,7 @@ class AbstractNode : public Node {
   std::condition_variable message_tracker_cond_;
 
   // the map's key is: request_id, the map's value is:<rank_id, CommMessage>
-  std::unordered_map<uint64_t, std::unordered_map<uint32_t, CommMessage>> receive_messages_;
+  std::unordered_map<uint64_t, std::unordered_map<uint32_t, std::shared_ptr<CommMessage>>> receive_messages_;
   std::mutex receive_messages_mutex_;
   // the map's key is: request_id
   std::unordered_map<uint64_t, MessageCallback> message_callbacks_;

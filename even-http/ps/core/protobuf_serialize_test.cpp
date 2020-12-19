@@ -93,15 +93,24 @@ void TestSerializeToString() {
   std::cout << "CommMessage SerializeAsString, cost:" << (end2 - end1).count() / 1e6 << "ms" << std::endl;
 }
 
+void TestVector(std::vector<CommMessage> *data) {
+  CommMessage commMessage;
+  commMessage.set_data("abc");
+  (*data).push_back(commMessage);
+}
+
 int main(int argc, char **argv) {
   std::cout<< "test1------------------"<<std::endl;
-  SerializeAsString();
+//  SerializeAsString();
   std::cout<< "test2------------------"<<std::endl;
-  SerializeToArray();
+//  SerializeToArray();
   std::cout<< "test3------------------"<<std::endl;
-  TestSerializeToArrayVerySmallSetData();
+//  TestSerializeToArrayVerySmallSetData();
   std::cout<< "test4------------------"<<std::endl;
-  TestSerializeToString();
+//  TestSerializeToString();
+  std::vector<CommMessage> resp;
+  TestVector(&resp);
+  std::cout <<resp.at(0).data() << std::endl;
 
   return 0;
 }

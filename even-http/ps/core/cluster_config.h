@@ -30,7 +30,7 @@ namespace ps {
 namespace core {
 class ClusterConfig {
  public:
-  static void Init(const uint32_t &worker_num, const uint32_t &server_num, std::unique_ptr<std::string> scheduler_host,
+  static void Init(const uint32_t &worker_num, const uint32_t &server_num, const std::string &scheduler_host,
                    const uint16_t &scheduler_port);
   static uint32_t worker_num();
   static uint32_t server_num();
@@ -49,7 +49,7 @@ class ClusterConfig {
   static uint32_t worker_num_;
   static uint32_t server_num_;
   static uint32_t heartbeat_interval_;
-  static std::unique_ptr<std::string> scheduler_host_;
+  static const char* scheduler_host_;
   static uint16_t scheduler_port_;
   static uint32_t heartbeat_timeout_;
   static uint32_t cluster_available_timeout_;

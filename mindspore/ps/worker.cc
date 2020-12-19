@@ -6,6 +6,10 @@
 
 namespace mindspore {
 namespace ps {
+void Worker::Initialize() {
+  lookup_slicer_ = [this](auto &&send, auto &&sliced, auto &&attrs) { LookupIdSlicer(send, sliced, attrs); };
+}
+
 void Worker::AddEmbeddingTable(const Key &key, const size_t &row_count) {
   uint64_t begin = 0;
   uint64_t end = 0;
@@ -40,13 +44,14 @@ void Worker::InitPSEmbeddingTable(const size_t &key, const std::vector<size_t> &
   *embedding_table_meta.mutable_input_shape() = {input_shape.begin(), input_shape.end()};
   *embedding_table_meta.mutable_indices_shape() = {indices_shape.begin(), indices_shape.end()};
   *embedding_table_meta.mutable_output_shape() = {output_shape.begin(), output_shape.end()};
-//  embedding_table_meta.set_command(PSCommand::INIT_EMBEDDING_TABLE);
+  //  embedding_table_meta.set_command(PSCommand::INIT_EMBEDDING_TABLE);
 
   worker_node_.BroadcastToServers(embedding_table_meta.SerializeAsString());
 }
 
 void Worker::LookupIdSlicer(const EmbeddingTableLookup &send,
-                            std::vector<std::pair<bool, EmbeddingTableLookup>> *sliced, const std::map<int64_t, int64_t> &attrs) {
+                            std::vector<std::pair<bool, EmbeddingTableLookup>> *sliced,
+                            const std::map<int64_t, int64_t> &attrs) {
   MS_EXCEPTION_IF_NULL(sliced);
 
   const Key &key = send.key();
@@ -62,7 +67,7 @@ void Worker::LookupIdSlicer(const EmbeddingTableLookup &send,
 
     kvs.set_key(key);
 
-    std::for_each(send.keys().begin(), send.keys().end(), [&](int32_t lookup_id){
+    std::for_each(send.keys().begin(), send.keys().end(), [&](int32_t lookup_id) {
       if (lookup_id >= begin && lookup_id <= end) {
         unique_ids.insert(lookup_id);
       }
@@ -76,6 +81,26 @@ void Worker::LookupIdSlicer(const EmbeddingTableLookup &send,
       sliced->at(i).first = true;
     }
   }
+}
+
+void Worker::DoPSEmbeddingLookup(const Key &key, const std::vector<int> &lookup_ids, std::vector<float> *lookup_result,
+                                 int64_t cmd) {
+  MS_EXCEPTION_IF_NULL(lookup_result);
+  EmbeddingTableLookup embedding_table_lookup;
+  embedding_table_lookup.set_key(key);
+  *embedding_table_lookup.mutable_keys() = {lookup_ids.begin(), lookup_ids.end()};
+
+  SlicedKVMessages messages;
+  lookup_slicer_(embedding_table_lookup, &messages, {});
+  std::vector<uint32_t> rank_ids;
+  std::vector<std::string> data;
+  for (size_t i = 0; i < messages.size(); i++) {
+    if (messages.at(i).first) {
+      rank_ids.emplace_back(i);
+      data.emplace_back(messages.at(i).second.SerializeAsString());
+    }
+  }
+//  worker_node_.Send()
 }
 
 bool Worker::IsKeyInit(const size_t &key) {
