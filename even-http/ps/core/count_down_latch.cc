@@ -26,6 +26,13 @@ void CountDownLatch::Wait() {
   }
 }
 
+bool CountDownLatch::WaitFor(const uint32_t &timeout) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  if (count_ > 0) {
+    return condition_.wait_for(lock, std::chrono::seconds(timeout), [&] { return count_ == 0; });
+  }
+}
+
 void CountDownLatch::CountDown() {
   std::lock_guard<std::mutex> lock(mutex_);
   --count_;

@@ -29,17 +29,18 @@ class CountDownLatch {
 
   void Wait();
 
+  bool WaitFor(const uint32_t &timeout);
 
   void CountDown();
 
-  int GetCount() ;
+  int GetCount();
 
  private:
   std::mutex mutex_;
   std::condition_variable condition_;
   int count_;
 };
-}
-}
-}
+}  // namespace core
+}  // namespace ps
+}  // namespace mindspore
 #endif  // RPC_COUNT_DOWN_LATCH_H

@@ -23,7 +23,7 @@ namespace ps {
 namespace core {
 uint32_t ClusterConfig::worker_num_ = 0;
 uint32_t ClusterConfig::server_num_ = 0;
-const char* ClusterConfig::scheduler_host_ = nullptr;
+std::unique_ptr<std::string> ClusterConfig::scheduler_host_ = nullptr;
 uint16_t ClusterConfig::scheduler_port_ = 0;
 // The interval for sending heartbeat packets between worker node,server node and scheduler node is 3 seconds.
 uint32_t ClusterConfig::heartbeat_interval_ = 3;
@@ -34,14 +34,14 @@ uint32_t ClusterConfig::cluster_available_timeout_ = 300;
 // The timeout period for the client to connect to the server is 100ms.
 uint32_t ClusterConfig::connect_interval_ = 100;
 
-void ClusterConfig::Init(const uint32_t &worker_num, const uint32_t &server_num, const std::string &scheduler_host,
-                         const uint16_t &scheduler_port) {
+void ClusterConfig::Init(const uint32_t &worker_num, const uint32_t &server_num,
+                         std::unique_ptr<std::string> scheduler_host, const uint16_t &scheduler_port) {
   worker_num_ = worker_num;
   server_num_ = server_num;
-  if (!CommUtil::CheckIp(scheduler_host)) {
-    MS_LOG(EXCEPTION) << "The scheduler_host:" << scheduler_host << " is illegal!";
+  if (!CommUtil::CheckIp(*scheduler_host)) {
+    MS_LOG(EXCEPTION) << "The scheduler_host:" << *scheduler_host << " is illegal!";
   }
-  scheduler_host_ = scheduler_host.c_str();
+  scheduler_host_ = std::move(scheduler_host);
   scheduler_port_ = scheduler_port;
 }
 
@@ -55,7 +55,7 @@ void ClusterConfig::set_heartbeat_interval(const uint32_t &heartbeat_interval) {
   heartbeat_interval_ = heartbeat_interval;
 }
 
-std::string ClusterConfig::scheduler_host() { return scheduler_host_; }
+std::string ClusterConfig::scheduler_host() { return *scheduler_host_; }
 
 uint16_t ClusterConfig::scheduler_port() { return scheduler_port_; }
 

@@ -68,14 +68,14 @@ void NodeManagerTest::StartClient() {
   //  auto end = std::chrono::high_resolution_clock::now();
   //  MS_LOG(INFO) << "send ok, cost:" << (end - start).count() / 1e6 << "ms";
 
-  std::shared_ptr<CommMessage> comm_message;
+  CommMessage comm_message;
   KVMessage resp_temp;
   auto start2 = std::chrono::high_resolution_clock::now();
   worker_node_->Send(NodeRole::SERVER, 0, message, &comm_message);
-  std::cout << comm_message->pb_meta().role() << std::endl;
-  std::cout << comm_message->pb_meta().rank_id() << std::endl;
-  resp_temp.ParseFromString(comm_message->data());
-  std::cout << resp_temp.keys_size() << std::endl;
+//  std::cout << comm_message->pb_meta().role() << std::endl;
+//  std::cout << comm_message->pb_meta().rank_id() << std::endl;
+//  resp_temp.ParseFromString(comm_message->data());
+//  std::cout << resp_temp.keys_size() << std::endl;
   auto end2 = std::chrono::high_resolution_clock::now();
   MS_LOG(INFO) << "send ok, cost:" << (end2 - start2).count() / 1e6 << "ms";
 
@@ -84,24 +84,24 @@ void NodeManagerTest::StartClient() {
   //  auto end = std::chrono::high_resolution_clock::now();
   //  MS_LOG(INFO) << "send ok, cost:" << (end - start).count() / 1e6 << "ms";
 
-//  std::vector<uint32_t> rank_ids = {0, 1};
-//  KVMessage kv_message1;
-//  std::vector<int> keys1(100, 1);
-//  std::vector<int> values1(100, 2);
-//  *kv_message1.mutable_keys() = {keys1.begin(), keys1.end()};
-//  *kv_message1.mutable_values() = {values1.begin(), values1.end()};
-//  std::vector<std::string> data = {kv_message1.SerializeAsString(), kv_message.SerializeAsString()};
-//
-//  std::vector<std::shared_ptr<CommMessage>> resp;
-////  resp->resize(2);
-//
-//  worker_node_->Send(NodeRole::SERVER, rank_ids, data, &resp);
-//
-//  KVMessage kv_message_resp;
-//  KVMessage kv_message_resp1;
-//  kv_message_resp.ParseFromString(resp.at(0)->data());
-//  kv_message_resp1.ParseFromString(resp.at(1)->data());
-//  MS_LOG(INFO) << "resp size:" << kv_message_resp.keys_size() << " resp1 size:" << kv_message_resp1.keys_size();
+  std::vector<uint32_t> rank_ids = {0, 1};
+  KVMessage kv_message1;
+  std::vector<int> keys1(100, 1);
+  std::vector<int> values1(100, 2);
+  *kv_message1.mutable_keys() = {keys1.begin(), keys1.end()};
+  *kv_message1.mutable_values() = {values1.begin(), values1.end()};
+  std::vector<std::string> data = {kv_message1.SerializeAsString(), kv_message.SerializeAsString()};
+
+  std::vector<CommMessage> resp;
+//  resp->resize(2);
+
+  worker_node_->Send(NodeRole::SERVER, rank_ids, data, &resp);
+
+  KVMessage kv_message_resp;
+  KVMessage kv_message_resp1;
+  kv_message_resp.ParseFromString(resp.at(0).data());
+  kv_message_resp1.ParseFromString(resp.at(1).data());
+  MS_LOG(INFO) << "resp size:" << kv_message_resp.keys_size() << " resp1 size:" << kv_message_resp1.keys_size();
   worker_node_->Finish();
   worker_node_->Stop();
 }
