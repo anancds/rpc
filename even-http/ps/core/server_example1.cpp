@@ -12,7 +12,7 @@ using namespace mindspore::ps::core;
 using namespace mindspore::ps;
 
 static void Start() {
-  ClusterConfig::Init(1, 2, "127.0.0.1", 9999);
+  ClusterConfig::Init(1, 2, std::make_unique<std::string>("127.0.0.1"), 9999);
   NodeManagerTest::Get()->StartServer();
 }
 
