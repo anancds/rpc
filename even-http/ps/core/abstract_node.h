@@ -37,17 +37,18 @@ class AbstractNode : public Node {
   bool BroadcastToServers(const std::string &message, const uint32_t &timeout = kCommTimeoutInSeconds);
   void set_event_callback(const OnNodeEventMessage &on_node_event_message);
 
-  virtual bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                    const uint32_t &timeout = kCommTimeoutInSeconds);
-  virtual bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                    const std::vector<std::string> &data, const uint32_t &timeout = kCommTimeoutInSeconds);
-  virtual bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                    CommMessage *comm_message_resp, const uint32_t &timeout = kCommTimeoutInSeconds);
-  virtual bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                    const std::vector<std::string> &data, std::vector<CommMessage> *comm_message_resp,
-                    const uint32_t &timeout = kCommTimeoutInSeconds);
-
+  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+            const uint32_t &timeout = kCommTimeoutInSeconds);
+  bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
+            const uint32_t &timeout = kCommTimeoutInSeconds);
+  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+            CommMessage *comm_message_resp, const uint32_t &timeout = kCommTimeoutInSeconds);
+  bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
+            std::vector<CommMessage> *comm_message_resp, const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Wait(uint64_t request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
+
+  bool CollSend(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+                const uint32_t &timeout = kCommTimeoutInSeconds);
 
  protected:
   void Register(const std::shared_ptr<TcpClient> &client);

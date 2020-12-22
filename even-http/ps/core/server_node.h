@@ -50,15 +50,23 @@ class ServerNode : public AbstractNode {
   void set_handler(const RequestHandler &handler);
   void Response(const TcpServer &server, const TcpConnection &conn, const MessageMeta &message_meta,
                 const std::string &message);
+  uint32_t CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp);
+  bool CollWaitFor(const uint32_t &rank_id, const uint32_t &timeout = kCommTimeoutInSeconds);
 
  private:
   void CreateTcpServer();
   void Initialize();
   void ProcessSendData(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void set_received_data_callback(const uint32_t &rank_id, const MessageCallback &received_data_callbacks);
+  void RunReceivedDataCallback(const uint32_t &rank_id);
 
   std::shared_ptr<TcpServer> server_;
   std::unique_ptr<std::thread> server_thread_;
   RequestHandler request_handler_;
+  std::unordered_map<uint32_t, CommMessage> received_data_;
+  std::mutex received_data_callbacks_mutex_;
+  std::unordered_map<uint64_t, MessageCallback> received_data_callbacks_;
+  std::condition_variable received_data_cond_;
 };
 }  // namespace core
 }  // namespace ps

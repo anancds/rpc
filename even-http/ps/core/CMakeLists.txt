@@ -51,7 +51,9 @@ set(HTTP_HEADER
 add_library(core1 ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})
 foreach (_target
         example_old scheduler_example
-        client_example server_example client_test server_test protobuf_serialize_test fsm server_example1)
+        client_example server_example client_test server_test protobuf_serialize_test fsm server_example1
+        retry
+        )
     add_executable(${_target} "${_target}.cpp"
             ${HTTP_SRC}
             ${HTTP_HEADER}

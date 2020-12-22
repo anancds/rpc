@@ -55,11 +55,20 @@ void AbstractNode::ProcessRegisterResp(const CommMessage &message) {
 
 bool AbstractNode::BroadcastToServers(const std::string &message, const uint32_t &timeout) {
   uint64_t request_id = ++next_request_id_;
-  message_tracker_[request_id] = std::make_pair(nodes_address_.size(), 0);
+  if (node_info_.node_role_ == NodeRole::SERVER) {
+    message_tracker_[request_id] = std::make_pair(nodes_address_.size() - 1, 0);
+  } else {
+    message_tracker_[request_id] = std::make_pair(nodes_address_.size(), 0);
+  }
   for (auto it = nodes_address_.begin(); it != nodes_address_.end(); ++it) {
+    if (node_info_.node_role_ == NodeRole::SERVER && node_info_.rank_id_ == (*it).first.second) {
+      continue;
+    }
     MessageMeta message_meta;
     message_meta.set_cmd(NodeCommand::SEND_DATA);
     message_meta.set_request_id(request_id);
+    message_meta.set_rank_id(node_info_.rank_id_);
+    message_meta.set_role(node_info_.node_role_);
 
     CommMessage comm_message;
     *comm_message.mutable_pb_meta() = {message_meta};
@@ -82,12 +91,14 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
 
   MessageMeta message_meta;
   message_meta.set_cmd(NodeCommand::SEND_DATA);
+  message_meta.set_rank_id(node_info_.rank_id_);
+  message_meta.set_role(node_info_.node_role_);
 
   CommMessage comm_message;
   *comm_message.mutable_pb_meta() = {message_meta};
   comm_message.set_data(message);
   auto client = GetOrCreateTcpClient(rank_id);
-  return SendMessageSync(client, comm_message);
+  return SendMessageSync(client, comm_message, timeout);
 }
 
 bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
@@ -106,6 +117,8 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     MessageMeta message_meta;
     message_meta.set_cmd(NodeCommand::SEND_DATA);
     message_meta.set_request_id(request_id);
+    message_meta.set_rank_id(node_info_.rank_id_);
+    message_meta.set_role(node_info_.node_role_);
 
     CommMessage comm_message;
     *comm_message.mutable_pb_meta() = {message_meta};
@@ -179,6 +192,8 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     MessageMeta message_meta;
     message_meta.set_cmd(NodeCommand::SEND_DATA);
     message_meta.set_request_id(request_id);
+    message_meta.set_rank_id(node_info_.rank_id_);
+    message_meta.set_role(node_info_.node_role_);
 
     CommMessage comm_message;
     *comm_message.mutable_pb_meta() = {message_meta};
@@ -198,6 +213,22 @@ bool AbstractNode::Wait(uint64_t request_id, const uint32_t &timeout) {
   });
   message_tracker_.erase(request_id);
   return res;
+}
+
+bool AbstractNode::CollSend(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+                            const uint32_t &timeout) {
+  if (!CommUtil::ValidateRankId(node_role, rank_id)) {
+    MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
+  }
+
+  MessageMeta message_meta;
+  message_meta.set_cmd(NodeCommand::COLLECTIVES_SEND_DATA);
+
+  CommMessage comm_message;
+  *comm_message.mutable_pb_meta() = {message_meta};
+  comm_message.set_data(message);
+  auto client = GetOrCreateTcpClient(rank_id);
+  return SendMessageSync(client, comm_message, timeout);
 }
 
 void AbstractNode::StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client) {
