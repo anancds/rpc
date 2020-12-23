@@ -58,7 +58,6 @@ class TcpClient {
   void Init();
   void StartWithDelay(int seconds);
   void Stop();
-  static void StopEventBase();
   void Start();
   void StartWithNoBlock();
   void SetMessageCallback(const OnMessage &cb);

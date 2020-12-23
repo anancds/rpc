@@ -57,6 +57,7 @@ class ServerNode : public AbstractNode {
   void CreateTcpServer();
   void Initialize();
   void ProcessSendData(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void ProcessCollectiveSendData(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
   void set_received_data_callback(const uint32_t &rank_id, const MessageCallback &received_data_callbacks);
   void RunReceivedDataCallback(const uint32_t &rank_id);
 

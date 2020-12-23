@@ -40,8 +40,8 @@ struct A {
 int main() {
   A a;
 
-  bool const r1 = retry(std::bind(f, "stringparam1"), 3, 100);
-  bool const r2 = retry(std::bind(a, "stringparam2", 77), 5, 300);
+  bool const r1 = retry([] { return f("stringparam1"); }, 3, 100);
+  bool const r2 = retry([&] { return a("stringparam2", 77); }, 5, 300);
   // Ex 3: lambda
   bool const r3 = retry(
     []() -> bool {

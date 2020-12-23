@@ -9,6 +9,10 @@ namespace ps {
 namespace core {
 
 void NodeManagerTest::StartScheduler() {
+  int result = evthread_use_pthreads();
+  if (result != 0) {
+    MS_LOG(EXCEPTION) << "Use event pthread failed!";
+  }
   scheduler_node_ = std::make_unique<SchedulerNode>();
   scheduler_node_->Start();
   scheduler_node_->Finish();
@@ -19,6 +23,10 @@ void NodeManagerTest::StartScheduler() {
 }
 
 void NodeManagerTest::StartServer() {
+  int result = evthread_use_pthreads();
+  if (result != 0) {
+    MS_LOG(EXCEPTION) << "Use event pthread failed!";
+  }
   server_node_ = std::make_unique<ServerNode>();
   server_node_->set_event_callback([&](const NodeEvent &event) {
     if (event == NodeEvent::CLUSTER_TIMEOUT) {
@@ -37,21 +45,25 @@ void NodeManagerTest::StartServer() {
   });
   server_node_->Start();
 
-  KVMessage kv_message;
-  std::vector<int> keys(66, 1);
-  std::vector<int> values(66, 2);
-  *kv_message.mutable_keys() = {keys.begin(), keys.end()};
-  *kv_message.mutable_values() = {values.begin(), values.end()};
-  auto start = std::chrono::high_resolution_clock::now();
-  server_node_->BroadcastToServers(kv_message.SerializeAsString());
-  auto end = std::chrono::high_resolution_clock::now();
-  MS_LOG(INFO) << "server node broadcast send ok, cost:" << (end - start).count() / 1e6 << "ms";
+//  KVMessage kv_message;
+//  std::vector<int> keys(66, 1);
+//  std::vector<int> values(66, 2);
+//  *kv_message.mutable_keys() = {keys.begin(), keys.end()};
+//  *kv_message.mutable_values() = {values.begin(), values.end()};
+//  auto start = std::chrono::high_resolution_clock::now();
+//  server_node_->BroadcastToServers(kv_message.SerializeAsString());
+//  auto end = std::chrono::high_resolution_clock::now();
+//  MS_LOG(INFO) << "server node broadcast send ok, cost:" << (end - start).count() / 1e6 << "ms";
 
   server_node_->Finish();
   server_node_->Stop();
 }
 
 void NodeManagerTest::StartClient() {
+  int result = evthread_use_pthreads();
+  if (result != 0) {
+    MS_LOG(EXCEPTION) << "Use event pthread failed!";
+  }
   worker_node_ = std::make_unique<WorkerNode>();
   worker_node_->set_event_callback([&](const NodeEvent &event) {
     if (event == NodeEvent::CLUSTER_TIMEOUT) {
@@ -101,12 +113,8 @@ void NodeManagerTest::StartClient() {
   *kv_message1.mutable_keys() = {keys1.begin(), keys1.end()};
   *kv_message1.mutable_values() = {values1.begin(), values1.end()};
   std::vector<std::string> data = {kv_message1.SerializeAsString(), kv_message.SerializeAsString()};
-
   std::vector<CommMessage> resp;
-  //  resp->resize(2);
-
   worker_node_->Send(NodeRole::SERVER, rank_ids, data, &resp);
-
   KVMessage kv_message_resp;
   KVMessage kv_message_resp1;
   kv_message_resp.ParseFromString(resp.at(0).data());

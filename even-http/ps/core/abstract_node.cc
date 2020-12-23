@@ -241,7 +241,6 @@ void AbstractNode::StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client)
       std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval()));
     }
   });
-  heart_beat_thread_->detach();
 }
 
 void AbstractNode::Heartbeat(const std::shared_ptr<TcpClient> &client, bool is_node_finish) {
@@ -365,11 +364,9 @@ bool AbstractNode::InitClientToScheduler() {
     MS_LOG(INFO) << "The worker node start a tcp client!";
     client_to_scheduler_->Start();
   });
-  client_to_scheduler_thread_->detach();
 
   client_to_scheduler_->set_disconnected_callback([&]() {
     std::this_thread::sleep_for(std::chrono::milliseconds(ClusterConfig::connect_interval()));
-    client_to_scheduler_->Stop();
     client_to_scheduler_->Init();
   });
   return client_to_scheduler_->WaitConnected();

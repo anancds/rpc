@@ -17,5 +17,11 @@ int main(int /*argc*/, char ** /*argv*/) {
     const_cast<TcpServer&>(server).SendMessage(conn, message);
   });
   server_->Init();
-  server_->Start();
+  std::thread server_thread = std::thread([&](){
+                               server_->Start();
+                              });
+  std::this_thread::sleep_for(std::chrono::seconds(5));
+//  server_->Stop();
+  server_thread.join();
+  std::this_thread::sleep_for(std::chrono::seconds(4));
 }
