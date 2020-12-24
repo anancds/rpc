@@ -232,22 +232,24 @@ bool AbstractNode::CollSend(const enum NodeRole &node_role, const uint32_t &rank
 }
 
 uint32_t AbstractNode::CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp) {
-  if (collective_received_data_.count(rank_id) > 0) {
-    *comm_message_resp = collective_received_data_[rank_id];
+  uint64_t rank_request_id = NextExpectedRankRequestId(rank_id);
+  if (collective_received_data_.count(std::make_pair(rank_id, rank_request_id)) > 0) {
+    *comm_message_resp = collective_received_data_[std::make_pair(rank_id, rank_request_id)];
+    collective_received_data_.erase(std::make_pair(rank_id, rank_request_id));
   } else {
-    set_received_data_callback(rank_id, [&]() {
-      received_data_callbacks_mutex_.lock();
+    set_received_data_callback(rank_id, rank_request_id, [&]() {
+      collective_callbacks_mutex_.lock();
       *comm_message_resp = collective_received_data_[rank_id];
-      collective_received_data_.erase(rank_id);
-      received_data_callbacks_mutex_.unlock();
+      collective_received_data_.erase(std::make_pair(rank_id, rank_request_id));
+      collective_callbacks_mutex_.unlock();
     });
   }
   return rank_id;
 }
 
 bool AbstractNode::CollWaitFor(const uint32_t &rank_id, const uint32_t &timeout) {
-  std::unique_lock<std::mutex> lock(received_data_callbacks_mutex_);
-  bool res = received_data_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
+  std::unique_lock<std::mutex> lock(collective_callbacks_mutex_);
+  bool res = collective_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
     if (collective_received_data_.count(rank_id)) {
       return true;
     } else {
@@ -493,32 +495,58 @@ void AbstractNode::NotifyMessageArrival(const CommMessage &message) {
   message_tracker_cond_.notify_all();
 }
 
-void AbstractNode::set_received_data_callback(const uint32_t &rank_id, const MessageCallback &received_data_callbacks) {
+void AbstractNode::set_received_data_callback(const uint32_t &rank_id, const uint64_t &rank_request_id,
+                                              const MessageCallback &received_data_callbacks) {
   if (!received_data_callbacks) {
     return;
   }
-  std::lock_guard<std::mutex> lock(received_data_callbacks_mutex_);
-  received_data_callbacks_[rank_id] = received_data_callbacks;
+  std::lock_guard<std::mutex> lock(collective_callbacks_mutex_);
+  collective_callbacks_[std::make_pair(rank_id, rank_request_id)] = received_data_callbacks;
 }
 
-void AbstractNode::RunReceivedDataCallback(const uint32_t &rank_id) {
-  received_data_callbacks_mutex_.lock();
-  // When receiving a message's response, Then compare with the desired number of responses,
+void AbstractNode::RunReceivedDataCallback(const CommMessage &message) {
+  collective_callbacks_mutex_.lock();
+  uint32_t rank_id = message.pb_meta().rank_id();
+  // When receiving a collective message, Then generate rank request id,compare with the desired rank request id,
   // If they are equal, then call the callback function
-  if (collective_received_data_.count(rank_id) > 0) {
-    auto it = received_data_callbacks_.find(rank_id);
-    if (it != received_data_callbacks_.end()) {
-      received_data_callbacks_mutex_.unlock();
+  uint64_t rank_request_id = NextActualRankRequestId(rank_id);
+  collective_received_data_[std::make_pair(message.pb_meta().rank_id(), rank_request_id)] = message;
+  auto it = collective_callbacks_.find(std::make_pair(rank_id, rank_request_id));
+  if (it != collective_callbacks_.end()) {
+    collective_callbacks_mutex_.unlock();
 
-      if (it->second) {
-        it->second();
-      }
-
-      received_data_callbacks_mutex_.lock();
-      received_data_callbacks_.erase(it);
+    if (it->second) {
+      it->second();
     }
+
+    collective_callbacks_mutex_.lock();
+    collective_callbacks_.erase(it);
   }
-  received_data_callbacks_mutex_.unlock();
+  collective_callbacks_mutex_.unlock();
+}
+
+uint64_t AbstractNode::NextExpectedRankRequestId(const uint32_t &rank_id) {
+  std::lock_guard<std::mutex> lock(rank_request_ids_mutex);
+  uint64_t rank_request_id = 1;
+  if (expected_rank_request_ids_.count(rank_id)) {
+    rank_request_id = ++expected_rank_request_ids_[rank_id];
+    expected_rank_request_ids_[rank_id] = rank_request_id;
+  } else {
+    expected_rank_request_ids_[rank_id] = rank_request_id;
+  }
+  return rank_request_id;
+}
+
+uint64_t AbstractNode::NextActualRankRequestId(const uint32_t &rank_id) {
+  std::lock_guard<std::mutex> lock(rank_request_ids_mutex);
+  uint64_t rank_request_id = 1;
+  if (actual_rank_request_ids_.count(rank_id)) {
+    rank_request_id = ++actual_rank_request_ids_[rank_id];
+    actual_rank_request_ids_[rank_id] = rank_request_id;
+  } else {
+    actual_rank_request_ids_[rank_id] = rank_request_id;
+  }
+  return rank_request_id;
 }
 }  // namespace core
 }  // namespace ps

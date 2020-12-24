@@ -23,7 +23,6 @@
 #include <map>
 #include <vector>
 #include <unordered_map>
-
 #include "ps/core/node.h"
 
 namespace mindspore {
@@ -71,37 +70,47 @@ class AbstractNode : public Node {
   void RunMessageCallback(const uint64_t &request_id);
   void set_message_callback(const uint64_t &request_id, const MessageCallback &message_callback);
   void NotifyMessageArrival(const CommMessage &message);
-  void set_received_data_callback(const uint32_t &rank_id, const MessageCallback &received_data_callbacks);
-  void RunReceivedDataCallback(const uint32_t &rank_id);
+  void set_received_data_callback(const uint32_t &rank_id, const uint64_t &rank_request_id,
+                                  const MessageCallback &received_data_callbacks);
+  void RunReceivedDataCallback(const CommMessage &message);
+  uint64_t NextExpectedRankRequestId(const uint32_t &rank_id);
+  uint64_t NextActualRankRequestId(const uint32_t &rank_id);
 
   std::unique_ptr<std::thread> heart_beat_thread_;
   std::unique_ptr<std::thread> client_to_scheduler_thread_;
   std::shared_ptr<TcpClient> client_to_scheduler_;
 
   OnNodeEventMessage on_node_event_message_;
-  // the map's key is: <node_role,rank_id>, the map's value is: <ip, port>
+  // the key is: <node_role,rank_id>, the value is: <ip, port>
   std::map<std::pair<NodeRole, uint32_t>, std::pair<std::string, uint16_t>> nodes_address_;
   std::mutex client_mutex_;
   // the map's key is: rank_id
   std::unordered_map<int, std::shared_ptr<TcpClient>> connected_nodes_;
 
-  // the map's key is: request_id, the map's value is: <expected responses, actual responses>
+  // the key is: request_id, the value is: <expected responses, actual responses>
   std::unordered_map<uint64_t, std::pair<uint32_t, uint32_t>> message_tracker_;
   std::mutex message_tracker_mutex_;
   std::condition_variable message_tracker_cond_;
 
-  // the map's key is: request_id, the map's value is:<rank_id, CommMessage>
+  // the key is: request_id, the value is:<rank_id, CommMessage>
   std::unordered_map<uint64_t, std::unordered_map<uint32_t, CommMessage>> receive_messages_;
   std::mutex receive_messages_mutex_;
-  // the map's key is: request_id
+  // the key is: request_id
   std::unordered_map<uint64_t, MessageCallback> message_callbacks_;
   std::mutex message_callbacks_mutex_;
 
-  // collective
-  std::unordered_map<uint32_t, CommMessage> collective_received_data_;
-  std::mutex received_data_callbacks_mutex_;
-  std::unordered_map<uint64_t, MessageCallback> received_data_callbacks_;
-  std::condition_variable received_data_cond_;
+  // the key is <rank_id, rank_request_id>
+  std::map<std::pair<uint32_t, uint64_t>, CommMessage> collective_received_data_;
+  std::mutex collective_callbacks_mutex_;
+  // the key is <rank_id, rank_request_id>
+  std::map<std::pair<uint32_t, uint64_t>, MessageCallback> collective_callbacks_;
+  std::condition_variable collective_cond_;
+
+  // the key is rank_id, the value is rank_id's expected request_id
+  std::unordered_map<uint32_t, uint64_t> expected_rank_request_ids_;
+  // the key is rank_id, the value is rank_id's actual request_id
+  std::unordered_map<uint32_t, uint64_t> actual_rank_request_ids_;
+  std::mutex rank_request_ids_mutex;
 };
 }  // namespace core
 }  // namespace ps

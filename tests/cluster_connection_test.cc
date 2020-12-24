@@ -49,15 +49,9 @@ class TestClusterConnection : public UT::Common {
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   }
   void TearDown() override {
-    if (scheduler_thread_->joinable()) {
-      scheduler_thread_->join();
-    }
-    if (server_thread_->joinable()) {
-      server_thread_->join();
-    }
-    if (worker_thread_->joinable()) {
-      worker_thread_->join();
-    }
+    scheduler_thread_->join();
+    server_thread_->join();
+    worker_thread_->join();
   }
 
   std::unique_ptr<SchedulerNode> scheduler_node_;

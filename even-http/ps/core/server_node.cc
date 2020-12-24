@@ -69,6 +69,7 @@ void ServerNode::CreateTcpServer() {
         break;
       case NodeCommand::COLLECTIVES_SEND_DATA:
         ProcessCollectiveSendData(server, conn, message);
+        RunReceivedDataCallback(message);
         break;
       default:
         MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
@@ -105,7 +106,6 @@ void ServerNode::ProcessCollectiveSendData(const TcpServer &server, const TcpCon
   CommMessage comm_message;
   *comm_message.mutable_pb_meta() = {message.pb_meta()};
   const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
-  collective_received_data_[message.pb_meta().rank_id()] = message;
 }
 
 bool ServerNode::Stop() {

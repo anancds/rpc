@@ -7,23 +7,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../even-http)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../mindspore)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../log)
 
-#set(TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_client.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_server.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/tcp_message_handler.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/comm_util.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/cluster_config.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node_manager.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/scheduler_node.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/server_node.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/worker_node.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/node_manager_test.cpp
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/abstract_node.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/embedding_table_shard_metadata.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/worker.cc
-#        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/util.cc
-#        )
-
 add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_message_handler.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_server.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/comm_util.cc
@@ -66,6 +49,7 @@ foreach (_target
         cluster_config_test
         worker_test
         count_down_latch_test
+        abstract_node_test
         )
     add_executable(${_target} "${_target}.cc"
 #            ${PROTO_SRCS}
