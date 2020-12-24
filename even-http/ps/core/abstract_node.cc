@@ -231,7 +231,7 @@ bool AbstractNode::CollSend(const enum NodeRole &node_role, const uint32_t &rank
   return SendMessageSync(client, comm_message, timeout);
 }
 
-std::pair<uint32_t, uint64_t>  AbstractNode::CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp) {
+std::pair<uint32_t, uint64_t> AbstractNode::CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp) {
   uint64_t rank_request_id = NextExpectedRankRequestId(rank_id);
   if (collective_received_data_.count(std::make_pair(rank_id, rank_request_id)) > 0) {
     *comm_message_resp = collective_received_data_[std::make_pair(rank_id, rank_request_id)];
@@ -250,13 +250,26 @@ std::pair<uint32_t, uint64_t>  AbstractNode::CollReceive(const uint32_t &rank_id
 bool AbstractNode::CollWaitFor(std::pair<uint32_t, uint64_t> coll_request_id, const uint32_t &timeout) {
   std::unique_lock<std::mutex> lock(collective_callbacks_mutex_);
   bool res = collective_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
-    if (collective_received_data_.count(coll_request_id)) {
+    if (actual_rank_request_ids_.count(coll_request_id.first) &&
+        (actual_rank_request_ids_[coll_request_id.first] >= coll_request_id.second)) {
       return true;
     } else {
       return false;
     }
   });
   return res;
+}
+
+void AbstractNode::CollWait(std::pair<uint32_t, uint64_t> coll_request_id) {
+  std::unique_lock<std::mutex> lock(collective_callbacks_mutex_);
+  collective_cond_.wait(lock, [&] {
+    if (actual_rank_request_ids_.count(coll_request_id.first) &&
+        (actual_rank_request_ids_[coll_request_id.first] >= coll_request_id.second)) {
+      return true;
+    } else {
+      return false;
+    }
+  });
 }
 
 void AbstractNode::StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client) {
@@ -510,6 +523,7 @@ void AbstractNode::RunReceivedDataCallback(const CommMessage &message) {
   // When receiving a collective message, Then generate rank request id,compare with the desired rank request id,
   // If they are equal, then call the callback function
   uint64_t rank_request_id = NextActualRankRequestId(rank_id);
+  collective_cond_.notify_all();
   collective_received_data_[std::make_pair(message.pb_meta().rank_id(), rank_request_id)] = message;
   auto it = collective_callbacks_.find(std::make_pair(rank_id, rank_request_id));
   if (it != collective_callbacks_.end()) {

@@ -50,8 +50,8 @@ class AbstractNode : public Node {
   bool CollSend(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
                 const uint32_t &timeout = kCommTimeoutInSeconds);
   std::pair<uint32_t, uint64_t> CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp);
-  bool CollWaitFor(std::pair<uint32_t, uint64_t> coll_request_id,
-                   const uint32_t &timeout = kCommTimeoutInSeconds);
+  bool CollWaitFor(std::pair<uint32_t, uint64_t> coll_request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
+  void CollWait(std::pair<uint32_t, uint64_t> coll_request_id);
 
  protected:
   void Register(const std::shared_ptr<TcpClient> &client);
