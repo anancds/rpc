@@ -57,32 +57,6 @@ void ServerNode::Response(const TcpServer &server, const TcpConnection &conn, co
   const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
 }
 
-uint32_t ServerNode::CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp) {
-  if (received_data_.count(rank_id) > 0) {
-    *comm_message_resp = received_data_[rank_id];
-  } else {
-    set_received_data_callback(rank_id, [&]() {
-      received_data_callbacks_mutex_.lock();
-      *comm_message_resp = received_data_[rank_id];
-      received_data_.erase(rank_id);
-      received_data_callbacks_mutex_.unlock();
-    });
-  }
-  return rank_id;
-}
-
-bool ServerNode::CollWaitFor(const uint32_t &rank_id, const uint32_t &timeout) {
-  std::unique_lock<std::mutex> lock(received_data_callbacks_mutex_);
-  bool res = received_data_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
-    if (received_data_.count(rank_id)) {
-      return true;
-    } else {
-      return false;
-    }
-  });
-  return res;
-}
-
 void ServerNode::CreateTcpServer() {
   std::string interface;
   std::string server_ip;
@@ -94,7 +68,8 @@ void ServerNode::CreateTcpServer() {
         ProcessSendData(server, conn, message);
         break;
       case NodeCommand::COLLECTIVES_SEND_DATA:
-
+        ProcessCollectiveSendData(server, conn, message);
+        break;
       default:
         MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
@@ -123,42 +98,14 @@ void ServerNode::Initialize() {
 
 void ServerNode::ProcessSendData(const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
   request_handler_(server, conn, message.pb_meta(), message.data());
-  //  if (message.pb_meta().role() != NodeRole::SERVER && request_handler_) {
-  //    request_handler_(server, conn, message.pb_meta(), message.data());
-  //  } else {
-  //    CommMessage comm_message;
-  //    *comm_message.mutable_pb_meta() = {message.pb_meta()};
-  //    const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
-  //    received_data_[message.pb_meta().rank_id()] = message;
-  //  }
 }
 
-void ServerNode::set_received_data_callback(const uint32_t &rank_id, const MessageCallback &received_data_callbacks) {
-  if (!received_data_callbacks) {
-    return;
-  }
-  std::lock_guard<std::mutex> lock(received_data_callbacks_mutex_);
-  received_data_callbacks_[rank_id] = received_data_callbacks;
-}
-
-void ServerNode::RunReceivedDataCallback(const uint32_t &rank_id) {
-  received_data_callbacks_mutex_.lock();
-  // When receiving a message's response, Then compare with the desired number of responses,
-  // If they are equal, then call the callback function
-  if (received_data_.count(rank_id) > 0) {
-    auto it = received_data_callbacks_.find(rank_id);
-    if (it != received_data_callbacks_.end()) {
-      received_data_callbacks_mutex_.unlock();
-
-      if (it->second) {
-        it->second();
-      }
-
-      received_data_callbacks_mutex_.lock();
-      received_data_callbacks_.erase(it);
-    }
-  }
-  received_data_callbacks_mutex_.unlock();
+void ServerNode::ProcessCollectiveSendData(const TcpServer &server, const TcpConnection &conn,
+                                           const CommMessage &message) {
+  CommMessage comm_message;
+  *comm_message.mutable_pb_meta() = {message.pb_meta()};
+  const_cast<TcpServer &>(server).SendMessage(conn, comm_message);
+  collective_received_data_[message.pb_meta().rank_id()] = message;
 }
 
 bool ServerNode::Stop() {

@@ -49,6 +49,8 @@ class AbstractNode : public Node {
 
   bool CollSend(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
                 const uint32_t &timeout = kCommTimeoutInSeconds);
+  uint32_t CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp);
+  bool CollWaitFor(const uint32_t &rank_id, const uint32_t &timeout = kCommTimeoutInSeconds);
 
  protected:
   void Register(const std::shared_ptr<TcpClient> &client);
@@ -69,6 +71,8 @@ class AbstractNode : public Node {
   void RunMessageCallback(const uint64_t &request_id);
   void set_message_callback(const uint64_t &request_id, const MessageCallback &message_callback);
   void NotifyMessageArrival(const CommMessage &message);
+  void set_received_data_callback(const uint32_t &rank_id, const MessageCallback &received_data_callbacks);
+  void RunReceivedDataCallback(const uint32_t &rank_id);
 
   std::unique_ptr<std::thread> heart_beat_thread_;
   std::unique_ptr<std::thread> client_to_scheduler_thread_;
@@ -92,6 +96,12 @@ class AbstractNode : public Node {
   // the map's key is: request_id
   std::unordered_map<uint64_t, MessageCallback> message_callbacks_;
   std::mutex message_callbacks_mutex_;
+
+  // collective
+  std::unordered_map<uint32_t, CommMessage> collective_received_data_;
+  std::mutex received_data_callbacks_mutex_;
+  std::unordered_map<uint64_t, MessageCallback> received_data_callbacks_;
+  std::condition_variable received_data_cond_;
 };
 }  // namespace core
 }  // namespace ps

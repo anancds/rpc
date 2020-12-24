@@ -231,6 +231,32 @@ bool AbstractNode::CollSend(const enum NodeRole &node_role, const uint32_t &rank
   return SendMessageSync(client, comm_message, timeout);
 }
 
+uint32_t AbstractNode::CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp) {
+  if (collective_received_data_.count(rank_id) > 0) {
+    *comm_message_resp = collective_received_data_[rank_id];
+  } else {
+    set_received_data_callback(rank_id, [&]() {
+      received_data_callbacks_mutex_.lock();
+      *comm_message_resp = collective_received_data_[rank_id];
+      collective_received_data_.erase(rank_id);
+      received_data_callbacks_mutex_.unlock();
+    });
+  }
+  return rank_id;
+}
+
+bool AbstractNode::CollWaitFor(const uint32_t &rank_id, const uint32_t &timeout) {
+  std::unique_lock<std::mutex> lock(received_data_callbacks_mutex_);
+  bool res = received_data_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
+    if (collective_received_data_.count(rank_id)) {
+      return true;
+    } else {
+      return false;
+    }
+  });
+  return res;
+}
+
 void AbstractNode::StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client) {
   MS_LOG(INFO) << "The node role: " << CommUtil::NodeRoleToString(node_info_.node_role_)
                << ", the node id:" << node_info_.node_id_ << ", the node rank id:" << node_info_.rank_id_
@@ -465,6 +491,34 @@ void AbstractNode::NotifyMessageArrival(const CommMessage &message) {
 
   message_tracker_[request_id].second++;
   message_tracker_cond_.notify_all();
+}
+
+void AbstractNode::set_received_data_callback(const uint32_t &rank_id, const MessageCallback &received_data_callbacks) {
+  if (!received_data_callbacks) {
+    return;
+  }
+  std::lock_guard<std::mutex> lock(received_data_callbacks_mutex_);
+  received_data_callbacks_[rank_id] = received_data_callbacks;
+}
+
+void AbstractNode::RunReceivedDataCallback(const uint32_t &rank_id) {
+  received_data_callbacks_mutex_.lock();
+  // When receiving a message's response, Then compare with the desired number of responses,
+  // If they are equal, then call the callback function
+  if (collective_received_data_.count(rank_id) > 0) {
+    auto it = received_data_callbacks_.find(rank_id);
+    if (it != received_data_callbacks_.end()) {
+      received_data_callbacks_mutex_.unlock();
+
+      if (it->second) {
+        it->second();
+      }
+
+      received_data_callbacks_mutex_.lock();
+      received_data_callbacks_.erase(it);
+    }
+  }
+  received_data_callbacks_mutex_.unlock();
 }
 }  // namespace core
 }  // namespace ps
