@@ -23,6 +23,7 @@
 #include <map>
 #include <vector>
 #include <unordered_map>
+
 #include "ps/core/node.h"
 
 namespace mindspore {
@@ -48,8 +49,9 @@ class AbstractNode : public Node {
 
   bool CollSend(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
                 const uint32_t &timeout = kCommTimeoutInSeconds);
-  uint32_t CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp);
-  bool CollWaitFor(const uint32_t &rank_id, const uint32_t &timeout = kCommTimeoutInSeconds);
+  std::pair<uint32_t, uint64_t> CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp);
+  bool CollWaitFor(std::pair<uint32_t, uint64_t> coll_request_id,
+                   const uint32_t &timeout = kCommTimeoutInSeconds);
 
  protected:
   void Register(const std::shared_ptr<TcpClient> &client);

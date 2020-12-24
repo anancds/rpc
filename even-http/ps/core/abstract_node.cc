@@ -231,7 +231,7 @@ bool AbstractNode::CollSend(const enum NodeRole &node_role, const uint32_t &rank
   return SendMessageSync(client, comm_message, timeout);
 }
 
-uint32_t AbstractNode::CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp) {
+std::pair<uint32_t, uint64_t>  AbstractNode::CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp) {
   uint64_t rank_request_id = NextExpectedRankRequestId(rank_id);
   if (collective_received_data_.count(std::make_pair(rank_id, rank_request_id)) > 0) {
     *comm_message_resp = collective_received_data_[std::make_pair(rank_id, rank_request_id)];
@@ -239,18 +239,18 @@ uint32_t AbstractNode::CollReceive(const uint32_t &rank_id, CommMessage *comm_me
   } else {
     set_received_data_callback(rank_id, rank_request_id, [&]() {
       collective_callbacks_mutex_.lock();
-      *comm_message_resp = collective_received_data_[rank_id];
+      *comm_message_resp = collective_received_data_[std::make_pair(rank_id, rank_request_id)];
       collective_received_data_.erase(std::make_pair(rank_id, rank_request_id));
       collective_callbacks_mutex_.unlock();
     });
   }
-  return rank_id;
+  return std::make_pair(rank_id, rank_request_id);
 }
 
-bool AbstractNode::CollWaitFor(const uint32_t &rank_id, const uint32_t &timeout) {
+bool AbstractNode::CollWaitFor(std::pair<uint32_t, uint64_t> coll_request_id, const uint32_t &timeout) {
   std::unique_lock<std::mutex> lock(collective_callbacks_mutex_);
   bool res = collective_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
-    if (collective_received_data_.count(rank_id)) {
+    if (collective_received_data_.count(coll_request_id)) {
       return true;
     } else {
       return false;
