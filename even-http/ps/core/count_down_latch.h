@@ -33,10 +33,10 @@ class CountDownLatch {
 
   void CountDown();
 
-  int GetCount();
+  int GetCount() const;
 
  private:
-  std::mutex mutex_;
+  mutable std::mutex mutex_;
   std::condition_variable condition_;
   int count_;
 };

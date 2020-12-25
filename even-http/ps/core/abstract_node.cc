@@ -221,6 +221,10 @@ bool AbstractNode::CollSend(const enum NodeRole &node_role, const uint32_t &rank
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
 
+  if (node_role == node_info_.node_role_ && rank_id == node_info_.rank_id_) {
+    MS_LOG(EXCEPTION) << "Does not support sending data to yourself!";
+  }
+
   MessageMeta message_meta;
   message_meta.set_cmd(NodeCommand::COLLECTIVES_SEND_DATA);
 
@@ -231,7 +235,16 @@ bool AbstractNode::CollSend(const enum NodeRole &node_role, const uint32_t &rank
   return SendMessageSync(client, comm_message, timeout);
 }
 
-std::pair<uint32_t, uint64_t> AbstractNode::CollReceive(const uint32_t &rank_id, CommMessage *comm_message_resp) {
+std::pair<uint32_t, uint64_t> AbstractNode::CollReceive(const enum NodeRole &node_role, const uint32_t &rank_id,
+                                                        CommMessage *comm_message_resp) {
+  if (!CommUtil::ValidateRankId(node_role, rank_id)) {
+    MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
+  }
+
+  if (node_role == node_info_.node_role_ && rank_id == node_info_.rank_id_) {
+    MS_LOG(EXCEPTION) << "Does not support receiving data from yourself!";
+  }
+
   uint64_t rank_request_id = NextExpectedRankRequestId(rank_id);
   if (collective_received_data_.count(std::make_pair(rank_id, rank_request_id)) > 0) {
     *comm_message_resp = collective_received_data_[std::make_pair(rank_id, rank_request_id)];

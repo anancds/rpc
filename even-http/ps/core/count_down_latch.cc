@@ -41,7 +41,7 @@ void CountDownLatch::CountDown() {
   }
 }
 
-int CountDownLatch::GetCount() {
+int CountDownLatch::GetCount() const{
   std::lock_guard<std::mutex> lock(mutex_);
   return count_;
 }
