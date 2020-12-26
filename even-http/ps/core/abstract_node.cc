@@ -53,17 +53,15 @@ void AbstractNode::ProcessRegisterResp(const CommMessage &message) {
   MS_LOG(INFO) << "The node id is:" << node_info_.node_id_ << ", and the rank id is:" << node_info_.rank_id_;
 }
 
-bool AbstractNode::BroadcastToServers(const std::string &message, const uint32_t &timeout) {
-  uint64_t request_id = ++next_request_id_;
-  if (node_info_.node_role_ == NodeRole::SERVER) {
-    message_tracker_[request_id] = std::make_pair(nodes_address_.size() - 1, 0);
-  } else {
-    message_tracker_[request_id] = std::make_pair(nodes_address_.size(), 0);
+bool AbstractNode::Broadcast(const enum NodeRole &node_role, const std::string &message, const uint32_t &timeout) {
+  if (node_role != NodeRole::SERVER) {
+    MS_LOG(EXCEPTION) << "Currently only supports broadcast to server nodes";
   }
+
+  uint64_t request_id = ++next_request_id_;
+  message_tracker_[request_id] = std::make_pair(nodes_address_.size(), 0);
+
   for (auto it = nodes_address_.begin(); it != nodes_address_.end(); ++it) {
-    if (node_info_.node_role_ == NodeRole::SERVER && node_info_.rank_id_ == (*it).first.second) {
-      continue;
-    }
     MessageMeta message_meta;
     message_meta.set_cmd(NodeCommand::SEND_DATA);
     message_meta.set_request_id(request_id);
@@ -215,56 +213,50 @@ bool AbstractNode::Wait(uint64_t request_id, const uint32_t &timeout) {
   return res;
 }
 
-bool AbstractNode::CollSend(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                            const uint32_t &timeout) {
+uint64_t AbstractNode::CollectiveSendAsync(const enum NodeRole &node_role, const uint32_t &rank_id,
+                                           const std::string &message, const uint32_t &timeout) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
 
-  if (node_role == node_info_.node_role_ && rank_id == node_info_.rank_id_) {
-    MS_LOG(EXCEPTION) << "Does not support sending data to yourself!";
-  }
-
   MessageMeta message_meta;
   message_meta.set_cmd(NodeCommand::COLLECTIVES_SEND_DATA);
+  message_meta.set_rank_id(node_info_.rank_id_);
+  message_meta.set_role(node_info_.node_role_);
 
   CommMessage comm_message;
   *comm_message.mutable_pb_meta() = {message_meta};
   comm_message.set_data(message);
   auto client = GetOrCreateTcpClient(rank_id);
-  return SendMessageSync(client, comm_message, timeout);
+  return SendMessageAsync(client, comm_message);
 }
 
-std::pair<uint32_t, uint64_t> AbstractNode::CollReceive(const enum NodeRole &node_role, const uint32_t &rank_id,
-                                                        CommMessage *comm_message_resp) {
+std::pair<uint32_t, uint64_t> AbstractNode::CollectiveReceive(const enum NodeRole &node_role, const uint32_t &rank_id,
+                                                              CommMessage *comm_message_resp) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
 
-  if (node_role == node_info_.node_role_ && rank_id == node_info_.rank_id_) {
-    MS_LOG(EXCEPTION) << "Does not support receiving data from yourself!";
-  }
-
   uint64_t rank_request_id = NextExpectedRankRequestId(rank_id);
-  if (collective_received_data_.count(std::make_pair(rank_id, rank_request_id)) > 0) {
-    *comm_message_resp = collective_received_data_[std::make_pair(rank_id, rank_request_id)];
-    collective_received_data_.erase(std::make_pair(rank_id, rank_request_id));
+  if (received_data_.count(std::make_pair(rank_id, rank_request_id)) > 0) {
+    *comm_message_resp = received_data_[std::make_pair(rank_id, rank_request_id)];
+    received_data_.erase(std::make_pair(rank_id, rank_request_id));
   } else {
-    set_received_data_callback(rank_id, rank_request_id, [&]() {
-      collective_callbacks_mutex_.lock();
-      *comm_message_resp = collective_received_data_[std::make_pair(rank_id, rank_request_id)];
-      collective_received_data_.erase(std::make_pair(rank_id, rank_request_id));
-      collective_callbacks_mutex_.unlock();
+    set_received_data_callback(rank_id, rank_request_id, [=]() {
+      received_callbacks_mutex_.lock();
+      *comm_message_resp = received_data_[std::make_pair(rank_id, 1)];
+      received_data_.erase(std::make_pair(rank_id, rank_request_id));
+      received_callbacks_mutex_.unlock();
     });
   }
   return std::make_pair(rank_id, rank_request_id);
 }
 
-bool AbstractNode::CollWaitFor(std::pair<uint32_t, uint64_t> coll_request_id, const uint32_t &timeout) {
-  std::unique_lock<std::mutex> lock(collective_callbacks_mutex_);
-  bool res = collective_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
-    if (actual_rank_request_ids_.count(coll_request_id.first) &&
-        (actual_rank_request_ids_[coll_request_id.first] >= coll_request_id.second)) {
+bool AbstractNode::CollectiveWaitFor(std::pair<uint32_t, uint64_t> request_id, const uint32_t &timeout) {
+  std::unique_lock<std::mutex> lock(received_callbacks_mutex_);
+  bool res = received_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
+    if (actual_rank_request_ids_.count(request_id.first) &&
+        (actual_rank_request_ids_[request_id.first] >= request_id.second)) {
       return true;
     } else {
       return false;
@@ -273,11 +265,11 @@ bool AbstractNode::CollWaitFor(std::pair<uint32_t, uint64_t> coll_request_id, co
   return res;
 }
 
-void AbstractNode::CollWait(std::pair<uint32_t, uint64_t> coll_request_id) {
-  std::unique_lock<std::mutex> lock(collective_callbacks_mutex_);
-  collective_cond_.wait(lock, [&] {
-    if (actual_rank_request_ids_.count(coll_request_id.first) &&
-        (actual_rank_request_ids_[coll_request_id.first] >= coll_request_id.second)) {
+void AbstractNode::CollectiveWait(std::pair<uint32_t, uint64_t> request_id) {
+  std::unique_lock<std::mutex> lock(received_callbacks_mutex_);
+  received_cond_.wait(lock, [&] {
+    if (actual_rank_request_ids_.count(request_id.first) &&
+        (actual_rank_request_ids_[request_id.first] >= request_id.second)) {
       return true;
     } else {
       return false;
@@ -443,6 +435,9 @@ const std::shared_ptr<TcpClient> &AbstractNode::GetOrCreateTcpClient(const int &
           ProcessSendDataResp(message);
           RunMessageCallback(message.pb_meta().request_id());
           break;
+        case NodeCommand::COLLECTIVES_SEND_DATA:
+          MS_LOG(INFO) << "The Node id:" << node_info_.node_id_ << " receive a collectives_send_data message response!";
+          break;
         default:
           MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
       }
@@ -463,10 +458,12 @@ bool AbstractNode::SendMessageSync(const std::shared_ptr<TcpClient> &client, con
   return Wait(request_id, timeout);
 }
 
-void AbstractNode::SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message) {
+uint64_t AbstractNode::SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message) {
   uint64_t request_id = ++next_request_id_;
+  message_tracker_[request_id] = std::make_pair(1, 0);
   const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
   client->SendMessage(message);
+  return request_id;
 }
 
 void AbstractNode::ProcessSendDataResp(const CommMessage &message) {
@@ -526,30 +523,30 @@ void AbstractNode::set_received_data_callback(const uint32_t &rank_id, const uin
   if (!received_data_callbacks) {
     return;
   }
-  std::lock_guard<std::mutex> lock(collective_callbacks_mutex_);
-  collective_callbacks_[std::make_pair(rank_id, rank_request_id)] = received_data_callbacks;
+  std::lock_guard<std::mutex> lock(received_callbacks_mutex_);
+  received_callbacks_[std::make_pair(rank_id, rank_request_id)] = received_data_callbacks;
 }
 
 void AbstractNode::RunReceivedDataCallback(const CommMessage &message) {
-  collective_callbacks_mutex_.lock();
+  received_callbacks_mutex_.lock();
   uint32_t rank_id = message.pb_meta().rank_id();
   // When receiving a collective message, Then generate rank request id,compare with the desired rank request id,
   // If they are equal, then call the callback function
   uint64_t rank_request_id = NextActualRankRequestId(rank_id);
-  collective_cond_.notify_all();
-  collective_received_data_[std::make_pair(message.pb_meta().rank_id(), rank_request_id)] = message;
-  auto it = collective_callbacks_.find(std::make_pair(rank_id, rank_request_id));
-  if (it != collective_callbacks_.end()) {
-    collective_callbacks_mutex_.unlock();
+  received_data_[std::make_pair(rank_id, rank_request_id)] = message;
+  auto it = received_callbacks_.find(std::make_pair(rank_id, rank_request_id));
+  if (it != received_callbacks_.end()) {
+    received_callbacks_mutex_.unlock();
 
     if (it->second) {
       it->second();
     }
 
-    collective_callbacks_mutex_.lock();
-    collective_callbacks_.erase(it);
+    received_callbacks_mutex_.lock();
+    received_cond_.notify_all();
+    received_callbacks_.erase(it);
   }
-  collective_callbacks_mutex_.unlock();
+  received_callbacks_mutex_.unlock();
 }
 
 uint64_t AbstractNode::NextExpectedRankRequestId(const uint32_t &rank_id) {

@@ -36,6 +36,7 @@ class NodeManagerTest {
 
   void StartScheduler();
   void StartServer();
+  void StartServer1();
   void StartClient();
 
  protected:

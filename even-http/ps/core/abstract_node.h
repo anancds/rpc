@@ -34,7 +34,8 @@ class AbstractNode : public Node {
   AbstractNode() : heart_beat_thread_(nullptr), client_to_scheduler_thread_(nullptr), client_to_scheduler_(nullptr) {}
   ~AbstractNode() override = default;
 
-  bool BroadcastToServers(const std::string &message, const uint32_t &timeout = kCommTimeoutInSeconds);
+  bool Broadcast(const enum NodeRole &node_role, const std::string &message,
+                 const uint32_t &timeout = kCommTimeoutInSeconds);
   void set_event_callback(const OnNodeEventMessage &on_node_event_message);
 
   bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
@@ -47,12 +48,12 @@ class AbstractNode : public Node {
             std::vector<CommMessage> *comm_message_resp, const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Wait(uint64_t request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
 
-  bool CollSend(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                const uint32_t &timeout = kCommTimeoutInSeconds);
-  std::pair<uint32_t, uint64_t> CollReceive(const enum NodeRole &node_role, const uint32_t &rank_id,
-                                            CommMessage *comm_message_resp);
-  bool CollWaitFor(std::pair<uint32_t, uint64_t> coll_request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
-  void CollWait(std::pair<uint32_t, uint64_t> coll_request_id);
+  uint64_t CollectiveSendAsync(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
+                               const uint32_t &timeout = kCommTimeoutInSeconds);
+  std::pair<uint32_t, uint64_t> CollectiveReceive(const enum NodeRole &node_role, const uint32_t &rank_id,
+                                                  CommMessage *comm_message_resp);
+  bool CollectiveWaitFor(std::pair<uint32_t, uint64_t> request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
+  void CollectiveWait(std::pair<uint32_t, uint64_t> request_id);
 
  protected:
   void Register(const std::shared_ptr<TcpClient> &client);
@@ -68,7 +69,7 @@ class AbstractNode : public Node {
   const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
   bool SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message,
                        const uint32_t &timeout = kCommTimeoutInSeconds);
-  void SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
+  uint64_t SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
   void ProcessSendDataResp(const CommMessage &message);
   void RunMessageCallback(const uint64_t &request_id);
   void set_message_callback(const uint64_t &request_id, const MessageCallback &message_callback);
@@ -103,11 +104,11 @@ class AbstractNode : public Node {
   std::mutex message_callbacks_mutex_;
 
   // the key is <rank_id, rank_request_id>
-  std::map<std::pair<uint32_t, uint64_t>, CommMessage> collective_received_data_;
-  std::mutex collective_callbacks_mutex_;
+  std::map<std::pair<uint32_t, uint64_t>, CommMessage> received_data_;
+  std::mutex received_callbacks_mutex_;
   // the key is <rank_id, rank_request_id>
-  std::map<std::pair<uint32_t, uint64_t>, MessageCallback> collective_callbacks_;
-  std::condition_variable collective_cond_;
+  std::map<std::pair<uint32_t, uint64_t>, MessageCallback> received_callbacks_;
+  std::condition_variable received_cond_;
 
   // the key is rank_id, the value is rank_id's expected request_id
   std::unordered_map<uint32_t, uint64_t> expected_rank_request_ids_;

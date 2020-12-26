@@ -62,12 +62,19 @@ void test_size_t() {
 
 }
 
+void TestPair() {
+  std::map<std::pair<uint32_t, uint64_t>, uint32_t> received_data_;
+  received_data_[std::make_pair(1,1)] = 1;
+  std::cout << received_data_.count(std::make_pair(1,1)) << std::endl;
+  received_data_.erase(std::make_pair(1,1));
+  std::cout << received_data_.count(std::make_pair(1,1)) << std::endl;
+}
+
 int main(int /*argc*/, char ** /*argv*/) {
 
 //  test_size_t();
 //  testMap();
-std::cout << sizeof(int) << std::endl;
-std::cout << sizeof(float) << std::endl;
+TestPair();
   StartServer();
   CommMessage message;
   //  while (true) {

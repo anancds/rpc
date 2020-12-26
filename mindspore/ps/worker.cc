@@ -46,7 +46,7 @@ void Worker::InitPSEmbeddingTable(const size_t &key, const std::vector<size_t> &
   *embedding_table_meta.mutable_output_shape() = {output_shape.begin(), output_shape.end()};
   //  embedding_table_meta.set_command(PSCommand::INIT_EMBEDDING_TABLE);
 
-  worker_node_.BroadcastToServers(embedding_table_meta.SerializeAsString());
+  worker_node_.Broadcast(NodeRole::SERVER, embedding_table_meta.SerializeAsString());
 }
 
 void Worker::LookupIdSlicer(const EmbeddingTableLookup &send,
@@ -100,7 +100,7 @@ void Worker::DoPSEmbeddingLookup(const Key &key, const std::vector<int> &lookup_
       data.emplace_back(messages.at(i).second.SerializeAsString());
     }
   }
-//  worker_node_.Send()
+  //  worker_node_.Send()
 }
 
 bool Worker::IsKeyInit(const size_t &key) {
