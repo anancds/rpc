@@ -112,6 +112,7 @@ bool ServerNode::Stop() {
   MS_LOG(INFO) << "Stop server node!";
   if (!is_already_stopped_.load()) {
     is_already_stopped_ = true;
+    is_finish_ = true;
     heart_beat_thread_->join();
     client_to_scheduler_->Stop();
     if (!connected_nodes_.empty()) {

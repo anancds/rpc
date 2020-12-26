@@ -50,7 +50,7 @@ class AbstractNode : public Node {
 
   uint64_t CollectiveSendAsync(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
                                const uint32_t &timeout = kCommTimeoutInSeconds);
-  std::pair<uint32_t, uint64_t> CollectiveReceive(const enum NodeRole &node_role, const uint32_t &rank_id,
+  std::pair<uint32_t, uint64_t> CollectiveReceiveAsync(const enum NodeRole &node_role, const uint32_t &rank_id,
                                                   CommMessage *comm_message_resp);
   bool CollectiveWaitFor(std::pair<uint32_t, uint64_t> request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
   void CollectiveWait(std::pair<uint32_t, uint64_t> request_id);

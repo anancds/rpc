@@ -231,7 +231,7 @@ uint64_t AbstractNode::CollectiveSendAsync(const enum NodeRole &node_role, const
   return SendMessageAsync(client, comm_message);
 }
 
-std::pair<uint32_t, uint64_t> AbstractNode::CollectiveReceive(const enum NodeRole &node_role, const uint32_t &rank_id,
+std::pair<uint32_t, uint64_t> AbstractNode::CollectiveReceiveAsync(const enum NodeRole &node_role, const uint32_t &rank_id,
                                                               CommMessage *comm_message_resp) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";

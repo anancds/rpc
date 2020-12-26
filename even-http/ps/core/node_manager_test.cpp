@@ -61,9 +61,10 @@ void NodeManagerTest::StartServer() {
     *kv_message.mutable_keys() = {keys.begin(), keys.end()};
     *kv_message.mutable_values() = {values.begin(), values.end()};
     auto start = std::chrono::high_resolution_clock::now();
-    server_node_->CollectiveSend(NodeRole::SERVER, 1, kv_message.SerializeAsString());
+    uint64_t request = server_node_->CollectiveSendAsync(NodeRole::SERVER, 1, kv_message.SerializeAsString());
     CommMessage receive_data;
-    server_node_->CollectiveWait(server_node_->CollectiveReceive(NodeRole::SERVER, 1, &receive_data));
+    server_node_->CollectiveWait(server_node_->CollectiveReceiveAsync(NodeRole::SERVER, 1, &receive_data));
+    server_node_->Wait(request);
     KVMessage kvMessage;
     kvMessage.ParseFromString(receive_data.data());
     std::cout << kvMessage.keys_size() << std::endl;
@@ -105,7 +106,7 @@ void NodeManagerTest::StartServer1() {
   auto start = std::chrono::high_resolution_clock::now();
   uint64_t request = server_node_->CollectiveSendAsync(NodeRole::SERVER, 0, kv_message.SerializeAsString());
   CommMessage receive_data;
-  server_node_->CollectiveWait(server_node_->CollectiveReceive(NodeRole::SERVER, 0, &receive_data));
+  server_node_->CollectiveWait(server_node_->CollectiveReceiveAsync(NodeRole::SERVER, 0, &receive_data));
   server_node_->Wait(request);
   KVMessage kvMessage;
   kvMessage.ParseFromString(receive_data.data());
