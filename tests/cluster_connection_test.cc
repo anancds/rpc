@@ -46,12 +46,12 @@ class TestClusterConnection : public UT::Common {
       scheduler_node_->Finish();
       scheduler_node_->Stop();
     });
-    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   }
   void TearDown() override {
     scheduler_thread_->join();
-    server_thread_->join();
     worker_thread_->join();
+    server_thread_->join();
   }
 
   std::unique_ptr<SchedulerNode> scheduler_node_;

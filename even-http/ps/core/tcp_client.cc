@@ -52,6 +52,7 @@ TcpClient::TcpClient(const std::string &address, std::uint16_t port)
 }
 
 TcpClient::~TcpClient() {
+ std::lock_guard<std::mutex> lock(connection_mutex_);
   if (buffer_event_) {
     bufferevent_free(buffer_event_);
     buffer_event_ = nullptr;
@@ -60,10 +61,10 @@ TcpClient::~TcpClient() {
     event_free(event_timeout_);
     event_timeout_ = nullptr;
   }
-  if (event_base_) {
-    event_base_free(event_base_);
-    event_base_ = nullptr;
-  }
+//  if (event_base_) {
+//    event_base_free(event_base_);
+//    event_base_ = nullptr;
+//  }
 }
 
 std::string TcpClient::GetServerAddress() const { return server_address_; }

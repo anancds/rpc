@@ -74,7 +74,7 @@ class AbstractNode : public Node {
   void set_message_callback(const uint64_t &request_id, const MessageCallback &callback);
   void NotifyMessageArrival(const CommMessage &message);
   void set_receive_callback(const uint32_t &rank_id, const uint64_t &request_id, const MessageCallback &callback);
-  void RunReceivedDataCallback(const CommMessage &message);
+  void RunReceiveCallback(const CommMessage &message);
   uint64_t NextExpectedRankRequestId(const uint32_t &rank_id);
   uint64_t NextActualRankRequestId(const uint32_t &rank_id);
 
@@ -103,10 +103,10 @@ class AbstractNode : public Node {
 
   // the key is <rank_id, rank_request_id>
   std::map<std::pair<uint32_t, uint64_t>, CommMessage> received_data_;
-  std::mutex received_callbacks_mutex_;
+  std::mutex receive_callbacks_mutex_;
   // the key is <rank_id, rank_request_id>
-  std::map<std::pair<uint32_t, uint64_t>, MessageCallback> received_callbacks_;
-  std::condition_variable received_cond_;
+  std::map<std::pair<uint32_t, uint64_t>, MessageCallback> receive_callbacks_;
+  std::condition_variable receive_cond_;
 
   // the key is rank_id, the value is rank_id's expected request_id
   std::unordered_map<uint32_t, uint64_t> expected_rank_request_ids_;

@@ -36,10 +36,6 @@ TEST_F(TestAbstractNode, NextExpectedRankRequestId) {
   ASSERT_EQ(1, workerNode.NextExpectedRankRequestId(0));
   ASSERT_EQ(2, workerNode.NextExpectedRankRequestId(0));
   ASSERT_EQ(1, workerNode.NextExpectedRankRequestId(1));
-  uint64_t a = workerNode.NextExpectedRankRequestId(0);
-  workerNode.set_receive_callback(0, a, [&]() { std::cout << a << std::endl; });
-  workerNode.received_callbacks_[std::make_pair(0, a)]();
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }
 }  // namespace core
 }  // namespace ps

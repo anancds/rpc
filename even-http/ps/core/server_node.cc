@@ -67,9 +67,9 @@ void ServerNode::CreateTcpServer() {
       case NodeCommand::SEND_DATA:
         ProcessSendData(server, conn, message);
         break;
-      case NodeCommand::COLLECTIVES_SEND_DATA:
+      case NodeCommand::COLLECTIVE_SEND_DATA:
         ProcessCollectiveSendData(server, conn, message);
-        RunReceivedDataCallback(message);
+        RunReceiveCallback(message);
         break;
       default:
         MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
