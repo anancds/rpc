@@ -42,18 +42,17 @@ class AbstractNode : public Node {
             const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
             const uint32_t &timeout = kCommTimeoutInSeconds);
-  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-            CommMessage *comm_message_resp, const uint32_t &timeout = kCommTimeoutInSeconds);
+  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message, CommMessage *output,
+            const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
-            std::vector<CommMessage> *comm_message_resp, const uint32_t &timeout = kCommTimeoutInSeconds);
+            std::vector<CommMessage> *output, const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Wait(uint64_t request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
 
   uint64_t CollectiveSendAsync(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
                                const uint32_t &timeout = kCommTimeoutInSeconds);
   std::pair<uint32_t, uint64_t> CollectiveReceiveAsync(const enum NodeRole &node_role, const uint32_t &rank_id,
-                                                  CommMessage *comm_message_resp);
-  bool CollectiveWaitFor(std::pair<uint32_t, uint64_t> request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
-  void CollectiveWait(std::pair<uint32_t, uint64_t> request_id);
+                                                       CommMessage *output);
+  bool CollectiveWait(std::pair<uint32_t, uint64_t> request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
 
  protected:
   void Register(const std::shared_ptr<TcpClient> &client);
@@ -72,10 +71,9 @@ class AbstractNode : public Node {
   uint64_t SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
   void ProcessSendDataResp(const CommMessage &message);
   void RunMessageCallback(const uint64_t &request_id);
-  void set_message_callback(const uint64_t &request_id, const MessageCallback &message_callback);
+  void set_message_callback(const uint64_t &request_id, const MessageCallback &callback);
   void NotifyMessageArrival(const CommMessage &message);
-  void set_received_data_callback(const uint32_t &rank_id, const uint64_t &rank_request_id,
-                                  const MessageCallback &received_data_callbacks);
+  void set_receive_callback(const uint32_t &rank_id, const uint64_t &request_id, const MessageCallback &callback);
   void RunReceivedDataCallback(const CommMessage &message);
   uint64_t NextExpectedRankRequestId(const uint32_t &rank_id);
   uint64_t NextActualRankRequestId(const uint32_t &rank_id);

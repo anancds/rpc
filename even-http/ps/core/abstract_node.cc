@@ -129,8 +129,8 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
 }
 
 bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                        CommMessage *comm_message_resp, const uint32_t &timeout) {
-  MS_EXCEPTION_IF_NULL(comm_message_resp);
+                        CommMessage *output, const uint32_t &timeout) {
+  MS_EXCEPTION_IF_NULL(output);
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
@@ -140,7 +140,7 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
   set_message_callback(request_id, [&]() {
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
-    *comm_message_resp = res[rank_id];
+    *output = res[rank_id];
     receive_messages_.erase(request_id);
     receive_messages_mutex_.unlock();
   });
@@ -160,9 +160,9 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
 }
 
 bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                        const std::vector<std::string> &data, std::vector<CommMessage> *comm_message_resp,
+                        const std::vector<std::string> &data, std::vector<CommMessage> *output,
                         const uint32_t &timeout) {
-  MS_EXCEPTION_IF_NULL(comm_message_resp);
+  MS_EXCEPTION_IF_NULL(output);
   uint64_t request_id = ++next_request_id_;
   message_tracker_[request_id] = std::make_pair(data.size(), 0);
 
@@ -176,7 +176,7 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
     for (size_t it = 0; it < len; ++it) {
-      (*comm_message_resp).push_back(res[rank_ids.at(it)]);
+      (*output).push_back(res[rank_ids.at(it)]);
     }
     receive_messages_.erase(request_id);
     receive_messages_mutex_.unlock();
@@ -231,20 +231,20 @@ uint64_t AbstractNode::CollectiveSendAsync(const enum NodeRole &node_role, const
   return SendMessageAsync(client, comm_message);
 }
 
-std::pair<uint32_t, uint64_t> AbstractNode::CollectiveReceiveAsync(const enum NodeRole &node_role, const uint32_t &rank_id,
-                                                              CommMessage *comm_message_resp) {
+std::pair<uint32_t, uint64_t> AbstractNode::CollectiveReceiveAsync(const enum NodeRole &node_role,
+                                                                   const uint32_t &rank_id, CommMessage *output) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
 
   uint64_t rank_request_id = NextExpectedRankRequestId(rank_id);
   if (received_data_.count(std::make_pair(rank_id, rank_request_id)) > 0) {
-    *comm_message_resp = received_data_[std::make_pair(rank_id, rank_request_id)];
+    *output = received_data_[std::make_pair(rank_id, rank_request_id)];
     received_data_.erase(std::make_pair(rank_id, rank_request_id));
   } else {
-    set_received_data_callback(rank_id, rank_request_id, [=]() {
+    set_receive_callback(rank_id, rank_request_id, [=]() {
       received_callbacks_mutex_.lock();
-      *comm_message_resp = received_data_[std::make_pair(rank_id, 1)];
+      *output = received_data_[std::make_pair(rank_id, 1)];
       received_data_.erase(std::make_pair(rank_id, rank_request_id));
       received_callbacks_mutex_.unlock();
     });
@@ -252,7 +252,7 @@ std::pair<uint32_t, uint64_t> AbstractNode::CollectiveReceiveAsync(const enum No
   return std::make_pair(rank_id, rank_request_id);
 }
 
-bool AbstractNode::CollectiveWaitFor(std::pair<uint32_t, uint64_t> request_id, const uint32_t &timeout) {
+bool AbstractNode::CollectiveWait(std::pair<uint32_t, uint64_t> request_id, const uint32_t &timeout) {
   std::unique_lock<std::mutex> lock(received_callbacks_mutex_);
   bool res = received_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
     if (actual_rank_request_ids_.count(request_id.first) &&
@@ -263,18 +263,6 @@ bool AbstractNode::CollectiveWaitFor(std::pair<uint32_t, uint64_t> request_id, c
     }
   });
   return res;
-}
-
-void AbstractNode::CollectiveWait(std::pair<uint32_t, uint64_t> request_id) {
-  std::unique_lock<std::mutex> lock(received_callbacks_mutex_);
-  received_cond_.wait(lock, [&] {
-    if (actual_rank_request_ids_.count(request_id.first) &&
-        (actual_rank_request_ids_[request_id.first] >= request_id.second)) {
-      return true;
-    } else {
-      return false;
-    }
-  });
 }
 
 void AbstractNode::StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client) {
@@ -501,12 +489,12 @@ void AbstractNode::RunMessageCallback(const uint64_t &request_id) {
   message_callbacks_mutex_.unlock();
 }
 
-void AbstractNode::set_message_callback(const uint64_t &request_id, const MessageCallback &message_callback) {
-  if (!message_callback) {
+void AbstractNode::set_message_callback(const uint64_t &request_id, const MessageCallback &callback) {
+  if (!callback) {
     return;
   }
   std::lock_guard<std::mutex> lock(message_callbacks_mutex_);
-  message_callbacks_[request_id] = message_callback;
+  message_callbacks_[request_id] = callback;
 }
 
 void AbstractNode::NotifyMessageArrival(const CommMessage &message) {
@@ -518,13 +506,13 @@ void AbstractNode::NotifyMessageArrival(const CommMessage &message) {
   message_tracker_cond_.notify_all();
 }
 
-void AbstractNode::set_received_data_callback(const uint32_t &rank_id, const uint64_t &rank_request_id,
-                                              const MessageCallback &received_data_callbacks) {
-  if (!received_data_callbacks) {
+void AbstractNode::set_receive_callback(const uint32_t &rank_id, const uint64_t &request_id,
+                                        const MessageCallback &callback) {
+  if (!callback) {
     return;
   }
   std::lock_guard<std::mutex> lock(received_callbacks_mutex_);
-  received_callbacks_[std::make_pair(rank_id, rank_request_id)] = received_data_callbacks;
+  received_callbacks_[std::make_pair(rank_id, request_id)] = callback;
 }
 
 void AbstractNode::RunReceivedDataCallback(const CommMessage &message) {
