@@ -47,6 +47,14 @@ TEST_F(TestCommUtil, ValidateRankId) {
   EXPECT_TRUE(CommUtil::ValidateRankId(NodeRole::SERVER, 1));
   EXPECT_FALSE(CommUtil::ValidateRankId(NodeRole::SERVER, 2));
 }
+
+TEST_F(TestCommUtil, Retry) {
+  ClusterConfig::Init(3, 2, std::make_unique<std::string>("127.0.0.1"), 9999);
+  EXPECT_TRUE(CommUtil::ValidateRankId(NodeRole::WORKER, 2));
+  EXPECT_FALSE(CommUtil::ValidateRankId(NodeRole::WORKER, 3));
+  EXPECT_TRUE(CommUtil::ValidateRankId(NodeRole::SERVER, 1));
+  EXPECT_FALSE(CommUtil::ValidateRankId(NodeRole::SERVER, 2));
+}
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore

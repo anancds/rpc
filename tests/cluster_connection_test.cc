@@ -70,17 +70,17 @@ TEST_F(TestClusterConnection, StartServerAndClient) {
       [&](const TcpServer &server, const TcpConnection &conn, const MessageMeta &message_meta,
           const std::string &message) { server_node_->Response(server, conn, message_meta, message); });
     server_node_->Start();
-    server_node_->Finish();
+    server_node_->Finish(3);
     server_node_->Stop();
   });
 
   worker_node_ = std::make_unique<WorkerNode>();
   worker_thread_ = std::make_unique<std::thread>([&]() {
     worker_node_->Start();
-    worker_node_->Finish();
+    worker_node_->Finish(3);
     worker_node_->Stop();
   });
-  std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 }
 }  // namespace core
 }  // namespace ps
