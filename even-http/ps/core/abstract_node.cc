@@ -130,7 +130,7 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
 }
 
 bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
-                        CommMessage *output, const uint32_t &timeout) {
+                        std::string *output, const uint32_t &timeout) {
   MS_EXCEPTION_IF_NULL(output);
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
@@ -141,7 +141,7 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
   set_message_callback(request_id, [&]() {
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
-    *output = res[rank_id];
+    *output = res[rank_id].data();
     receive_messages_.erase(request_id);
     receive_messages_mutex_.unlock();
   });
@@ -161,7 +161,7 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
 }
 
 bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                        const std::vector<std::string> &data, std::vector<CommMessage> *output,
+                        const std::vector<std::string> &data, std::vector<std::string> *output,
                         const uint32_t &timeout) {
   MS_EXCEPTION_IF_NULL(output);
   uint64_t request_id = ++next_request_id_;
@@ -177,7 +177,7 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
     for (size_t it = 0; it < len; ++it) {
-      (*output).push_back(res[rank_ids.at(it)]);
+      (*output).push_back(res[rank_ids.at(it)].data());
     }
     receive_messages_.erase(request_id);
     receive_messages_mutex_.unlock();
@@ -233,19 +233,19 @@ uint64_t AbstractNode::CollectiveSendAsync(const enum NodeRole &node_role, const
 }
 
 std::pair<uint32_t, uint64_t> AbstractNode::CollectiveReceiveAsync(const enum NodeRole &node_role,
-                                                                   const uint32_t &rank_id, CommMessage *output) {
+                                                                   const uint32_t &rank_id, std::string *output) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
 
   uint64_t rank_request_id = NextExpectedRankRequestId(rank_id);
   if (received_data_.count(std::make_pair(rank_id, rank_request_id)) > 0) {
-    *output = received_data_[std::make_pair(rank_id, rank_request_id)];
+    *output = received_data_[std::make_pair(rank_id, rank_request_id)].data();
     received_data_.erase(std::make_pair(rank_id, rank_request_id));
   } else {
     set_receive_callback(rank_id, rank_request_id, [=]() {
       receive_callbacks_mutex_.lock();
-      *output = received_data_[std::make_pair(rank_id, 1)];
+      *output = received_data_[std::make_pair(rank_id, 1)].data();
       received_data_.erase(std::make_pair(rank_id, rank_request_id));
       receive_callbacks_mutex_.unlock();
     });

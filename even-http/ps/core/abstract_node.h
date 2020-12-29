@@ -42,16 +42,16 @@ class AbstractNode : public Node {
             const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
             const uint32_t &timeout = kCommTimeoutInSeconds);
-  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message, CommMessage *output,
+  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message, std::string *output,
             const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<std::string> &data,
-            std::vector<CommMessage> *output, const uint32_t &timeout = kCommTimeoutInSeconds);
+            std::vector<std::string> *output, const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Wait(uint64_t request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
 
   uint64_t CollectiveSendAsync(const enum NodeRole &node_role, const uint32_t &rank_id, const std::string &message,
                                const uint32_t &timeout = kCommTimeoutInSeconds);
   std::pair<uint32_t, uint64_t> CollectiveReceiveAsync(const enum NodeRole &node_role, const uint32_t &rank_id,
-                                                       CommMessage *output);
+                                                       std::string *output);
   bool CollectiveWait(std::pair<uint32_t, uint64_t> request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
 
  protected:
