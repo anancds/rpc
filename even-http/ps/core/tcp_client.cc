@@ -36,6 +36,8 @@ namespace mindspore {
 namespace ps {
 namespace core {
 event_base *TcpClient::event_base_ = nullptr;
+std::mutex TcpClient::event_base_mutex_;
+bool TcpClient::is_started_ = false;
 
 TcpClient::TcpClient(const std::string &address, std::uint16_t port)
     : event_timeout_(nullptr),
@@ -230,6 +232,13 @@ void TcpClient::EventCallback(struct bufferevent *bev, std::int16_t events, void
 }
 
 void TcpClient::Start() {
+  event_base_mutex_.lock();
+  if (is_started_) {
+    event_base_mutex_.unlock();
+    return;
+  }
+  is_started_ = true;
+  event_base_mutex_.unlock();
   MS_EXCEPTION_IF_NULL(event_base_);
   int ret = event_base_dispatch(event_base_);
   MSLOG_IF(INFO, ret == 0, NoExceptionType) << "Event base dispatch success!";

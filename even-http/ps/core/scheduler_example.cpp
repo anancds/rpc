@@ -14,7 +14,7 @@
 using namespace mindspore::ps::core;
 
 static void StartServer() {
-  ClusterConfig::Init(1, 2, std::make_unique<std::string>("127.0.0.1"), 9999);
+  ClusterConfig::Init(0, 1, std::make_unique<std::string>("127.0.0.1"), 9999);
   NodeManagerTest::Get()->StartScheduler();
 }
 
@@ -52,29 +52,27 @@ void testMap() {
 void test_size_t() {
   size_t size = 408;
   char res[100] = {0};
-  memcpy_s(res, 4,&size, 4);
-  memcpy_s(res + 4, 4,&size + 4, 4);
+  memcpy_s(res, 4, &size, 4);
+  memcpy_s(res + 4, 4, &size + 4, 4);
   size_t *test = reinterpret_cast<size_t *>(res);
   std::cout << *test << std::endl;
   std::cout << *reinterpret_cast<size_t *>(res) << std::endl;
 
-  memcpy_s(res, 4,&size +4, 4);
-
+  memcpy_s(res, 4, &size + 4, 4);
 }
 
 void TestPair() {
   std::map<std::pair<uint32_t, uint64_t>, uint32_t> received_data_;
-  received_data_[std::make_pair(1,1)] = 1;
-  std::cout << received_data_.count(std::make_pair(1,1)) << std::endl;
-  received_data_.erase(std::make_pair(1,1));
-  std::cout << received_data_.count(std::make_pair(1,1)) << std::endl;
+  received_data_[std::make_pair(1, 1)] = 1;
+  std::cout << received_data_.count(std::make_pair(1, 1)) << std::endl;
+  received_data_.erase(std::make_pair(1, 1));
+  std::cout << received_data_.count(std::make_pair(1, 1)) << std::endl;
 }
 
 int main(int /*argc*/, char ** /*argv*/) {
-
-//  test_size_t();
-//  testMap();
-TestPair();
+  //  test_size_t();
+  //  testMap();
+  TestPair();
   StartServer();
   CommMessage message;
   //  while (true) {

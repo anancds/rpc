@@ -64,7 +64,7 @@ void NodeManager::UpdateHeartbeat(const std::string &node_id) {
   struct timeval current_time {};
   (void)gettimeofday(&current_time, nullptr);
   heartbeats_[node_id] = current_time;
-  MS_LOG(INFO) << "The node role: " << CommUtil::NodeRoleToString(node_info.node_role_) << ", the node id:" << node_id
+  MS_LOG(DEBUG) << "The node role: " << CommUtil::NodeRoleToString(node_info.node_role_) << ", the node id:" << node_id
                << ", the node rank id:" << node_info.rank_id_ << " the current time is: " << current_time.tv_sec;
 }
 
