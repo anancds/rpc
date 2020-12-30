@@ -33,6 +33,8 @@ uint32_t ClusterConfig::heartbeat_timeout_ = 30;
 uint32_t ClusterConfig::cluster_available_timeout_ = 300;
 // The timeout period for the client to connect to the server is 100ms.
 uint32_t ClusterConfig::connect_interval_ = 100;
+// When the scheduler exits, the worker and server can continue to work for 5 hours
+uint32_t ClusterConfig::scheduler_timeout_ = 3600 * 5;
 
 void ClusterConfig::Init(const uint32_t &worker_num, const uint32_t &server_num,
                          std::unique_ptr<std::string> scheduler_host, const uint16_t &scheduler_port) {
@@ -74,6 +76,10 @@ void ClusterConfig::set_cluster_available_timeout(const uint32_t &cluster_availa
 uint32_t ClusterConfig::connect_interval() { return connect_interval_; }
 
 void ClusterConfig::set_connect_interval(const uint32_t &connect_interval) { connect_interval_ = connect_interval; }
+
+uint32_t ClusterConfig::scheduler_timeout() { return scheduler_timeout_; }
+
+void ClusterConfig::set_scheduler_timeout(const uint32_t &scheduler_timeout) { scheduler_timeout_ = scheduler_timeout; }
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore

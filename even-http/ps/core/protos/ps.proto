@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 syntax = "proto3";
-package mindspore.ps.core;
+package mindspore.ps;
 option optimize_for = LITE_RUNTIME;
 
 enum PSCommand {
@@ -27,6 +27,11 @@ message KVMessage {
   PSCommand command = 1;
   repeated int32 keys = 2;
   repeated float values = 3;
+}
+
+message PSMessage {
+  PSCommand command = 1;
+  bytes data = 2;
 }
 
 message EmbeddingTableMeta {

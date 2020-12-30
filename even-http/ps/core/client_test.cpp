@@ -7,6 +7,7 @@
 #include "ps/core/tcp_client.h"
 
 using namespace mindspore::ps::core;
+using namespace mindspore::ps;
 
 int main(int /*argc*/, char ** /*argv*/) {
   std::unique_ptr<TcpClient> client_ = std::make_unique<TcpClient>("127.0.0.1", 9999);

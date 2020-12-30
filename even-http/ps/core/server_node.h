@@ -44,7 +44,7 @@ class ServerNode : public AbstractNode {
   bool Stop() override;
   bool Finish(const uint32_t &timeout = kTimeoutInSeconds) override;
 
-  using RequestHandler = std::function<void(const TcpServer &server, const TcpConnection &conn, const MessageMeta meta,
+  using RequestHandler = std::function<void(const TcpServer &server, const TcpConnection &conn, const MessageMeta &meta,
                                             const std::string &message)>;
 
   void set_handler(const RequestHandler &handler);

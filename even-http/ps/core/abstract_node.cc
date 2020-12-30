@@ -37,6 +37,8 @@ void AbstractNode::Register(const std::shared_ptr<TcpClient> &client) {
                       << " the node id:" << node_info_.node_id_ << " register timeout!";
   }
 
+  UpdateHeartbeat();
+
   MS_LOG(INFO) << "The node role:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                << " the node id:" << node_info_.node_id_ << "is registering to scheduler!";
 }
@@ -215,7 +217,7 @@ bool AbstractNode::Wait(uint64_t request_id, const uint32_t &timeout) {
 }
 
 uint64_t AbstractNode::CollectiveSendAsync(const enum NodeRole &node_role, const uint32_t &rank_id,
-                                           const std::string &message, const uint32_t &timeout) {
+                                           const std::string &message) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
@@ -294,9 +296,29 @@ void AbstractNode::Heartbeat(const std::shared_ptr<TcpClient> &client, bool is_n
   }
 }
 
+void AbstractNode::UpdateHeartbeat() {
+  struct timeval current_time {};
+  (void)gettimeofday(&current_time, nullptr);
+  heartbeat_time_ = current_time;
+  MS_LOG(DEBUG) << "The node role: " << CommUtil::NodeRoleToString(node_info_.node_role_)
+                << ", the node id:" << node_info_.node_id_ << ", the node rank id:" << node_info_.rank_id_
+                << " receive a heartbeat from the scheduler, the current time is: " << current_time.tv_sec;
+}
+
+bool AbstractNode::CheckSchedulerTimeout() const {
+  struct timeval current_time {};
+  (void)gettimeofday(&current_time, nullptr);
+  if (heartbeat_time_.tv_sec + ClusterConfig::scheduler_timeout() < current_time.tv_sec) {
+    return true;
+  }
+  return false;
+}
+
 void AbstractNode::ProcessHeartbeatResp(const CommMessage &message) {
   HeartbeatRespMessage heartbeat_resp_message;
   heartbeat_resp_message.ParseFromString(message.data());
+  UpdateHeartbeat();
+
   is_ready_ = heartbeat_resp_message.is_cluster_ready();
   if (is_ready_.load()) {
     wait_start_cond_.notify_all();
@@ -353,9 +375,9 @@ bool AbstractNode::Disconnect(const std::shared_ptr<TcpClient> &client, const ui
   *message.mutable_pb_meta() = {meta};
   message.set_data(finish_message.SerializeAsString());
   if (!SendMessageSync(client, message)) {
-    MS_LOG(EXCEPTION) << "Disconnect timeout!";
+    MS_LOG(ERROR) << "The node role:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+                  << " the node id:" << node_info_.node_id_ << " send Finish Message timeout!";
   }
-  MS_LOG(INFO) << "The node id:" << node_info_.node_id_ << " send finish message!";
   return WaitForDisconnect(timeout);
 }
 

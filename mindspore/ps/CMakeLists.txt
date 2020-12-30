@@ -18,11 +18,13 @@ set(ABC_SRC
         util.cc
         worker.cc
         embedding_table_shard_metadata.cc
+        parameter_server.cc
         )
 set(ABC_HEADER
         util.h
         worker.h
         embedding_table_shard_metadata.h
+        parameter_server.h
         )
 
 add_library(ps ${ABC_SRC} ${ABC_HEADER})
