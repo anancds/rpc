@@ -62,8 +62,9 @@ class ParameterServer {
 
    private:
     ParameterServer *ps_;
-    using RequestHandler =
-      std::function<void(const core::MessageMeta &meta, const std::string &message, std::string *res)>;
+    typedef void (ServerHandler::*RequestHandler)(const core::MessageMeta &meta, const std::string &message, std::string *res);
+//    using RequestHandler =
+//      std::function<void(const core::MessageMeta &meta, const std::string &message, std::string *res)>;
     std::unordered_map<int64_t, RequestHandler> handlers_;
     std::unordered_map<Key, bool> init_weights_;
     std::unordered_map<Key, bool> init_weight_to_optim_;

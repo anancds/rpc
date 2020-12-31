@@ -5,6 +5,7 @@
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
 using namespace mindspore::ps::core;
+using namespace mindspore::ps;
 
 void SerializeAsString() {
   CommMessage comm_message;

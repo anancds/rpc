@@ -7,6 +7,7 @@
 #include "ps/core/tcp_server.h"
 
 using namespace mindspore::ps::core;
+using namespace mindspore::ps;
 
 int main(int /*argc*/, char ** /*argv*/) {
   std::unique_ptr<TcpServer> server_ = std::make_unique<TcpServer>("127.0.0.1", 9999);
