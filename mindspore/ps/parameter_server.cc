@@ -19,21 +19,76 @@
 namespace mindspore {
 namespace ps {
 
+// void ParameterServer::InitEmbeddingTable(
+//  const Key &key, const std::shared_ptr<std::vector<std::shared_ptr<std::vector<size_t>>>> &shapes,
+//  const ParamInitInfo &param_init_info) {
+//  MS_EXCEPTION_IF_NULL(shapes);
+//  if (weights_.count(key) == 0) {
+//    // Init embedding weight
+//    const std::vector<size_t> &input_shapes = lookup->input_sizes();
+//    size_t total_dims =
+//      std::accumulate(input_shapes.begin(), input_shapes.end(), IntToSize(1), std::multiplies<size_t>());
+//    WeightPtr embedding = std::make_shared<Weight>(total_dims, 0);
+//    MS_EXCEPTION_IF_NULL(embedding);
+//    T *embedding_data = embedding->data();
+//    std::default_random_engine engine;
+//    std::normal_distribution<float> random(0, 0.01);
+//
+//    for (size_t i = 0; i < total_dims; i++) {
+//      embedding_data[i] = random(engine);
+//    }
+//    weights_[key] = embedding;
+//    tokens_[key] = 0;
+//    is_embedding_[key] = true;
+//
+//    grads_accum_counter_[key] = 0;
+//  }
+//}
+
+inline std::mutex &ParameterServer::mutex() { return mutex_; }
+
 void ParameterServer::ServerHandler::Init() { handlers_[kInitEmbeddingsCmd] = &ServerHandler::HandleInitEmbeddings; }
 
 void ParameterServer::ServerHandler::operator()(const core::TcpServer &server, const core::TcpConnection &conn,
-                                                const core::MessageMeta &meta, const std::string &message) {
+                                                const core::MessageMeta &meta, const std::string &message,
+                                                std::string *res) {
   PSMessage ps_message;
   ps_message.ParseFromString(message);
+  std::string output;
   if (ps_message.command() == PSCommand::PUSH) {
-
   } else if (ps_message.command() == PSCommand::PULL) {
-
   } else {
     auto &handler_ptr = handlers_[ps_message.command()];
-    (this->*handler_ptr)(server, conn, meta, message);
+    handler_ptr( meta, ps_message.data(), &output);
   }
-  ps_->server_node_.Response(server, conn, meta, message);
+  ps_->server_node_.Response(server, conn, meta, output);
+}
+
+void ParameterServer::ServerHandler::HandleInitEmbeddings(const core::MessageMeta &meta, const std::string &message,
+                                                          std::string *res) {
+  std::unique_lock<std::mutex> lock(ps_->mutex());
+  EmbeddingTableMeta embedding_table_meta;
+  embedding_table_meta.ParseFromString(message);
+  const Key &key = embedding_table_meta.key();
+  MS_LOG(INFO) << "Initializing embedding table for key:" << key;
+  std::shared_ptr<std::vector<std::shared_ptr<std::vector<size_t>>>> shapes =
+    std::make_shared<std::vector<std::shared_ptr<std::vector<size_t>>>>();
+  MS_EXCEPTION_IF_NULL(shapes);
+  std::shared_ptr<std::vector<size_t>> input_shape = std::make_shared<std::vector<size_t>>(
+    embedding_table_meta.input_shape().begin(), embedding_table_meta.input_shape().end());
+  MS_EXCEPTION_IF_NULL(input_shape);
+  std::shared_ptr<std::vector<size_t>> indices_shape = std::make_shared<std::vector<size_t>>(
+    embedding_table_meta.indices_shape().begin(), embedding_table_meta.indices_shape().end());
+  MS_EXCEPTION_IF_NULL(indices_shape);
+  std::shared_ptr<std::vector<size_t>> output_shape = std::make_shared<std::vector<size_t>>(
+    embedding_table_meta.output_shape().begin(), embedding_table_meta.output_shape().end());
+  MS_EXCEPTION_IF_NULL(output_shape);
+  shapes->push_back(input_shape);
+  shapes->push_back(indices_shape);
+  shapes->push_back(output_shape);
+
+  ParamInitInfo param_init_info;
+  ps_->InitEmbeddingTable(key, shapes, param_init_info);
 }
 }  // namespace ps
 }  // namespace mindspore
