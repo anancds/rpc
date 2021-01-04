@@ -67,8 +67,8 @@ TEST_F(TestClusterConnection, StartServerAndClient) {
   server_node_ = std::make_unique<ServerNode>();
   server_thread_ = std::make_unique<std::thread>([&]() {
     server_node_->set_handler(
-      [&](const TcpServer &server, const TcpConnection &conn, const MessageMeta &message_meta,
-          const std::string &message) { server_node_->Response(server, conn, message_meta, message); });
+      [&](std::shared_ptr<TcpServer> server, std::shared_ptr<TcpConnection> conn,
+          std::shared_ptr<CommMessage> message) { server_node_->Response(*server, *conn, *message); });
     server_node_->Start();
     server_node_->Finish(3);
     server_node_->Stop();

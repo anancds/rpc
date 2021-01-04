@@ -46,9 +46,9 @@ TcpClient::TcpClient(const std::string &address, std::uint16_t port)
       server_port_(port),
       is_stop_(true),
       is_connected_(false) {
-  message_handler_.SetCallback([this](const CommMessage &message) {
+  message_handler_.SetCallback([this](std::shared_ptr<CommMessage> message) {
     if (message_callback_) {
-      message_callback_(*this, message);
+      message_callback_(*this, *message);
     }
   });
 }

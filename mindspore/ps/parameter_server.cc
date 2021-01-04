@@ -35,7 +35,7 @@ void ParameterServer::ServerHandler::operator()(const core::TcpServer &server, c
     auto &handler_ptr = handlers_[ps_message.command()];
     (this->*handler_ptr)( meta, ps_message.data(), &output);
   }
-  ps_->server_node_.Response(server, conn, meta, output);
+  // ps_->server_node_.Response(server, conn, *meta, output);
 }
 
 void ParameterServer::ServerHandler::HandleInitEmbeddings(const core::MessageMeta &meta, const std::string &message,

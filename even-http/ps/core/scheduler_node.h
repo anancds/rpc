@@ -51,13 +51,17 @@ class SchedulerNode : public Node {
  private:
   void Initialize();
   void CreateTcpServer();
-  void ProcessHeartbeat(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
-  void ProcessRegister(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void ProcessHeartbeat(std::shared_ptr<TcpServer> server, std::shared_ptr<TcpConnection> conn,
+                        std::shared_ptr<CommMessage> message);
+  void ProcessRegister(std::shared_ptr<TcpServer> server, std::shared_ptr<TcpConnection> conn,
+                       std::shared_ptr<CommMessage> message);
   void StartUpdateClusterStateTimer();
-  void ProcessFinish(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
-  void ProcessFetchServers(const TcpServer &server, const TcpConnection &conn, const CommMessage &message);
+  void ProcessFinish(std::shared_ptr<TcpServer> server, std::shared_ptr<TcpConnection> conn,
+                     std::shared_ptr<CommMessage> message);
+  void ProcessFetchServers(std::shared_ptr<TcpServer> server, std::shared_ptr<TcpConnection> conn,
+                           std::shared_ptr<CommMessage> message);
 
-  std::unique_ptr<TcpServer> server_;
+  std::shared_ptr<TcpServer> server_;
   std::unique_ptr<std::thread> scheduler_thread_;
   std::unique_ptr<std::thread> update_state_thread_;
 

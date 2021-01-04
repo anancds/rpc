@@ -39,7 +39,7 @@ int main(int /*argc*/, char ** /*argv*/) {
 
   comm_message.set_data(kv_message.SerializeAsString());
   client_->SendMessage(comm_message);
-  std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(500000));
     client_->Stop();
   http_server_thread_->join();
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));

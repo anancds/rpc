@@ -28,13 +28,12 @@ void NodeManagerTest::StartServer() {
       //      server_node_->Stop();
     }
   });
-  server_node_->set_handler([&](const TcpServer &server, const TcpConnection &conn, const MessageMeta &message_meta,
-                                const std::string &message) {
+  server_node_->set_handler([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
     KVMessage kv_message;
-    kv_message.ParseFromString(message);
+    kv_message.ParseFromString(message->data());
     MS_LOG(INFO) << "size:" << kv_message.keys_size();
 
-    server_node_->Response(server, conn, message_meta, message);
+    server_node_->Response(conn, message);
   });
   server_node_->Start();
   //  std::this_thread::sleep_for(std::chrono::seconds(10));
@@ -81,13 +80,11 @@ void NodeManagerTest::StartServer1() {
       //      server_node_->Stop();
     }
   });
-  server_node_->set_handler([&](const TcpServer &server, const TcpConnection &conn, const MessageMeta &message_meta,
-                                const std::string &message) {
+  server_node_->set_handler([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
     KVMessage kv_message;
-    kv_message.ParseFromString(message);
+    kv_message.ParseFromString(message->data());
     MS_LOG(INFO) << "size:" << kv_message.keys_size();
-
-    server_node_->Response(server, conn, message_meta, message);
+    server_node_->Response(conn, message);
   });
   server_node_->Start();
   //  std::this_thread::sleep_for(std::chrono::seconds(10));
@@ -173,8 +170,8 @@ void NodeManagerTest::StartClient() {
   worker_node_->Send(NodeRole::SERVER, rank_ids, data, &resp);
   KVMessage kv_message_resp;
   KVMessage kv_message_resp1;
-  //  kv_message_resp.ParseFromString(resp.at(0));
-  //  kv_message_resp1.ParseFromString(resp.at(1));
+  kv_message_resp.ParseFromString(resp.at(0));
+  kv_message_resp1.ParseFromString(resp.at(1));
   MS_LOG(INFO) << "resp size:" << kv_message_resp.keys_size() << " resp1 size:" << kv_message_resp1.keys_size();
   worker_node_->Finish();
   worker_node_->Stop();

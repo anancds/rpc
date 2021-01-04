@@ -33,11 +33,12 @@ class TestTcpServer : public UT::Common {
     server_ = std::make_unique<TcpServer>("127.0.0.1", 0);
     std::unique_ptr<std::thread> http_server_thread_(nullptr);
     http_server_thread_ = std::make_unique<std::thread>([&]() {
-      server_->SetMessageCallback([](const TcpServer &server, const TcpConnection &conn, const CommMessage &message) {
+      server_->SetMessageCallback([](std::shared_ptr<TcpServer> server, std::shared_ptr<TcpConnection> conn,
+                                     std::shared_ptr<CommMessage> message) {
         KVMessage kv_message;
-        kv_message.ParseFromString(message.data());
+        kv_message.ParseFromString(message->data());
         EXPECT_EQ(2, kv_message.keys_size());
-        const_cast<TcpServer&>(server).SendMessage(conn, message);
+        server->SendMessage(conn, message);
       });
       server_->Init();
       server_->Start();
