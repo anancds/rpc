@@ -32,15 +32,7 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-void TcpConnection::InitConnection(const evutil_socket_t &fd) {
-  tcp_message_handler_.SetCallback([=](std::shared_ptr<CommMessage> message) {
-    OnServerReceiveMessage on_server_receive = server_->GetServerReceive();
-    if (on_server_receive) {
-      std::shared_ptr<TcpConnection> conn = server_->GetConnectionByFd(fd);
-      on_server_receive(conn, message);
-    }
-  });
-}
+void TcpConnection::InitConnection(const messageReceive &callback) { tcp_message_handler_.SetCallback(callback); }
 
 void TcpConnection::OnReadHandler(const void *buffer, size_t num) { tcp_message_handler_.ReceiveMessage(buffer, num); }
 
@@ -50,9 +42,11 @@ void TcpConnection::SendMessage(const void *buffer, size_t num) const {
   }
 }
 
-TcpServer* TcpConnection::GetServer() const { return server_; }
+TcpServer *TcpConnection::GetServer() const { return server_; }
 
 const evutil_socket_t &TcpConnection::GetFd() const { return fd_; }
+
+void TcpConnection::set_callback(const Callback &callback) { callback_ = callback; }
 
 void TcpConnection::SendMessage(std::shared_ptr<CommMessage> message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
@@ -261,10 +255,12 @@ void TcpServer::ListenerCallback(struct evconnlistener *, evutil_socket_t fd, st
   MS_EXCEPTION_IF_NULL(conn);
 
   server->AddConnection(fd, conn);
-  conn->InitConnection(fd);
-  // conn->SetCallback([&](std::shared_ptr<CommMessage> message){
-  //   server->GetServerReceive(conn, message);
-  // });
+  conn->InitConnection([=](std::shared_ptr<CommMessage> message) {
+    OnServerReceiveMessage on_server_receive = server->GetServerReceive();
+    if (on_server_receive) {
+      on_server_receive(conn, message);
+    }
+  });
   bufferevent_setcb(bev, TcpServer::ReadCallback, nullptr, TcpServer::EventCallback,
                     reinterpret_cast<void *>(conn.get()));
   if (bufferevent_enable(bev, EV_READ | EV_WRITE) == -1) {
@@ -362,7 +358,9 @@ void TcpServer::TimerOnceCallback(evutil_socket_t, int16_t, void *arg) {
   }
 }
 
-void TcpServer::SendMessage(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) { conn->SendMessage(message); }
+void TcpServer::SendMessage(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
+  conn->SendMessage(message);
+}
 
 void TcpServer::SendMessage(std::shared_ptr<CommMessage> message) {
   std::lock_guard<std::mutex> lock(connection_mutex_);

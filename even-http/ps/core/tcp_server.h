@@ -52,18 +52,22 @@ class TcpConnection {
   TcpConnection(const TcpConnection &);
   virtual ~TcpConnection() = default;
 
-  virtual void InitConnection(const evutil_socket_t &fd);
+  using Callback = std::function<void(const std::shared_ptr<CommMessage>)>;
+
+  virtual void InitConnection(const messageReceive &callback);
   virtual void SendMessage(const void *buffer, size_t num) const;
   void SendMessage(std::shared_ptr<CommMessage> message) const;
   virtual void OnReadHandler(const void *buffer, size_t numBytes);
   TcpServer *GetServer() const;
   const evutil_socket_t &GetFd() const;
+  void set_callback(const Callback &callback);
 
  protected:
   struct bufferevent *buffer_event_;
   evutil_socket_t fd_;
   TcpServer *server_;
   TcpMessageHandler tcp_message_handler_;
+  Callback callback_;
 };
 
 using OnServerReceiveMessage =
