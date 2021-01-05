@@ -33,8 +33,6 @@
 #include <condition_variable>
 
 #include "ps/core/cluster_config.h"
-#include "../../../build/even-http/ps/core/comm.pb.h"
-#include "../../../build/even-http/ps/core/ps.pb.h"
 #include "utils/convert_utils_base.h"
 
 namespace mindspore {

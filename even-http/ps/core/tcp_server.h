@@ -34,8 +34,6 @@
 #include <thread>
 #include <atomic>
 
-#include "../../../build/even-http/ps/core/comm.pb.h"
-#include "../../../build/even-http/ps/core/ps.pb.h"
 #include "ps/core/tcp_message_handler.h"
 #include "ps/core/cluster_config.h"
 #include "utils/log_adapter.h"

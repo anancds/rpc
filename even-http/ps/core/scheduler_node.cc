@@ -63,7 +63,7 @@ void SchedulerNode::ProcessHeartbeat(std::shared_ptr<TcpServer> server, std::sha
   std::shared_ptr<CommMessage> comm_message = std::make_shared<CommMessage>();
   *comm_message->mutable_pb_meta() = {message->pb_meta()};
   comm_message->set_data(heartbeat_resp_message.SerializeAsString());
-  server_->SendMessage(conn, comm_message);
+  server->SendMessage(conn, comm_message);
 }
 
 void SchedulerNode::Initialize() {

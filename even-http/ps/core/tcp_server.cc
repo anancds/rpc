@@ -314,8 +314,6 @@ void TcpServer::EventCallback(struct bufferevent *bev, std::int16_t events, void
   struct evbuffer *output = bufferevent_get_output(bev);
   size_t remain = evbuffer_get_length(output);
   auto conn = static_cast<class TcpConnection *>(data);
-  // std::shared_ptr<TcpConnection>* conn = static_cast<std::shared_ptr<TcpConnection>*>(data);
-  // auto conn = reinterpret_cast<TcpConnection *>(data);
   auto srv = conn->GetServer();
 
   if (events & BEV_EVENT_EOF) {
