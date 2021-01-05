@@ -30,8 +30,6 @@
 #include <utility>
 #include <tuple>
 
-#include "../../../build/even-http/ps/core/comm.pb.h"
-#include "../../../build/even-http/ps/core/ps.pb.h"
 #include "ps/core/cluster_config.h"
 #include "ps/core/node_info.h"
 #include "ps/core/tcp_client.h"
