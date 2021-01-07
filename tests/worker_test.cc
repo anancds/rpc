@@ -33,7 +33,7 @@ TEST_F(TestWorker, LookUpSlice) {
   Worker worker;
   worker.AddEmbeddingTable(1, 100);
 
-  Worker::SlicedKVMessages messages;
+  Worker::SlicedEmbeddingMessages messages;
 
   EmbeddingTableLookup lookup;
   lookup.set_key(1);
@@ -53,6 +53,97 @@ TEST_F(TestWorker, LookUpSlice) {
   EXPECT_EQ(messages.at(2).first, false);
   EXPECT_EQ(messages.at(1).second.keys_size(), 1);
   EXPECT_EQ(messages.at(0).second.keys_size(), 1);
+}
+
+TEST_F(TestWorker, WorkerInitEmbeddingSlicer) {
+  Worker worker;
+  worker.AddEmbeddingTable(1, 10);
+
+  Worker::SlicedKVMessages messages;
+  KVMessage send;
+  send.add_keys(1);
+  send.add_keys(2);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_values(1);
+  send.add_values(2);
+  send.add_values(8);
+  send.add_values(8);
+  send.add_values(8);
+  send.add_values(8);
+  send.add_values(8);
+  send.add_values(8);
+  send.add_values(8);
+  send.add_values(8);
+  worker.WorkerInitEmbeddingSlicer(send, &messages, {});
+
+  std::vector<uint32_t> rank_ids;
+  std::vector<std::string> data;
+  for (size_t i = 0; i < messages.size(); i++) {
+    if (messages.at(i).first) {
+      rank_ids.emplace_back(i);
+      data.emplace_back(messages.at(i).second.SerializeAsString());
+    }
+  }
+  EXPECT_EQ(messages.size(), 3);
+  EXPECT_EQ(messages.at(0).first, true);
+  EXPECT_EQ(messages.at(1).first, true);
+  EXPECT_EQ(messages.at(2).first, true);
+  EXPECT_EQ(messages.at(0).second.values_size(), 4);
+  EXPECT_EQ(messages.at(1).second.values_size(), 3);
+  EXPECT_EQ(messages.at(2).second.values_size(), 3);
+}
+
+TEST_F(TestWorker, RoundRobinSlicer) {
+  Worker worker;
+  worker.AddEmbeddingTable(1, 10);
+
+
+  Worker::SlicedKVMessages messages;
+  KVMessage send;
+  send.add_keys(1);
+  send.add_keys(2);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_keys(8);
+  send.add_values(1);
+  send.add_values(2);
+  send.add_values(8);
+  send.add_values(8);
+  send.add_values(8);
+  send.add_values(8);
+  send.add_values(8);
+  send.add_values(8);
+  send.add_values(8);
+  send.add_values(8);
+  worker.WorkerInitEmbeddingSlicer(send, &messages, {});
+
+  std::vector<uint32_t> rank_ids;
+  std::vector<std::string> data;
+  for (size_t i = 0; i < messages.size(); i++) {
+    if (messages.at(i).first) {
+      rank_ids.emplace_back(i);
+      data.emplace_back(messages.at(i).second.SerializeAsString());
+    }
+  }
+  EXPECT_EQ(messages.size(), 3);
+  EXPECT_EQ(messages.at(0).first, true);
+  EXPECT_EQ(messages.at(1).first, true);
+  EXPECT_EQ(messages.at(2).first, true);
+  EXPECT_EQ(messages.at(0).second.values_size(), 4);
+  EXPECT_EQ(messages.at(1).second.values_size(), 3);
+  EXPECT_EQ(messages.at(2).second.values_size(), 3);
 }
 }  // namespace ps
 }  // namespace mindspore

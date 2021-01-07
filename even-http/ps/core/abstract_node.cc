@@ -77,6 +77,8 @@ bool AbstractNode::Broadcast(const enum NodeRole &node_role, const std::string &
     auto client = GetOrCreateTcpClient((*it).first.second);
     client->SendMessage(comm_message);
   }
+  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return Wait(request_id, timeout);
 }
 
@@ -128,6 +130,8 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     auto client = GetOrCreateTcpClient(rank_ids.at(it));
     client->SendMessage(comm_message);
   }
+  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return Wait(request_id, timeout);
 }
 
@@ -159,6 +163,8 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
   comm_message.set_data(message);
   auto client = GetOrCreateTcpClient(rank_id);
   client->SendMessage(comm_message);
+  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return Wait(request_id, timeout);
 }
 
@@ -203,6 +209,8 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     auto client = GetOrCreateTcpClient(rank_ids.at(it));
     client->SendMessage(comm_message);
   }
+  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return Wait(request_id, timeout);
 }
 
@@ -466,6 +474,8 @@ bool AbstractNode::SendMessageSync(const std::shared_ptr<TcpClient> &client, con
   message_tracker_[request_id] = std::make_pair(1, 0);
   const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
   client->SendMessage(message);
+  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return Wait(request_id, timeout);
 }
 
@@ -474,6 +484,8 @@ uint64_t AbstractNode::SendMessageAsync(const std::shared_ptr<TcpClient> &client
   message_tracker_[request_id] = std::make_pair(1, 0);
   const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
   client->SendMessage(message);
+  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return request_id;
 }
 
@@ -482,6 +494,8 @@ void AbstractNode::ProcessSendDataResp(const CommMessage &message) {
   const MessageMeta &message_meta = message.pb_meta();
   const uint32_t &rank_id = message_meta.rank_id();
   const uint64_t request_id = message_meta.request_id();
+  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+               << ", the node id is:" << node_info_.node_id_ << " receive the request id is:" << request_id;
   auto it = receive_messages_.find(request_id);
   if (it != receive_messages_.end()) {
     it->second[rank_id] = message;

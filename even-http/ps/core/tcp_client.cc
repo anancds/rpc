@@ -272,6 +272,8 @@ void TcpClient::SendMessage(const CommMessage &message) const {
   if (evbuffer_add(bufferevent_get_output(buffer_event_), serialized.data(), buf_size) == -1) {
     MS_LOG(EXCEPTION) << "Event buffer add protobuf data failed!";
   }
+  bufferevent_unlock(buffer_event_);
+  bufferevent_lock(buffer_event_);
 }
 
 void TcpClient::StartTimer(const uint32_t &time) {

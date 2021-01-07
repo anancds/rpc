@@ -81,25 +81,24 @@ void SchedulerNode::CreateTcpServer() {
   std::string scheduler_host = ClusterConfig::scheduler_host();
   uint32_t scheduler_port = ClusterConfig::scheduler_port();
   server_ = std::make_shared<TcpServer>(scheduler_host, scheduler_port);
-  server_->SetMessageCallback(
-    [&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
-      switch (message->pb_meta().cmd()) {
-        case NodeCommand::HEARTBEAT:
-          ProcessHeartbeat(server_, conn, message);
-          break;
-        case NodeCommand::REGISTER:
-          ProcessRegister(server_, conn, message);
-          break;
-        case NodeCommand::FINISH:
-          ProcessFinish(server_, conn, message);
-          break;
-        case NodeCommand::FETCH_SERVER:
-          ProcessFetchServers(server_, conn, message);
-          break;
-        default:
-          MS_LOG(EXCEPTION) << "The cmd:" << message->pb_meta().cmd() << " is not supported!";
-      }
-    });
+  server_->SetMessageCallback([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
+    switch (message->pb_meta().cmd()) {
+      case NodeCommand::HEARTBEAT:
+        ProcessHeartbeat(server_, conn, message);
+        break;
+      case NodeCommand::REGISTER:
+        ProcessRegister(server_, conn, message);
+        break;
+      case NodeCommand::FINISH:
+        ProcessFinish(server_, conn, message);
+        break;
+      case NodeCommand::FETCH_SERVER:
+        ProcessFetchServers(server_, conn, message);
+        break;
+      default:
+        MS_LOG(EXCEPTION) << "The cmd:" << message->pb_meta().cmd() << " is not supported!";
+    }
+  });
 
   server_->Init();
 

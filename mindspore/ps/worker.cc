@@ -31,6 +31,16 @@ void Worker::AddEmbeddingTable(const Key &key, const size_t &row_count) {
   embedding_row_cnt_[key] = row_count;
 }
 
+void Worker::AddKeyToServerId(const Key &key) {}
+
+void Worker::AddKeyByHashMod(const Key &key) {
+  if (server_num_ == 0) {
+    MS_LOG(EXCEPTION) << "Server number is invalid:0";
+  }
+  key_to_server_id_[key] = static_cast<int64_t>(key % server_num_);
+  MS_LOG(INFO) << "The server id of key " << key << " is " << key_to_server_id_[key];
+}
+
 void Worker::InitPSEmbeddingTable(const size_t &key, const std::vector<size_t> &input_shape,
                                   const std::vector<size_t> &indices_shape, const std::vector<size_t> &output_shape) {
   bool has_init = IsKeyInit(key);
@@ -52,8 +62,7 @@ void Worker::InitPSEmbeddingTable(const size_t &key, const std::vector<size_t> &
   worker_node_.Broadcast(NodeRole::SERVER, ps_message.SerializeAsString());
 }
 
-void Worker::LookupIdSlicer(const EmbeddingTableLookup &send,
-                            std::vector<std::pair<bool, EmbeddingTableLookup>> *sliced,
+void Worker::LookupIdSlicer(const EmbeddingTableLookup &send, SlicedEmbeddingMessages *sliced,
                             const std::map<int64_t, int64_t> &attrs) {
   MS_EXCEPTION_IF_NULL(sliced);
 
@@ -86,6 +95,56 @@ void Worker::LookupIdSlicer(const EmbeddingTableLookup &send,
   }
 }
 
+void Worker::WorkerInitEmbeddingSlicer(const KVMessage &send, std::vector<std::pair<bool, KVMessage>> *sliced,
+                                       const std::map<int64_t, int64_t> &attrs) {
+  MS_EXCEPTION_IF_NULL(sliced);
+  sliced->resize(server_num_);
+  auto keys = send.keys();
+  auto vals = send.values();
+
+  size_t col_cnt = send.values_size() / embedding_row_cnt_[keys[0]];
+  const std::vector<EmbeddingTableShardMetadata> &ranges = *(embedding_table_ranges_[keys[0]]);
+  for (size_t i = 0; i < ranges.size(); i++) {
+    size_t offset_begin = ranges[i].begin() * col_cnt;
+    size_t offset_end = (ranges[i].end() + 1) * col_cnt;
+    KVMessage kvs;
+    *kvs.mutable_keys() = {keys.begin(), keys.end()};
+    *kvs.mutable_values() = {vals.begin() + offset_begin, vals.begin() + offset_end};
+    sliced->at(i).first = true;
+    sliced->at(i).second = kvs;
+  }
+}
+
+void Worker::RoundRobinSlicer(const KVMessage &send, SlicedKVMessages *sliced,
+                              const std::map<int64_t, int64_t> &attrs) {
+  MS_EXCEPTION_IF_NULL(sliced);
+  sliced->resize(server_num_);
+  auto keys = send.keys();
+  auto values = send.values();
+  auto lens = send.len();
+
+  int64_t server_id, len;
+  Key param_key;
+  for (size_t i = 0; i < send.keys_size(); i++) {
+    param_key = keys[i];
+    server_id = key_to_server_id_[param_key];
+    if (!sliced->at(server_id).first) {
+      sliced->at(server_id).first = true;
+    }
+
+    KVMessage &server_kv_pairs = sliced->at(server_id).second;
+    server_kv_pairs.add_keys(param_key);
+    len = lens[i];
+    int64_t offset = std::accumulate(lens.begin(), lens.begin() + i, 0);
+    auto val_begin = values.begin() + offset;
+    auto val_end = values.end() + len;
+    for (auto it = val_begin; it != val_end; ++it) {
+      server_kv_pairs.add_values(*it);
+    }
+    server_kv_pairs.add_len(len);
+  }
+}
+
 void Worker::DoPSEmbeddingLookup(const Key &key, const std::vector<int> &lookup_ids, std::vector<float> *lookup_result,
                                  int64_t cmd) {
   MS_EXCEPTION_IF_NULL(lookup_result);
@@ -93,7 +152,7 @@ void Worker::DoPSEmbeddingLookup(const Key &key, const std::vector<int> &lookup_
   embedding_table_lookup.set_key(key);
   *embedding_table_lookup.mutable_keys() = {lookup_ids.begin(), lookup_ids.end()};
 
-  SlicedKVMessages messages;
+  SlicedEmbeddingMessages messages;
   lookup_slicer_(embedding_table_lookup, &messages, {});
   std::vector<uint32_t> rank_ids;
   std::vector<std::string> data;

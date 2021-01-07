@@ -27,6 +27,7 @@ message KVMessage {
   PSCommand command = 1;
   repeated int32 keys = 2;
   repeated float values = 3;
+  repeated int32 len = 4;
 }
 
 message PSMessage {

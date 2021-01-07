@@ -66,9 +66,9 @@ class TestClusterConnection : public UT::Common {
 TEST_F(TestClusterConnection, StartServerAndClient) {
   server_node_ = std::make_unique<ServerNode>();
   server_thread_ = std::make_unique<std::thread>([&]() {
-    server_node_->set_handler(
-      [&](std::shared_ptr<TcpServer> server, std::shared_ptr<TcpConnection> conn,
-          std::shared_ptr<CommMessage> message) { server_node_->Response(*server, *conn, *message); });
+    server_node_->set_handler([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
+      server_node_->Response(conn, message);
+    });
     server_node_->Start();
     server_node_->Finish(3);
     server_node_->Stop();

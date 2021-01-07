@@ -32,6 +32,7 @@ set(HTTP_SRC
         http_message_handler.cc
         abstract_node.cc
         count_down_latch.cc
+        thread_pool.cc
         )
 set(HTTP_HEADER
         comm_util.h
@@ -47,6 +48,7 @@ set(HTTP_HEADER
         worker_node.h
         abstract_node.h
         count_down_latch.h
+        thread_pool.h
         )
 
 add_library(core1 ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})

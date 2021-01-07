@@ -19,8 +19,8 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include "../../cmake-build-debug/tests/3rd_party/google-test/googletest-src/googletest/include/gtest/gtest.h"
-#include "../../cmake-build-debug/tests/3rd_party/google-test/googletest-src/googlemock/include/gmock/gmock.h"
+#include "../../build/tests/3rd_party/google-test/googletest-src/googletest/include/gtest/gtest.h"
+#include "../../build/tests/3rd_party/google-test/googletest-src/googlemock/include/gmock/gmock.h"
 namespace UT {
 class Common : public testing::Test {
  public:

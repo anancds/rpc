@@ -84,7 +84,6 @@ TEST_F(TestTcpMessageHandler, 8_Header_1003_Data_8_Header_1003_Data) {
   handler.ReceiveMessage(result, 2 * buf_size + kHeaderLen * 2);
 }
 
-// todo
 TEST_F(TestTcpMessageHandler, 8_Header_4084_Data_4_Header_4_header_4084_data) {
   TcpMessageHandler handler;
   handler.SetCallback([this](std::shared_ptr<CommMessage> message) { EXPECT_EQ(message->data().size(), 4081); });

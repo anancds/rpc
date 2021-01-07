@@ -39,6 +39,8 @@ class NodeManagerTest {
   void StartServer1();
   void StartClient();
 
+  void ThreadResponse(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> meesage);
+
  protected:
   NodeManagerTest() = default;
 
