@@ -54,7 +54,7 @@ class TcpConnection {
 
   virtual void InitConnection(const messageReceive &callback);
   virtual void SendMessage(const void *buffer, size_t num) const;
-  void SendMessage(std::shared_ptr<CommMessage> message) const;
+  bool SendMessage(std::shared_ptr<CommMessage> message) const;
   virtual void OnReadHandler(const void *buffer, size_t numBytes);
   TcpServer *GetServer() const;
   const evutil_socket_t &GetFd() const;
@@ -99,7 +99,7 @@ class TcpServer {
   std::shared_ptr<TcpConnection> GetConnectionByFd(const evutil_socket_t &fd);
   OnServerReceiveMessage GetServerReceive() const;
   void SetMessageCallback(const OnServerReceiveMessage &cb);
-  void SendMessage(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message);
+  bool SendMessage(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message);
   void SendMessage(std::shared_ptr<CommMessage> message);
   uint16_t BoundPort() const;
   std::string BoundIp() const;

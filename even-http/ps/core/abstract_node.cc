@@ -37,8 +37,6 @@ void AbstractNode::Register(const std::shared_ptr<TcpClient> &client) {
                       << " the node id:" << node_info_.node_id_ << " register timeout!";
   }
 
-  UpdateHeartbeat();
-
   MS_LOG(INFO) << "The node role:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                << " the node id:" << node_info_.node_id_ << "is registering to scheduler!";
 }
@@ -77,8 +75,8 @@ bool AbstractNode::Broadcast(const enum NodeRole &node_role, const std::string &
     auto client = GetOrCreateTcpClient((*it).first.second);
     client->SendMessage(comm_message);
   }
-  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
-               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
+  MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+                << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return Wait(request_id, timeout);
 }
 
@@ -130,8 +128,8 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     auto client = GetOrCreateTcpClient(rank_ids.at(it));
     client->SendMessage(comm_message);
   }
-  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
-               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
+  MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+                << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return Wait(request_id, timeout);
 }
 
@@ -163,8 +161,8 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
   comm_message.set_data(message);
   auto client = GetOrCreateTcpClient(rank_id);
   client->SendMessage(comm_message);
-  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
-               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
+  MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+                << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return Wait(request_id, timeout);
 }
 
@@ -209,8 +207,8 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     auto client = GetOrCreateTcpClient(rank_ids.at(it));
     client->SendMessage(comm_message);
   }
-  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
-               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
+  MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+                << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return Wait(request_id, timeout);
 }
 
@@ -282,13 +280,19 @@ void AbstractNode::StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client)
                << " begin send heartbeat to the scheduler!";
   heart_beat_thread_ = std::make_unique<std::thread>([&]() {
     while (!is_finish_.load()) {
-      Heartbeat(client);
+      if (!Heartbeat(client)) {
+        MS_LOG(ERROR) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+                      << ", the node id is:" << node_info_.node_id_ << " Send heartbeat timeout!";
+        CheckSchedulerTimeout();
+      } else {
+        UpdateSchedulerTime();
+      }
       std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval()));
     }
   });
 }
 
-void AbstractNode::Heartbeat(const std::shared_ptr<TcpClient> &client, bool is_node_finish) {
+bool AbstractNode::Heartbeat(const std::shared_ptr<TcpClient> &client, bool is_node_finish) {
   MessageMeta meta;
   meta.set_cmd(NodeCommand::HEARTBEAT);
 
@@ -302,21 +306,22 @@ void AbstractNode::Heartbeat(const std::shared_ptr<TcpClient> &client, bool is_n
   if (!SendMessageSync(client, message)) {
     MS_LOG(ERROR) << "The node id:" << node_info_.node_id_ << " Send heartbeat timeout!";
   }
+  return true;
 }
 
-void AbstractNode::UpdateHeartbeat() {
+void AbstractNode::UpdateSchedulerTime() {
   struct timeval current_time {};
   (void)gettimeofday(&current_time, nullptr);
-  heartbeat_time_ = current_time;
+  scheduler_time_ = current_time;
   MS_LOG(DEBUG) << "The node role: " << CommUtil::NodeRoleToString(node_info_.node_role_)
                 << ", the node id:" << node_info_.node_id_ << ", the node rank id:" << node_info_.rank_id_
-                << " receive a heartbeat from the scheduler, the current time is: " << current_time.tv_sec;
+                << " update scheduler time, the current time is: " << current_time.tv_sec;
 }
 
 bool AbstractNode::CheckSchedulerTimeout() const {
   struct timeval current_time {};
   (void)gettimeofday(&current_time, nullptr);
-  if (heartbeat_time_.tv_sec + ClusterConfig::scheduler_timeout() < current_time.tv_sec) {
+  if (scheduler_time_.tv_sec + ClusterConfig::scheduler_timeout() < current_time.tv_sec) {
     return true;
   }
   return false;
@@ -325,7 +330,6 @@ bool AbstractNode::CheckSchedulerTimeout() const {
 void AbstractNode::ProcessHeartbeatResp(const CommMessage &message) {
   HeartbeatRespMessage heartbeat_resp_message;
   heartbeat_resp_message.ParseFromString(message.data());
-  UpdateHeartbeat();
 
   is_ready_ = heartbeat_resp_message.is_cluster_ready();
   if (is_ready_.load()) {
@@ -474,8 +478,8 @@ bool AbstractNode::SendMessageSync(const std::shared_ptr<TcpClient> &client, con
   message_tracker_[request_id] = std::make_pair(1, 0);
   const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
   client->SendMessage(message);
-  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
-               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
+  MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+                << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return Wait(request_id, timeout);
 }
 
@@ -484,8 +488,8 @@ uint64_t AbstractNode::SendMessageAsync(const std::shared_ptr<TcpClient> &client
   message_tracker_[request_id] = std::make_pair(1, 0);
   const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
   client->SendMessage(message);
-  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
-               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
+  MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+                << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return request_id;
 }
 
@@ -494,8 +498,8 @@ void AbstractNode::ProcessSendDataResp(const CommMessage &message) {
   const MessageMeta &message_meta = message.pb_meta();
   const uint32_t &rank_id = message_meta.rank_id();
   const uint64_t request_id = message_meta.request_id();
-  MS_LOG(INFO) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
-               << ", the node id is:" << node_info_.node_id_ << " receive the request id is:" << request_id;
+  MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+                << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   auto it = receive_messages_.find(request_id);
   if (it != receive_messages_.end()) {
     it->second[rank_id] = message;

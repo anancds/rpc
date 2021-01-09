@@ -48,19 +48,23 @@ const evutil_socket_t &TcpConnection::GetFd() const { return fd_; }
 
 void TcpConnection::set_callback(const Callback &callback) { callback_ = callback; }
 
-void TcpConnection::SendMessage(std::shared_ptr<CommMessage> message) const {
+bool TcpConnection::SendMessage(std::shared_ptr<CommMessage> message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
+  bufferevent_lock(buffer_event_);
+  bool res = true;
   size_t buf_size = message->ByteSizeLong();
   std::vector<unsigned char> serialized(buf_size);
   message->SerializeToArray(serialized.data(), SizeToInt(buf_size));
-  if (evbuffer_add(bufferevent_get_output(const_cast<struct bufferevent *>(buffer_event_)), &buf_size,
-                   sizeof(buf_size)) == -1) {
-    MS_LOG(EXCEPTION) << "Event buffer add header failed!";
+  if (bufferevent_write(buffer_event_, &buf_size, sizeof(buf_size)) == -1) {
+    MS_LOG(ERROR) << "Event buffer add header failed!";
+    res = false;
   }
-  if (evbuffer_add(bufferevent_get_output(const_cast<struct bufferevent *>(buffer_event_)), serialized.data(),
-                   buf_size) == -1) {
-    MS_LOG(EXCEPTION) << "Event buffer add protobuf data failed!";
+  if (bufferevent_write(buffer_event_, serialized.data(), buf_size) == -1) {
+    MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
+    res = false;
   }
+  bufferevent_unlock(buffer_event_);
+  return res;
 }
 
 TcpServer::TcpServer(const std::string &address, std::uint16_t port)
@@ -241,7 +245,7 @@ void TcpServer::ListenerCallback(struct evconnlistener *, evutil_socket_t fd, st
   MS_EXCEPTION_IF_NULL(base);
   MS_EXCEPTION_IF_NULL(sockaddr);
 
-  struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
+  struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
   if (!bev) {
     MS_LOG(ERROR) << "Error constructing buffer event!";
     int ret = event_base_loopbreak(base);
@@ -356,8 +360,8 @@ void TcpServer::TimerOnceCallback(evutil_socket_t, int16_t, void *arg) {
   }
 }
 
-void TcpServer::SendMessage(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
-  conn->SendMessage(message);
+bool TcpServer::SendMessage(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
+  return conn->SendMessage(message);
 }
 
 void TcpServer::SendMessage(std::shared_ptr<CommMessage> message) {

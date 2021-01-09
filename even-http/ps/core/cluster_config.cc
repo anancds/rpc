@@ -36,14 +36,14 @@ uint32_t ClusterConfig::connect_interval_ = 100;
 // When the scheduler exits, the worker and server can continue to work for 5 hours
 uint32_t ClusterConfig::scheduler_timeout_ = 3600 * 5;
 
-void ClusterConfig::Init(const uint32_t &worker_num, const uint32_t &server_num,
-                         std::unique_ptr<std::string> scheduler_host, const uint16_t &scheduler_port) {
+void ClusterConfig::Init(const uint32_t &worker_num, const uint32_t &server_num, std::string scheduler_host,
+                         const uint16_t &scheduler_port) {
   worker_num_ = worker_num;
   server_num_ = server_num;
-  if (!CommUtil::CheckIp(*scheduler_host)) {
-    MS_LOG(EXCEPTION) << "The scheduler_host:" << *scheduler_host << " is illegal!";
+  if (!CommUtil::CheckIp(scheduler_host)) {
+    MS_LOG(EXCEPTION) << "The scheduler_host:" << scheduler_host << " is illegal!";
   }
-  scheduler_host_ = std::move(scheduler_host);
+  scheduler_host_ = std::make_unique<std::string>(scheduler_host);
   scheduler_port_ = scheduler_port;
 }
 

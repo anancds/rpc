@@ -57,8 +57,8 @@ class AbstractNode : public Node {
   void Register(const std::shared_ptr<TcpClient> &client);
   void ProcessRegisterResp(const CommMessage &message);
   void StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client);
-  void Heartbeat(const std::shared_ptr<TcpClient> &client, bool is_node_finish = false);
-  void UpdateHeartbeat();
+  bool Heartbeat(const std::shared_ptr<TcpClient> &client, bool is_node_finish = false);
+  void UpdateSchedulerTime();
   bool CheckSchedulerTimeout() const;
   void ProcessHeartbeatResp(const CommMessage &message);
   void FetchServers(const std::shared_ptr<TcpClient> &client);
@@ -114,7 +114,7 @@ class AbstractNode : public Node {
   // the key is rank_id, the value is rank_id's actual request_id
   std::unordered_map<uint32_t, uint64_t> actual_rank_request_ids_;
   std::mutex rank_request_ids_mutex;
-  timeval heartbeat_time_;
+  timeval scheduler_time_;
 };
 }  // namespace core
 }  // namespace ps

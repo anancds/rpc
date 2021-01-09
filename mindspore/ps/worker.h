@@ -36,19 +36,28 @@ class Worker {
   void AddKeyToServerId(const Key &key);
   void AddKeyByHashMod(const Key &key);
 
+  void PushData(const std::vector<Key> &keys, const std::vector<float> &vals, const std::vector<int> &lens = {},
+                int64_t cmd = 0, int64_t priority = 0);
+
   void InitPSEmbeddingTable(const size_t &key, const std::vector<size_t> &input_shape,
                             const std::vector<size_t> &indices_shape, const std::vector<size_t> &output_shape);
-
+  void WorkerProxy<T>::UpdateEmbeddingTable(const ::ps::SArray<::ps::Key> &keys, const ::ps::SArray<int> &lookup_ids,
+                                            const ::ps::SArray<T> &vals, const Callback &cb, int64_t priority);
   void LookupIdSlicer(const EmbeddingTableLookup &send, SlicedEmbeddingMessages *sliced,
                       const std::map<int64_t, int64_t> &attrs);
   void WorkerInitEmbeddingSlicer(const KVMessage &send, std::vector<std::pair<bool, KVMessage>> *sliced,
                                  const std::map<int64_t, int64_t> &attrs);
   void RoundRobinSlicer(const KVMessage &send, SlicedKVMessages *sliced, const std::map<int64_t, int64_t> &attrs);
+  void SparseSlicer(const KVMessage &send, SlicedKVMessages *sliced, const std::map<int64_t, int64_t> &attrs);
+  void UpdateEmbeddingSlicer(const KVMessage &send, SlicedKVMessages *sliced, const std::map<int64_t, int64_t> &attrs);
   void DoPSEmbeddingLookup(const Key &key, const std::vector<int> &lookup_ids, std::vector<float> *lookup_result,
                            int64_t cmd);
 
  private:
   bool IsKeyInit(const size_t &key);
+  void PrepareSparseGradient(const size_t begin, const size_t end, const std::unordered_set<int> &distinct_ids,
+                             const std::vector<std::pair<int, float *>> &indice_to_grad, const int *all_indice,
+                             const size_t segment_size, float *gradient, int *indices);
 
   std::unordered_map<Key, std::shared_ptr<std::vector<EmbeddingTableShardMetadata>>> embedding_table_ranges_;
   int64_t server_num_{3};

@@ -30,7 +30,7 @@ namespace ps {
 namespace core {
 class ClusterConfig {
  public:
-  static void Init(const uint32_t &worker_num, const uint32_t &server_num, std::unique_ptr<std::string> scheduler_host,
+  static void Init(const uint32_t &worker_num, const uint32_t &server_num, std::string scheduler_host,
                    const uint16_t &scheduler_port);
   static uint32_t worker_num();
   static uint32_t server_num();

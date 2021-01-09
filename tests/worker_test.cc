@@ -16,7 +16,9 @@
 
 #include "common/common_test.h"
 #include "ps/embedding_table_shard_metadata.h"
+#define private public
 #include "ps/worker.h"
+#undef private
 
 namespace mindspore {
 namespace ps {
@@ -102,32 +104,33 @@ TEST_F(TestWorker, WorkerInitEmbeddingSlicer) {
 
 TEST_F(TestWorker, RoundRobinSlicer) {
   Worker worker;
-  worker.AddEmbeddingTable(1, 10);
-
+  // the server id of key 1 is 1, the server id of key 2 is 2, the server id of key 3 is 0
+  worker.AddKeyToServerId(1);
+  worker.AddKeyToServerId(2);
+  worker.AddKeyToServerId(3);
 
   Worker::SlicedKVMessages messages;
   KVMessage send;
   send.add_keys(1);
   send.add_keys(2);
-  send.add_keys(8);
-  send.add_keys(8);
-  send.add_keys(8);
-  send.add_keys(8);
-  send.add_keys(8);
-  send.add_keys(8);
-  send.add_keys(8);
-  send.add_keys(8);
+  send.add_keys(3);
+
   send.add_values(1);
   send.add_values(2);
+  send.add_values(3);
+  send.add_values(4);
+  send.add_values(5);
+  send.add_values(6);
+  send.add_values(7);
   send.add_values(8);
-  send.add_values(8);
-  send.add_values(8);
-  send.add_values(8);
-  send.add_values(8);
-  send.add_values(8);
-  send.add_values(8);
-  send.add_values(8);
-  worker.WorkerInitEmbeddingSlicer(send, &messages, {});
+  send.add_values(9);
+  send.add_values(10);
+
+  send.add_len(1);
+  send.add_len(3);
+  send.add_len(6);
+
+  worker.RoundRobinSlicer(send, &messages, {});
 
   std::vector<uint32_t> rank_ids;
   std::vector<std::string> data;
@@ -141,9 +144,16 @@ TEST_F(TestWorker, RoundRobinSlicer) {
   EXPECT_EQ(messages.at(0).first, true);
   EXPECT_EQ(messages.at(1).first, true);
   EXPECT_EQ(messages.at(2).first, true);
-  EXPECT_EQ(messages.at(0).second.values_size(), 4);
-  EXPECT_EQ(messages.at(1).second.values_size(), 3);
+  EXPECT_EQ(messages.at(0).second.values_size(), 6);
+  EXPECT_EQ(messages.at(1).second.values_size(), 1);
   EXPECT_EQ(messages.at(2).second.values_size(), 3);
+}
+
+TEST_F(TestWorker, PrepareSparseGradient) {
+  Worker worker;
+
+  std::unordered_set<int> distinct_ids = {1, 2, 3};
+  //  worker.PrepareSparseGradient(1, 4)
 }
 }  // namespace ps
 }  // namespace mindspore

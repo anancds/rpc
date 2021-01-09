@@ -60,7 +60,7 @@ class TcpClient {
   void Start();
   void StartWithNoBlock();
   void SetMessageCallback(const OnMessage &cb);
-  void SendMessage(const CommMessage &message) const;
+  bool SendMessage(const CommMessage &message) const;
   void StartTimer(const uint32_t &time);
   void set_timer_callback(const OnTimer &timer);
   const event_base &eventbase();
