@@ -70,6 +70,15 @@ void Worker::InitPSEmbeddingTable(const size_t &key, const std::vector<size_t> &
   worker_node_.Broadcast(NodeRole::SERVER, ps_message.SerializeAsString());
 }
 
+void Worker::UpdateEmbeddingTable(const std::vector<Key> &keys, const std::vector<int> &lookup_ids,
+                          const std::vector<float> &vals) {
+                            KVMessage kvs;
+  *kvs.mutable_keys() = {keys.begin(), keys.end()};
+  *kvs.mutable_len() = {lookup_ids.begin(), lookup_ids.end()};
+  *kvs.mutable_values() = {vals.begin(), vals.end()};
+  
+                          }
+
 void Worker::LookupIdSlicer(const EmbeddingTableLookup &send, SlicedEmbeddingMessages *sliced,
                             const std::map<int64_t, int64_t> &attrs) {
   MS_EXCEPTION_IF_NULL(sliced);

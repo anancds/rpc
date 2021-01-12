@@ -41,8 +41,8 @@ class Worker {
 
   void InitPSEmbeddingTable(const size_t &key, const std::vector<size_t> &input_shape,
                             const std::vector<size_t> &indices_shape, const std::vector<size_t> &output_shape);
-  void WorkerProxy<T>::UpdateEmbeddingTable(const ::ps::SArray<::ps::Key> &keys, const ::ps::SArray<int> &lookup_ids,
-                                            const ::ps::SArray<T> &vals, const Callback &cb, int64_t priority);
+  void UpdateEmbeddingTable(const std::vector<Key> &keys, const std::vector<int> &lookup_ids,
+                                            const std::vector<float> &vals);
   void LookupIdSlicer(const EmbeddingTableLookup &send, SlicedEmbeddingMessages *sliced,
                       const std::map<int64_t, int64_t> &attrs);
   void WorkerInitEmbeddingSlicer(const KVMessage &send, std::vector<std::pair<bool, KVMessage>> *sliced,

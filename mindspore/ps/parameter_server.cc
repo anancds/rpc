@@ -23,26 +23,24 @@ inline std::mutex &ParameterServer::mutex() { return mutex_; }
 
 void ParameterServer::ServerHandler::Init() { handlers_[kInitEmbeddingsCmd] = &ServerHandler::HandleInitEmbeddings; }
 
-void ParameterServer::ServerHandler::operator()(const core::TcpServer &server, const core::TcpConnection &conn,
-                                                const core::MessageMeta &meta, const std::string &message,
-                                                std::string *res) {
+void ParameterServer::ServerHandler::operator()(std::shared_ptr<core::TcpConnection> conn,
+                                                std::shared_ptr<core::CommMessage> message) {
   PSMessage ps_message;
-  ps_message.ParseFromString(message);
-  std::string output;
+  ps_message.ParseFromString(message->data());
+  PSMessage output;
   if (ps_message.command() == PSCommand::PUSH) {
   } else if (ps_message.command() == PSCommand::PULL) {
   } else {
     auto &handler_ptr = handlers_[ps_message.command()];
-    (this->*handler_ptr)( meta, ps_message.data(), &output);
+    (this->*handler_ptr)(ps_message, &output);
   }
   // ps_->server_node_.Response(server, conn, *meta, output);
 }
 
-void ParameterServer::ServerHandler::HandleInitEmbeddings(const core::MessageMeta &meta, const std::string &message,
-                                                          std::string *res) {
+void ParameterServer::ServerHandler::HandleInitEmbeddings(const PSMessage &message, PSMessage *res) {
   std::unique_lock<std::mutex> lock(ps_->mutex());
   EmbeddingTableMeta embedding_table_meta;
-  embedding_table_meta.ParseFromString(message);
+  embedding_table_meta.ParseFromString(message.data());
   const Key &key = embedding_table_meta.key();
   MS_LOG(INFO) << "Initializing embedding table for key:" << key;
   std::shared_ptr<std::vector<std::shared_ptr<std::vector<size_t>>>> shapes =
