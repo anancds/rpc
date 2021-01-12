@@ -41,14 +41,6 @@ void Worker::AddKeyByHashMod(const Key &key) {
   MS_LOG(INFO) << "The server id of key " << key << " is " << key_to_server_id_[key];
 }
 
-void Worker::PushData(const std::vector<Key> &keys, const std::vector<float> &vals, const std::vector<int> &lens = {},
-                      int64_t cmd = 0, int64_t priority = 0) {
-  KVMessage kvs;
-  *kvs.mutable_keys() = {keys.begin(), keys.end()};
-  *kvs.mutable_values() = {vals.begin(), vals.end()};
-  *kvs.mutable_len() = {lens.begin(), lens.end()};
-}
-
 void Worker::InitPSEmbeddingTable(const size_t &key, const std::vector<size_t> &input_shape,
                                   const std::vector<size_t> &indices_shape, const std::vector<size_t> &output_shape) {
   bool has_init = IsKeyInit(key);

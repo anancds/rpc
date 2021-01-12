@@ -39,7 +39,7 @@ class TestClusterConnection : public UT::Common {
   ~TestClusterConnection() override = default;
 
   void SetUp() override {
-    ClusterConfig::Init(1, 1, std::make_unique<std::string>("127.0.0.1"), 9999);
+    ClusterConfig::Init(1, 1, "127.0.0.1", 9999);
     scheduler_node_ = std::make_unique<SchedulerNode>();
     scheduler_thread_ = std::make_unique<std::thread>([&]() {
       scheduler_node_->Start();
