@@ -61,7 +61,7 @@ TEST_F(TestTcpServer, ServerSendMessage) {
   std::cout << server_->BoundPort() << std::endl;
   std::unique_ptr<std::thread> http_client_thread(nullptr);
   http_client_thread = std::make_unique<std::thread>([&]() {
-    client_->SetMessageCallback([](const TcpClient &client, const CommMessage &message) {
+    client_->SetMessageCallback([](const CommMessage &message) {
       KVMessage kv_message;
       kv_message.ParseFromString(message.data());
       EXPECT_EQ(2, kv_message.keys_size());
