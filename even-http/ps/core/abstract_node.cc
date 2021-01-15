@@ -409,7 +409,7 @@ bool AbstractNode::InitClientToScheduler() {
   std::string scheduler_host = ClusterConfig::scheduler_host();
   uint16_t scheduler_port = ClusterConfig::scheduler_port();
   client_to_scheduler_ = std::make_shared<TcpClient>(scheduler_host, scheduler_port);
-  client_to_scheduler_->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
+  client_to_scheduler_->SetMessageCallback([&](const CommMessage &message) {
     if (handlers_.count(message.pb_meta().cmd()) == 0) {
       MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
@@ -442,7 +442,7 @@ const std::shared_ptr<TcpClient> &AbstractNode::GetOrCreateTcpClient(const int &
     std::string ip = nodes_address_[std::make_pair(NodeRole::SERVER, rank_id)].first;
     uint16_t port = nodes_address_[std::make_pair(NodeRole::SERVER, rank_id)].second;
     auto client = std::make_shared<TcpClient>(ip, port);
-    client->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
+    client->SetMessageCallback([&](const CommMessage &message) {
       switch (message.pb_meta().cmd()) {
         case NodeCommand::SEND_DATA:
           ProcessSendDataResp(message);

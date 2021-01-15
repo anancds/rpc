@@ -11,11 +11,11 @@ using namespace mindspore::ps;
 
 int main(int /*argc*/, char ** /*argv*/) {
   std::unique_ptr<TcpClient> client_ = std::make_unique<TcpClient>("127.0.0.1", 9999);
-  client_->SetMessageCallback([&](const TcpClient &client, const CommMessage &message) {
+  client_->SetMessageCallback([&](const CommMessage &message) {
     KVMessage kv_message;
     kv_message.ParseFromString(message.data());
     std::cout << kv_message.keys_size() << std::endl;
-    client.SendMessage(message);
+    client_->SendMessage(message);
   });
 
   std::unique_ptr<std::thread> http_server_thread_(nullptr);
@@ -35,7 +35,6 @@ int main(int /*argc*/, char ** /*argv*/) {
   std::vector<int> values{3, 4};
   *kv_message.mutable_keys() = {keys.begin(), keys.end()};
   *kv_message.mutable_values() = {values.begin(), values.end()};
-  kv_message.set_command(PSCommand::PUSH);
 
   comm_message.set_data(kv_message.SerializeAsString());
   client_->SendMessage(comm_message);

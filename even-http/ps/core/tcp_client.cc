@@ -48,7 +48,7 @@ TcpClient::TcpClient(const std::string &address, std::uint16_t port)
       is_connected_(false) {
   message_handler_.SetCallback([this](std::shared_ptr<CommMessage> message) {
     if (message_callback_) {
-      message_callback_(*this, *message);
+      message_callback_(*message);
     }
   });
 }
@@ -271,6 +271,23 @@ bool TcpClient::SendMessage(const CommMessage &message) const {
     res = false;
   }
   if (bufferevent_write(buffer_event_, message.SerializeAsString().data(), buf_size) == -1) {
+    MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
+    res = false;
+  }
+  bufferevent_unlock(buffer_event_);
+  return res;
+}
+
+bool TcpClient::SendMessage(const void *message, size_t size) {
+  MS_EXCEPTION_IF_NULL(buffer_event_);
+  bufferevent_lock(buffer_event_);
+  bool res = true;
+
+  if (bufferevent_write(buffer_event_, &size, sizeof(size)) == -1) {
+    MS_LOG(ERROR) << "Event buffer add header failed!";
+    res = false;
+  }
+  if (bufferevent_write(buffer_event_, message, size) == -1) {
     MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
     res = false;
   }
