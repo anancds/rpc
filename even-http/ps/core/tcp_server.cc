@@ -53,13 +53,11 @@ bool TcpConnection::SendMessage(std::shared_ptr<CommMessage> message) const {
   bufferevent_lock(buffer_event_);
   bool res = true;
   size_t buf_size = message->ByteSizeLong();
-  std::vector<unsigned char> serialized(buf_size);
-  message->SerializeToArray(serialized.data(), SizeToInt(buf_size));
   if (bufferevent_write(buffer_event_, &buf_size, sizeof(buf_size)) == -1) {
     MS_LOG(ERROR) << "Event buffer add header failed!";
     res = false;
   }
-  if (bufferevent_write(buffer_event_, serialized.data(), buf_size) == -1) {
+  if (bufferevent_write(buffer_event_, message->SerializeAsString().data(), buf_size) == -1) {
     MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
     res = false;
   }

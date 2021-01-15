@@ -1,0 +1,51 @@
+/**
+ * Copyright 2020 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+import "google/protobuf/any.proto";
+package mindspore.ps.core;
+option optimize_for = LITE_RUNTIME;
+
+message MessageMeta1 {
+  // the command of this message,for example: register,heartbeat,data
+  // the request id of this message
+  uint64 request_id = 2;
+  // the role of the current node: worker,server,scheduler
+  // the current Node rank id,the worker node range is:[0,numOfWorker-1], the server node range is:[0, numOfServer-1]
+  int32 rank_id = 4;
+  // User-defined commands
+}
+message PackTest {
+  MessageMeta1 pb_meta = 1;
+  google.protobuf.Any transport_options = 2;
+
+} 
+
+message Inner {
+  MessageMeta1 pb_meta = 1;
+  google.protobuf.Any data = 2;
+}
+
+message CommMessage1 {
+  MessageMeta1 pb_meta = 1;
+  bytes data = 2;
+}
+
+message KVMessage1 {
+  repeated int32 keys = 2;
+  repeated float values = 3;
+  repeated int32 len = 4;
+}

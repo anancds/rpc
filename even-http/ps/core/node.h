@@ -34,7 +34,6 @@
 #include "ps/core/node_info.h"
 #include "ps/core/tcp_client.h"
 #include "ps/core/tcp_server.h"
-#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ps {

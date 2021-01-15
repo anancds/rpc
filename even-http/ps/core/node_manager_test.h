@@ -43,11 +43,16 @@ class NodeManagerTest {
 
  protected:
   NodeManagerTest() = default;
+  void CollectiveTest(const uint32_t &rank_id);
+  void BroadCastTest();
+  void PushTest(const uint32_t &size);
+  void PullTest(const uint32_t &size);
+  void PackKVMessage(std::shared_ptr<CommMessage> message);
 
  private:
-  std::unique_ptr<WorkerNode> worker_node_{nullptr};
-  std::unique_ptr<SchedulerNode> scheduler_node_{nullptr};
-  std::unique_ptr<ServerNode> server_node_{nullptr};
+  std::shared_ptr<WorkerNode> worker_node_{nullptr};
+  std::shared_ptr<SchedulerNode> scheduler_node_{nullptr};
+  std::shared_ptr<ServerNode> server_node_{nullptr};
 };
 }  // namespace core
 }  // namespace ps

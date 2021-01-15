@@ -41,7 +41,6 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-
 HttpServer::~HttpServer() { Stop(); }
 
 bool HttpServer::InitServer() {
@@ -164,7 +163,6 @@ void HttpServer::Stop() {
     is_stop_ = true;
   }
 }
-
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
