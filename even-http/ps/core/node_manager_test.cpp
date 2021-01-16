@@ -88,6 +88,26 @@ void NodeManagerTest::PullTest(const uint32_t &size) {
   MS_LOG(INFO) << "send ok, cost:" << (end2 - start2).count() / 1e6 << "ms";
 }
 
+void NodeManagerTest::MultiPullTest(const uint32_t &size) {
+  // for (int i = 0; i < 2; i++) {
+  //   std::vector<uint32_t> rank_ids = {0, 1};
+  //   KVMessage kv_message1;
+  //   std::vector<int> keys1(100, 1);
+  //   std::vector<int> values1(100, 2);
+  //   *kv_message1.mutable_keys() = {keys1.begin(), keys1.end()};
+  //   *kv_message1.mutable_values() = {values1.begin(), values1.end()};
+  //   std::vector<std::string> data = {kv_message1.SerializeAsString(), kv_message.SerializeAsString()};
+  //   std::vector<std::string> resp;
+  //   worker_node_->Send(NodeRole::SERVER, rank_ids, data, &resp);
+  //   KVMessage kv_message_resp;
+  //   KVMessage kv_message_resp1;
+  //   kv_message_resp.ParseFromString(resp.at(0));
+  //   kv_message_resp1.ParseFromString(resp.at(1));
+  //   MS_LOG(INFO) << "index:" << i << ",resp size:" << kv_message_resp.keys_size()
+  //                << " resp1 size:" << kv_message_resp1.keys_size();
+  // }
+}
+
 void NodeManagerTest::PackKVMessage(std::shared_ptr<CommMessage> message) {
   auto start1 = std::chrono::high_resolution_clock::now();
   KVMessage kv_message1;
@@ -115,7 +135,7 @@ void NodeManagerTest::StartServer() {
   });
   server_node_->set_handler([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
     KVMessage kv_message;
-    kv_message.ParseFromString(message->data());
+    // kv_message.ParseFromString(message->data());
     MS_LOG(INFO) << "size:" << kv_message.keys_size();
     // PackKVMessage(message);
 
@@ -130,7 +150,7 @@ void NodeManagerTest::StartServer() {
   // BroadCastTest();
 
   for (int i = 0; i < 2; ++i) {
-  CollectiveTest(1);
+  // CollectiveTest(1);
   }
 
   // std::this_thread::sleep_for(std::chrono::seconds(600000));
@@ -166,7 +186,7 @@ void NodeManagerTest::StartServer1() {
 
   for (int i = 0; i < 2; ++i) {
 
-  CollectiveTest(0);
+  // CollectiveTest(0);
   }
 
   server_node_->Finish(300);
@@ -194,30 +214,8 @@ void NodeManagerTest::StartClient() {
   });
   worker_node_->Start();
 
-  // PushTest(10000000);
+  PushTest(10000000);
 
-  //  auto start = std::chrono::high_resolution_clock::now();
-  //  worker_node_->Broadcast(NodeRole::SERVER, kv_message.SerializeAsString());
-  //  auto end = std::chrono::high_resolution_clock::now();
-  //  MS_LOG(INFO) << "send ok, cost:" << (end - start).count() / 1e6 << "ms";
-
-  // for (int i = 0; i < 2; i++) {
-  //   std::vector<uint32_t> rank_ids = {0, 1};
-  //   KVMessage kv_message1;
-  //   std::vector<int> keys1(100, 1);
-  //   std::vector<int> values1(100, 2);
-  //   *kv_message1.mutable_keys() = {keys1.begin(), keys1.end()};
-  //   *kv_message1.mutable_values() = {values1.begin(), values1.end()};
-  //   std::vector<std::string> data = {kv_message1.SerializeAsString(), kv_message.SerializeAsString()};
-  //   std::vector<std::string> resp;
-  //   worker_node_->Send(NodeRole::SERVER, rank_ids, data, &resp);
-  //   KVMessage kv_message_resp;
-  //   KVMessage kv_message_resp1;
-  //   kv_message_resp.ParseFromString(resp.at(0));
-  //   kv_message_resp1.ParseFromString(resp.at(1));
-  //   MS_LOG(INFO) << "index:" << i << ",resp size:" << kv_message_resp.keys_size()
-  //                << " resp1 size:" << kv_message_resp1.keys_size();
-  // }
   worker_node_->Finish(300);
   worker_node_->Stop();
 }

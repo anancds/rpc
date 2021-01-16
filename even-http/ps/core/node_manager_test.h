@@ -47,6 +47,7 @@ class NodeManagerTest {
   void BroadCastTest();
   void PushTest(const uint32_t &size);
   void PullTest(const uint32_t &size);
+  void MultiPullTest(const uint32_t &size);
   void PackKVMessage(std::shared_ptr<CommMessage> message);
 
  private:

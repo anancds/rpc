@@ -16,7 +16,6 @@
 
 syntax = "proto3";
 import "google/protobuf/any.proto";
-import "ps.proto";
 package mindspore.ps.core;
 option optimize_for = LITE_RUNTIME;
 
@@ -95,7 +94,7 @@ message FinishMessage {
 
 message CommMessage {
   MessageMeta pb_meta = 1;
-  // User-defined commands
-  bytes cmd = 3;
   bytes data = 2;
+  // User-defined commands
+  bytes user_cmd = 3;
 }
