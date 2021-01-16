@@ -410,7 +410,9 @@ bool AbstractNode::InitClientToScheduler() {
   std::string scheduler_host = ClusterConfig::scheduler_host();
   uint16_t scheduler_port = ClusterConfig::scheduler_port();
   client_to_scheduler_ = std::make_shared<TcpClient>(scheduler_host, scheduler_port);
-  client_to_scheduler_->SetMessageCallback([&](const CommMessage &message) {
+  client_to_scheduler_->SetMessageCallback([&](const void *data, size_t size) {
+    CommMessage message;
+    message.ParseFromArray(data, size);
     if (handlers_.count(message.pb_meta().cmd()) == 0) {
       MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
     }
@@ -443,7 +445,9 @@ const std::shared_ptr<TcpClient> &AbstractNode::GetOrCreateTcpClient(const int &
     std::string ip = nodes_address_[std::make_pair(NodeRole::SERVER, rank_id)].first;
     uint16_t port = nodes_address_[std::make_pair(NodeRole::SERVER, rank_id)].second;
     auto client = std::make_shared<TcpClient>(ip, port);
-    client->SetMessageCallback([&](const CommMessage &message) {
+    client->SetMessageCallback([&](const void *data, size_t size) {
+      CommMessage message;
+      message.ParseFromArray(data, size);
       switch (message.pb_meta().cmd()) {
         case NodeCommand::SEND_DATA:
           ProcessSendDataResp(message);
@@ -482,6 +486,17 @@ uint64_t AbstractNode::SendMessageAsync(const std::shared_ptr<TcpClient> &client
   MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                 << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return request_id;
+}
+
+bool AbstractNode::SendMessageSync(const std::shared_ptr<TcpClient> &client, const void *data, size_t size,
+                                   const uint32_t &timeout) {
+  // uint64_t request_id = ++next_request_id_;
+  // message_tracker_[request_id] = std::make_pair(1, 0);
+  // const_cast<CommMessage &>(message).mutable_pb_meta()->set_request_id(request_id);
+  // client->SendMessage(message);
+  // MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+  //               << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
+  // return request_id;
 }
 
 void AbstractNode::ProcessSendDataResp(const CommMessage &message) {

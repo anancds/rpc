@@ -24,9 +24,6 @@
 #include <vector>
 #include <unordered_map>
 
-#include <google/protobuf/any.h>
-#include <google/protobuf/any.pb.h>
-
 #include "ps/core/node.h"
 
 namespace mindspore {
@@ -74,6 +71,8 @@ class AbstractNode : public Node {
   bool InitClientToScheduler();
   const std::shared_ptr<TcpClient> &GetOrCreateTcpClient(const int &rank_id);
   bool SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message,
+                       const uint32_t &timeout = kCommTimeoutInSeconds);
+  bool SendMessageSync(const std::shared_ptr<TcpClient> &client, const void *data, size_t size,
                        const uint32_t &timeout = kCommTimeoutInSeconds);
   uint64_t SendMessageAsync(const std::shared_ptr<TcpClient> &client, const CommMessage &message);
   void ProcessSendDataResp(const CommMessage &message);

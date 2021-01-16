@@ -44,7 +44,7 @@ class TcpClient {
   using OnDisconnected = std::function<void()>;
   using OnRead = std::function<void(const TcpClient &, const void *, size_t)>;
   using OnTimeout = std::function<void(const TcpClient &)>;
-  using OnMessage = std::function<void(const CommMessage &)>;
+  using OnMessage = std::function<void(const void *, size_t)>;
   using OnTimer = std::function<void(const TcpClient &)>;
 
   explicit TcpClient(const std::string &address, std::uint16_t port);

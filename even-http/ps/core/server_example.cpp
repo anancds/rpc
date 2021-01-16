@@ -17,7 +17,9 @@ static void StartClient(mindspore::ps::core::TcpClient *client) {
   // Run msg server
   std::unique_ptr<std::thread> http_client_thread(nullptr);
   http_client_thread = std::make_unique<std::thread>([&]() {
-    client->SetMessageCallback([](const CommMessage &message) {
+    client->SetMessageCallback([](const void *data, size_t size) {
+      CommMessage message;
+      message.ParseFromArray(data, size);
       KVMessage kv_message;
       kv_message.ParseFromString(message.data());
     });

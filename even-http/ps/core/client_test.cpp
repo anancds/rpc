@@ -11,7 +11,9 @@ using namespace mindspore::ps;
 
 int main(int /*argc*/, char ** /*argv*/) {
   std::unique_ptr<TcpClient> client_ = std::make_unique<TcpClient>("127.0.0.1", 9999);
-  client_->SetMessageCallback([&](const CommMessage &message) {
+  client_->SetMessageCallback([&](const void *data, size_t size) {
+    CommMessage message;
+    message.ParseFromArray(data, size);
     KVMessage kv_message;
     kv_message.ParseFromString(message.data());
     std::cout << kv_message.keys_size() << std::endl;

@@ -46,6 +46,13 @@ class TcpMessageHandler {
 
   void SetCallback(const messageReceive &cb);
   void ReceiveMessage(const void *buffer, size_t num);
+  void ReceiveMessage1(const void *buffer, size_t num);
+
+  enum Protos { PROTOBUF = 0, RAW = 1 };
+  struct header {
+    uint32_t message_proto_ = Protos::PROTOBUF;
+    uint64_t message_length_ = 0;
+  };
 
  private:
   messageReceive message_callback_;
@@ -56,6 +63,8 @@ class TcpMessageHandler {
   char header_[8];
   int header_index_;
   size_t last_copy_len_;
+  header mHeader;
+  std::string mBuffer;
 };
 }  // namespace core
 }  // namespace ps

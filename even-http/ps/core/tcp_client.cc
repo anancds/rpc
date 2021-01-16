@@ -48,7 +48,8 @@ TcpClient::TcpClient(const std::string &address, std::uint16_t port)
       is_connected_(false) {
   message_handler_.SetCallback([this](std::shared_ptr<CommMessage> message) {
     if (message_callback_) {
-      message_callback_(*message);
+      const std::string &temp = message->SerializeAsString();
+      message_callback_(temp.c_str(), temp.length());
     }
   });
 }

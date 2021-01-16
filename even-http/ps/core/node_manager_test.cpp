@@ -149,8 +149,8 @@ void NodeManagerTest::StartServer() {
 
   // BroadCastTest();
 
-  for (int i = 0; i < 2; ++i) {
-  // CollectiveTest(1);
+  for (int i = 0; i < 20; ++i) {
+  CollectiveTest(1);
   }
 
   // std::this_thread::sleep_for(std::chrono::seconds(600000));
@@ -184,9 +184,9 @@ void NodeManagerTest::StartServer1() {
   server_node_->Start();
 
 
-  for (int i = 0; i < 2; ++i) {
+  for (int i = 0; i < 20; ++i) {
 
-  // CollectiveTest(0);
+  CollectiveTest(0);
   }
 
   server_node_->Finish(300);
