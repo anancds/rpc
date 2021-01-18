@@ -137,33 +137,35 @@ void PackTest2() {
   std::cout << "PackFrom1, cost:" << (end1 - start).count() / 1e6 << "ms" << std::endl;
 }
 
-void TestCustomCmd() {
-  CommMessage message;
-  Command cmd;
-  cmd.set_cmd(CommandCode::PUSH);
-  message.mutable_cmd()->PackFrom(cmd);
-
-  Command test;
-  message.cmd().UnpackTo(&test);
-  test.cmd();
+enum class Protos : size_t { PROTOBUF = 0, RAW = 1 };
+struct header {
+  Protos message_proto_ = Protos::PROTOBUF;
+  uint64_t message_length_ = 0;
+};
+void TestStruct() {
+  header temp;
+  std::cout << sizeof(temp) << std::endl;
+  Protos protos;
+  std::cout << sizeof(protos) << std::endl;
 }
 
 int main(int argc, char **argv) {
   std::cout << "test1------------------" << std::endl;
-  SerializeAsString();
+  // SerializeAsString();
   std::cout << "test2------------------" << std::endl;
-  SerializeToArray();
+  // SerializeToArray();
   std::cout << "test3------------------" << std::endl;
   //  TestSerializeToArrayVerySmallSetData();
   std::cout << "test4------------------" << std::endl;
   // TestSerializeToString();
 
   std::cout << "test5------------------" << std::endl;
-  PackTest1();
+  // PackTest1();
   std::cout << "test6------------------" << std::endl;
   // PackTest2();
   std::cout << "test7------------------" << std::endl;
-  TestCustomCmd();
+  std::cout << "test8------------------" << std::endl;
+  TestStruct();
 
   return 0;
 }

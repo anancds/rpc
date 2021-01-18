@@ -149,8 +149,10 @@ void NodeManagerTest::StartServer() {
 
   // BroadCastTest();
 
+  ThreadPool pool_coll1(10);
   for (int i = 0; i < 20; ++i) {
-  CollectiveTest(1);
+    pool_coll1.Submit(&NodeManagerTest::CollSend, this, 1);
+    // CollectiveTest(1);
   }
 
   // std::this_thread::sleep_for(std::chrono::seconds(600000));
@@ -159,10 +161,6 @@ void NodeManagerTest::StartServer() {
 }
 
 void NodeManagerTest::StartServer1() {
-  int result = evthread_use_pthreads();
-  if (result != 0) {
-    MS_LOG(EXCEPTION) << "Use event pthread failed!";
-  }
   server_node_ = std::make_shared<ServerNode>();
   server_node_->set_event_callback([&](const NodeEvent &event) {
     if (event == NodeEvent::CLUSTER_TIMEOUT) {
@@ -183,10 +181,10 @@ void NodeManagerTest::StartServer1() {
   });
   server_node_->Start();
 
-
+  ThreadPool pool_coll(10);
   for (int i = 0; i < 20; ++i) {
-
-  CollectiveTest(0);
+    pool_coll.Submit(&NodeManagerTest::CollSend, this, 0);
+    // CollectiveTest(0);
   }
 
   server_node_->Finish(300);
@@ -197,6 +195,8 @@ void NodeManagerTest::ThreadResponse(std::shared_ptr<TcpConnection> conn, std::s
   MS_LOG(INFO) << "thred id:" << std::this_thread::get_id();
   server_node_->Response(conn, message);
 }
+
+void NodeManagerTest::CollSend(const u_int32_t &rank_id) { CollectiveTest(rank_id); }
 
 void NodeManagerTest::StartClient() {
   int result = evthread_use_pthreads();

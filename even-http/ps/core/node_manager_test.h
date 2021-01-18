@@ -41,6 +41,8 @@ class NodeManagerTest {
 
   void ThreadResponse(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> meesage);
 
+  void CollSend(const uint32_t &rank_id);
+
  protected:
   NodeManagerTest() = default;
   void CollectiveTest(const uint32_t &rank_id);

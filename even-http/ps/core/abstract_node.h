@@ -103,6 +103,7 @@ class AbstractNode : public Node {
 
   // the key is: request_id, the value is:<rank_id, CommMessage>
   std::unordered_map<uint64_t, std::unordered_map<uint32_t, CommMessage>> receive_messages_;
+  std::map<std::pair<uint32_t, uint64_t>, bool> receive_messages_done_;
   std::mutex receive_messages_mutex_;
   // the key is: request_id
   std::unordered_map<uint64_t, MessageCallback> message_callbacks_;

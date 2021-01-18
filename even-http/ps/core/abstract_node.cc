@@ -244,31 +244,32 @@ std::pair<uint32_t, uint64_t> AbstractNode::CollectiveReceiveAsync(const enum No
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
 
+  receive_callbacks_mutex_.lock();
   uint64_t rank_request_id = NextExpectedRankRequestId(rank_id);
+  receive_messages_done_[std::make_pair(rank_id, rank_request_id)] = false;
   if (received_data_.count(std::make_pair(rank_id, rank_request_id)) > 0) {
     *output = received_data_[std::make_pair(rank_id, rank_request_id)];
     received_data_.erase(std::make_pair(rank_id, rank_request_id));
+    receive_messages_done_[std::make_pair(rank_id, rank_request_id)] = true;
+    MS_LOG(DEBUG) << "Receive data from rank id:" << rank_id << ", the rank request id is:" << rank_request_id;
   } else {
     set_receive_callback(rank_id, rank_request_id, [=]() {
       receive_callbacks_mutex_.lock();
       *output = received_data_[std::make_pair(rank_id, rank_request_id)];
       received_data_.erase(std::make_pair(rank_id, rank_request_id));
+      receive_messages_done_[std::make_pair(rank_id, rank_request_id)] = true;
+      MS_LOG(DEBUG) << "Receive data from rank id:" << rank_id << ", the rank request id is:" << rank_request_id;
       receive_callbacks_mutex_.unlock();
     });
   }
+  receive_callbacks_mutex_.unlock();
   return std::make_pair(rank_id, rank_request_id);
 }
 
 bool AbstractNode::CollectiveWait(std::pair<uint32_t, uint64_t> request_id, const uint32_t &timeout) {
   std::unique_lock<std::mutex> lock(receive_callbacks_mutex_);
-  bool res = receive_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {
-    if (actual_rank_request_ids_.count(request_id.first) &&
-        (actual_rank_request_ids_[request_id.first] >= request_id.second)) {
-      return true;
-    } else {
-      return false;
-    }
-  });
+  bool res =
+    receive_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] { return receive_messages_done_[request_id]; });
   return res;
 }
 
@@ -558,7 +559,6 @@ void AbstractNode::set_receive_callback(const uint32_t &rank_id, const uint64_t 
   if (!callback) {
     return;
   }
-  std::lock_guard<std::mutex> lock(receive_callbacks_mutex_);
   receive_callbacks_[std::make_pair(rank_id, request_id)] = callback;
 }
 
@@ -569,6 +569,8 @@ void AbstractNode::RunReceiveCallback(const CommMessage &message) {
   // If they are equal, then call the callback function
   uint64_t rank_request_id = NextActualRankRequestId(rank_id);
   received_data_[std::make_pair(rank_id, rank_request_id)] = message;
+  MS_LOG(DEBUG) << "Run Receive data callback,the rank id:" << rank_id << ", the rank request id is:" << rank_request_id
+                << ", the send request id is:" << message.pb_meta().request_id();
   auto it = receive_callbacks_.find(std::make_pair(rank_id, rank_request_id));
   if (it != receive_callbacks_.end()) {
     receive_callbacks_mutex_.unlock();
