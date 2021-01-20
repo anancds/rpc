@@ -89,7 +89,10 @@ void SchedulerNode::CreateTcpServer() {
   std::string scheduler_host = ClusterConfig::scheduler_host();
   uint32_t scheduler_port = ClusterConfig::scheduler_port();
   server_ = std::make_shared<TcpServer>(scheduler_host, scheduler_port);
-  server_->SetMessageCallback([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
+  server_->SetMessageCallback([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
+                                  const Protos &protos, const void *data, size_t size) {
+    std::shared_ptr<CommMessage> message = std::make_shared<CommMessage>();
+    message->ParseFromArray(data, size);
     if (handlers_.count(message->pb_meta().cmd()) == 0) {
       MS_LOG(EXCEPTION) << "The cmd:" << message->pb_meta().cmd() << " is not supported!";
     }

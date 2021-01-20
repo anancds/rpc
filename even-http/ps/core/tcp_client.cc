@@ -46,12 +46,12 @@ TcpClient::TcpClient(const std::string &address, std::uint16_t port)
       server_port_(port),
       is_stop_(true),
       is_connected_(false) {
-  message_handler_.SetCallback([this](std::shared_ptr<CommMessage> message) {
-    if (message_callback_) {
-      const std::string &temp = message->SerializeAsString();
-      message_callback_(temp.c_str(), temp.length());
-    }
-  });
+  message_handler_.SetCallback(
+    [this](std::shared_ptr<MessageMeta> meta, const Protos &protos, const void *data, size_t size) {
+      if (message_callback_) {
+        message_callback_(meta, protos, data, size);
+      }
+    });
 }
 
 TcpClient::~TcpClient() {
@@ -190,7 +190,7 @@ void TcpClient::ReadCallback(struct bufferevent *bev, void *ctx) {
 void TcpClient::OnReadHandler(const void *buf, size_t num) {
   MS_EXCEPTION_IF_NULL(buf);
   if (read_callback_) {
-    read_callback_(*this, buf, num);
+    read_callback_(buf, num);
   }
   message_handler_.ReceiveMessage(buf, num);
 }
@@ -199,7 +199,7 @@ void TcpClient::TimerCallback(evutil_socket_t, int16_t, void *arg) {
   MS_EXCEPTION_IF_NULL(arg);
   auto tcp_client = reinterpret_cast<TcpClient *>(arg);
   if (tcp_client->on_timer_callback_) {
-    tcp_client->on_timer_callback_(*tcp_client);
+    tcp_client->on_timer_callback_();
   }
 }
 
@@ -279,16 +279,25 @@ bool TcpClient::SendMessage(const CommMessage &message) const {
   return res;
 }
 
-bool TcpClient::SendMessage(const void *message, size_t size) {
+bool TcpClient::SendMessage(std::shared_ptr<MessageMeta> meta, const Protos &protos, const void *data, size_t size) {
   MS_EXCEPTION_IF_NULL(buffer_event_);
   bufferevent_lock(buffer_event_);
   bool res = true;
 
-  if (bufferevent_write(buffer_event_, &size, sizeof(size)) == -1) {
+  Messageheader header;
+  header.message_proto_ = protos;
+  header.message_meta_length_ = IntToUint(meta->ByteSize());
+  header.message_length_ = size + header.message_meta_length_;
+
+  std::vector<unsigned char> serialized(header.message_length_);
+  memcpy_s(serialized.data(), header.message_meta_length_, meta->SerializeAsString().data(),
+           header.message_meta_length_);
+  memcpy_s(serialized.data() + header.message_meta_length_, size, data, size);
+  if (bufferevent_write(buffer_event_, &header, sizeof(header)) == -1) {
     MS_LOG(ERROR) << "Event buffer add header failed!";
     res = false;
   }
-  if (bufferevent_write(buffer_event_, message, size) == -1) {
+  if (bufferevent_write(buffer_event_, serialized.data(), header.message_length_) == -1) {
     MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
     res = false;
   }

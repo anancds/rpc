@@ -65,6 +65,32 @@ bool TcpConnection::SendMessage(std::shared_ptr<CommMessage> message) const {
   return res;
 }
 
+bool TcpConnection::SendMessage(std::shared_ptr<MessageMeta> meta, const Protos &protos, const void *data,
+                                size_t size) const {
+  MS_EXCEPTION_IF_NULL(buffer_event_);
+  bufferevent_lock(buffer_event_);
+  bool res = true;
+  Messageheader header;
+  header.message_proto_ = protos;
+  header.message_meta_length_ = IntToUint(meta->ByteSize());
+  header.message_length_ = size + header.message_meta_length_;
+
+  std::vector<unsigned char> serialized(header.message_length_);
+  memcpy_s(serialized.data(), header.message_meta_length_, meta->SerializeAsString().data(),
+           header.message_meta_length_);
+  memcpy_s(serialized.data() + header.message_meta_length_, size, data, size);
+  if (bufferevent_write(buffer_event_, &header, sizeof(header)) == -1) {
+    MS_LOG(ERROR) << "Event buffer add header failed!";
+    res = false;
+  }
+  if (bufferevent_write(buffer_event_, serialized.data(), header.message_length_) == -1) {
+    MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
+    res = false;
+  }
+  bufferevent_unlock(buffer_event_);
+  return res;
+}
+
 TcpServer::TcpServer(const std::string &address, std::uint16_t port)
     : base_(nullptr),
       signal_event_(nullptr),
@@ -257,10 +283,10 @@ void TcpServer::ListenerCallback(struct evconnlistener *, evutil_socket_t fd, st
   MS_EXCEPTION_IF_NULL(conn);
 
   server->AddConnection(fd, conn);
-  conn->InitConnection([=](std::shared_ptr<CommMessage> message) {
+  conn->InitConnection([=](std::shared_ptr<MessageMeta> meta, const Protos &protos, const void *data, size_t size) {
     OnServerReceiveMessage on_server_receive = server->GetServerReceive();
     if (on_server_receive) {
-      on_server_receive(conn, message);
+      on_server_receive(conn, meta, protos, data, size);
     }
   });
   bufferevent_setcb(bev, TcpServer::ReadCallback, nullptr, TcpServer::EventCallback,
@@ -360,6 +386,11 @@ void TcpServer::TimerOnceCallback(evutil_socket_t, int16_t, void *arg) {
 
 bool TcpServer::SendMessage(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
   return conn->SendMessage(message);
+}
+
+bool TcpServer::SendMessage(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
+                            const Protos &protos, const void *data, size_t size) {
+  return conn->SendMessage(meta, protos, data, size);
 }
 
 void TcpServer::SendMessage(std::shared_ptr<CommMessage> message) {

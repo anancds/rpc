@@ -23,14 +23,18 @@ void NodeManagerTest::CollectiveTest(const uint32_t &rank_id) {
   *kv_message.mutable_values() = {values.begin(), values.end()};
   CommMessage message;
   message.set_data(kv_message.SerializeAsString());
-  auto start = std::chrono::high_resolution_clock::now();
 
-  uint64_t request = server_node_->CollectiveSendAsync(NodeRole::SERVER, rank_id, message);
-  CommMessage receive_data;
-  server_node_->CollectiveWait(server_node_->CollectiveReceiveAsync(NodeRole::SERVER, rank_id, &receive_data), 10);
+  const void *temp = message.SerializeAsString().data();
+  size_t size = message.ByteSizeLong();
+
+  auto start = std::chrono::high_resolution_clock::now();
+  uint64_t request = server_node_->CollectiveSendAsync(NodeRole::SERVER, rank_id, temp, size);
+  char *receive_data;
+  size_t len;
+  server_node_->CollectiveWait(server_node_->CollectiveReceiveAsync(NodeRole::SERVER, rank_id, &receive_data, &len), 10);
   server_node_->Wait(request, 10);
   KVMessage kvMessage;
-  kvMessage.ParseFromString(receive_data.data());
+  // kvMessage.ParseFromString(receive_data.data());
   MS_LOG(INFO) << kvMessage.keys_size();
   auto end = std::chrono::high_resolution_clock::now();
   MS_LOG(INFO) << "server node CollectiveSend ok, cost:" << (end - start).count() / 1e6 << "ms";
@@ -80,9 +84,11 @@ void NodeManagerTest::PullTest(const uint32_t &size) {
   CommMessage comm_resp_message;
   auto start2 = std::chrono::high_resolution_clock::now();
 
-  worker_node_->Send(NodeRole::SERVER, 0, comm_message, &comm_message);
+  std::shared_ptr<std::vector<unsigned char>> output = std::make_shared<std::vector<unsigned char>>();
+
+  worker_node_->Send(NodeRole::SERVER, 0, comm_message, output);
   KVMessage kv_resp_message;
-  kv_resp_message.ParseFromString(comm_message.data());
+  kv_resp_message.ParseFromArray(output->data(), output->size());
   std::cout << kv_resp_message.keys_size() << std::endl;
   auto end2 = std::chrono::high_resolution_clock::now();
   MS_LOG(INFO) << "send ok, cost:" << (end2 - start2).count() / 1e6 << "ms";
@@ -133,19 +139,19 @@ void NodeManagerTest::StartServer() {
       //      server_node_->Stop();
     }
   });
-  server_node_->set_handler([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
+  server_node_->set_handler([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
+                                std::shared_ptr<std::vector<unsigned char>> data) {
     KVMessage kv_message;
     // kv_message.ParseFromString(message->data());
     MS_LOG(INFO) << "size:" << kv_message.keys_size();
     // PackKVMessage(message);
 
     kv_message.Clear();
-    message->set_data(kv_message.SerializeAsString());
+    auto res = std::make_shared<std::vector<unsigned char>>();
 
-    server_node_->Response(conn, message);
+    server_node_->Response(conn, meta, res);
   });
   server_node_->Start();
-  //  std::this_thread::sleep_for(std::chrono::seconds(10));
 
   // BroadCastTest();
 
@@ -172,12 +178,12 @@ void NodeManagerTest::StartServer1() {
 
   ThreadPool pool(2);
 
-  server_node_->set_handler([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
+  server_node_->set_handler([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
+                                std::shared_ptr<std::vector<unsigned char>> data) {
     KVMessage kv_message;
-    kv_message.ParseFromString(message->data());
+    kv_message.ParseFromArray(data->data(), data->size());
     MS_LOG(INFO) << "size:" << kv_message.keys_size();
-    pool.Submit(&NodeManagerTest::ThreadResponse, this, conn, message);
-    // server_node_->Response(conn, message);
+    pool.Submit(&NodeManagerTest::ThreadResponse, this, conn, meta, data);
   });
   server_node_->Start();
 
@@ -191,9 +197,10 @@ void NodeManagerTest::StartServer1() {
   server_node_->Stop();
 }
 
-void NodeManagerTest::ThreadResponse(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message) {
+void NodeManagerTest::ThreadResponse(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
+                                     std::shared_ptr<std::vector<unsigned char>> data) {
   MS_LOG(INFO) << "thred id:" << std::this_thread::get_id();
-  server_node_->Response(conn, message);
+  server_node_->Response(conn, meta, data);
 }
 
 void NodeManagerTest::CollSend(const u_int32_t &rank_id) { CollectiveTest(rank_id); }

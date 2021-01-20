@@ -41,16 +41,20 @@ class ServerNode : public AbstractNode {
   bool Stop() override;
   bool Finish(const uint32_t &timeout = kTimeoutInSeconds) override;
 
-  using RequestHandler = std::function<void(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message)>;
+  using RequestHandler = std::function<void(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
+                                            std::shared_ptr<std::vector<unsigned char>>)>;
 
   void set_handler(const RequestHandler &handler);
-  void Response(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message);
+  void Response(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
+                std::shared_ptr<std::vector<unsigned char>> data);
 
  private:
   void CreateTcpServer();
   void Initialize();
-  void ProcessSendData(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message);
-  void ProcessCollectiveSendData(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> message);
+  void ProcessSendData(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta, const Protos &protos,
+                       const void *data, size_t size);
+  void ProcessCollectiveSendData(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
+                                 const void *data, size_t size);
 
   std::shared_ptr<TcpServer> server_;
   std::unique_ptr<std::thread> server_thread_;

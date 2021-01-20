@@ -24,46 +24,34 @@
 #include <vector>
 
 #include "utils/log_adapter.h"
+#include "ps/core/message.h"
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
-using messageReceive = std::function<void(std::shared_ptr<CommMessage>)>;
-constexpr int kHeaderLen = 8;
+using messageReceive = std::function<void(std::shared_ptr<MessageMeta>, const Protos &, const void *, size_t size)>;
+constexpr int kHeaderLen = 16;
 
 class TcpMessageHandler {
  public:
   TcpMessageHandler()
-      : is_parsed_(false),
-        message_buffer_(nullptr),
-        message_length_(0),
-        remaining_length_(0),
-        header_index_(-1),
-        last_copy_len_(0) {}
+      : is_parsed_(false), message_buffer_(nullptr), remaining_length_(0), header_index_(-1), last_copy_len_(0) {}
   virtual ~TcpMessageHandler() = default;
 
   void SetCallback(const messageReceive &cb);
   void ReceiveMessage(const void *buffer, size_t num);
-  void ReceiveMessage1(const void *buffer, size_t num);
-
-  enum Protos { PROTOBUF = 0, RAW = 1 };
-  struct header {
-    uint32_t message_proto_ = Protos::PROTOBUF;
-    uint64_t message_length_ = 0;
-  };
 
  private:
   messageReceive message_callback_;
   bool is_parsed_;
   std::unique_ptr<unsigned char> message_buffer_;
-  size_t message_length_;
   size_t remaining_length_;
-  char header_[8];
+  char header_[16];
   int header_index_;
   size_t last_copy_len_;
-  header mHeader;
+  Messageheader message_header_;
   std::string mBuffer;
 };
 }  // namespace core

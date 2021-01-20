@@ -137,9 +137,10 @@ void PackTest2() {
   std::cout << "PackFrom1, cost:" << (end1 - start).count() / 1e6 << "ms" << std::endl;
 }
 
-enum class Protos : size_t { PROTOBUF = 0, RAW = 1 };
+enum class Protos : uint32_t { PROTOBUF = 0, RAW = 1 };
 struct header {
   Protos message_proto_ = Protos::PROTOBUF;
+  uint32_t message_meta_length = 0;
   uint64_t message_length_ = 0;
 };
 void TestStruct() {
@@ -147,6 +148,11 @@ void TestStruct() {
   std::cout << sizeof(temp) << std::endl;
   Protos protos;
   std::cout << sizeof(protos) << std::endl;
+}
+
+void TestVoid(void *output) {
+  
+
 }
 
 int main(int argc, char **argv) {

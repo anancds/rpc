@@ -127,3 +127,30 @@
 //     free(client);
 //   }
 // }
+
+// void TcpMessageHandler::ReceiveMessage1(const void *buffer, size_t num) {
+//   MS_EXCEPTION_IF_NULL(buffer);
+//   mBuffer.append(reinterpret_cast<const char *>(buffer), num);
+
+//   while (mBuffer.size() > 0 && ((mHeader.message_len_ == 0 && mBuffer.size() >= sizeof(uint64_t)) ||
+//                                 mBuffer.size() >= mHeader.message_len_)) {
+//     if (mHeader.message_len_ == 0) {
+//       if (mBuffer.size() >= sizeof(uint64_t)) {
+//         // mHeader.message_proto_ = *reinterpret_cast<const uint32_t *>(mBuffer.c_str());
+//         // mHeader.message_proto_ = ntohl(mHeader.message_proto_);
+
+//         mHeader.message_len_ = *reinterpret_cast<const uint64_t *>(mBuffer.c_str());
+//         // mHeader.message_length_ = ntohl(mHeader.message_length_);
+
+//         mBuffer.erase(0, sizeof(uint64_t));
+//       }
+//     } else if (mBuffer.size() >= mHeader.message_len_) {
+//       std::shared_ptr<CommMessage> pb_message = std::make_shared<CommMessage>();
+//       pb_message->ParseFromArray(mBuffer.c_str(), mHeader.message_len_);
+//       if (message_callback_) message_callback_(pb_message);
+//       mBuffer.erase(0, mHeader.message_len_);
+//       mHeader.message_len_ = 0;
+//       mHeader.message_proto_ = Protos::RAW;
+//     }
+//   }
+// }

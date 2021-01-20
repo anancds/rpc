@@ -39,7 +39,8 @@ class NodeManagerTest {
   void StartServer1();
   void StartClient();
 
-  void ThreadResponse(std::shared_ptr<TcpConnection> conn, std::shared_ptr<CommMessage> meesage);
+  void ThreadResponse(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
+                      std::shared_ptr<std::vector<unsigned char>> data);
 
   void CollSend(const uint32_t &rank_id);
 

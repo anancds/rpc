@@ -35,8 +35,12 @@ void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
         header_[++header_index_] = *(buffer_data + i);
         --num;
         if (header_index_ == kHeaderLen - 1) {
-          message_length_ = *reinterpret_cast<const size_t *>(header_);
-          remaining_length_ = message_length_;
+          message_header_.message_proto_ = *reinterpret_cast<const Protos *>(header_);
+          message_header_.message_meta_length_ =
+            *reinterpret_cast<const uint32_t *>(header_ + sizeof(message_header_.message_proto_));
+          message_header_.message_length_ = *reinterpret_cast<const size_t *>(
+            header_ + sizeof(message_header_.message_proto_) + sizeof(message_header_.message_meta_length_));
+          remaining_length_ = message_header_.message_length_;
           message_buffer_.reset(new unsigned char[remaining_length_]);
           buffer_data += (i + 1);
           break;
@@ -57,43 +61,18 @@ void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
       }
 
       if (remaining_length_ == 0) {
-        std::shared_ptr<CommMessage> pb_message = std::make_shared<CommMessage>();
-        pb_message->ParseFromArray(message_buffer_.get(), message_length_);
+        std::shared_ptr<MessageMeta> pb_message = std::make_shared<MessageMeta>();
+        pb_message->ParseFromArray(message_buffer_.get(), message_header_.message_meta_length_);
         if (message_callback_) {
-          message_callback_(pb_message);
+          message_callback_(pb_message, message_header_.message_proto_,
+                            message_buffer_.get() + message_header_.message_meta_length_,
+                            message_header_.message_length_ - message_header_.message_meta_length_);
         }
         message_buffer_.reset();
         message_buffer_ = nullptr;
         header_index_ = -1;
         last_copy_len_ = 0;
       }
-    }
-  }
-}
-
-void TcpMessageHandler::ReceiveMessage1(const void *buffer, size_t num) {
-  MS_EXCEPTION_IF_NULL(buffer);
-  mBuffer.append(reinterpret_cast<const char *>(buffer), num);
-
-  while (mBuffer.size() > 0 && ((mHeader.message_length_ == 0 && mBuffer.size() >= sizeof(uint64_t)) ||
-                                mBuffer.size() >= mHeader.message_length_)) {
-    if (mHeader.message_length_ == 0) {
-      if (mBuffer.size() >= sizeof(uint64_t)) {
-        // mHeader.message_proto_ = *reinterpret_cast<const uint32_t *>(mBuffer.c_str());
-        // mHeader.message_proto_ = ntohl(mHeader.message_proto_);
-
-        mHeader.message_length_ = *reinterpret_cast<const uint64_t *>(mBuffer.c_str());
-        // mHeader.message_length_ = ntohl(mHeader.message_length_);
-
-        mBuffer.erase(0, sizeof(uint64_t));
-      }
-    } else if (mBuffer.size() >= mHeader.message_length_) {
-      std::shared_ptr<CommMessage> pb_message = std::make_shared<CommMessage>();
-      pb_message->ParseFromArray(mBuffer.c_str(), mHeader.message_length_);
-      if (message_callback_) message_callback_(pb_message);
-      mBuffer.erase(0, mHeader.message_length_);
-      mHeader.message_length_ = 0;
-      mHeader.message_proto_ = 0;
     }
   }
 }
