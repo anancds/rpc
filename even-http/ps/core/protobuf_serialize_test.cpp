@@ -150,9 +150,13 @@ void TestStruct() {
   std::cout << sizeof(protos) << std::endl;
 }
 
-void TestVoid(void *output) {
-  
+void TestVoid(void **output) {
+  unsigned char a[1] = {'a'};
+  *output = a;
+}
 
+void TestSharedPtr(std::shared_ptr<std::vector<unsigned char>> data) {
+  data->push_back('a');
 }
 
 int main(int argc, char **argv) {
@@ -171,7 +175,17 @@ int main(int argc, char **argv) {
   // PackTest2();
   std::cout << "test7------------------" << std::endl;
   std::cout << "test8------------------" << std::endl;
-  TestStruct();
+  // TestStruct();
+  std::cout << "test9------------------" << std::endl;
+  void *res;
+  TestVoid(&res);
+  char *test = reinterpret_cast<char *>(res);
+  std::string a(test, 1);
+  std::cout << "test9:" << a << std::endl;
+  std::cout << "test10------------------" << std::endl;
+  auto res_ptr = std::make_shared<std::vector<unsigned char>>();
+  TestSharedPtr(res_ptr);
+  std::cout << "test10------------------" << res_ptr->at(0) << std::endl;
 
   return 0;
 }
