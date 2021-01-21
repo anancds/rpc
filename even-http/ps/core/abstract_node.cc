@@ -20,8 +20,8 @@ namespace mindspore {
 namespace ps {
 namespace core {
 void AbstractNode::Register(const std::shared_ptr<TcpClient> &client) {
-  MessageMeta message_meta;
-  message_meta.set_cmd(NodeCommand::REGISTER);
+  auto message_meta = std::make_shared<MessageMeta>();
+  message_meta->set_cmd(NodeCommand::REGISTER);
 
   RegisterMessage register_message;
   register_message.set_node_id(node_info_.node_id_);
@@ -29,11 +29,8 @@ void AbstractNode::Register(const std::shared_ptr<TcpClient> &client) {
   register_message.set_ip(node_info_.ip_);
   register_message.set_port(node_info_.port_);
 
-  CommMessage comm_message;
-  *comm_message.mutable_pb_meta() = {message_meta};
-  comm_message.set_data(register_message.SerializeAsString());
-  comm_message.set_user_cmd("");
-  if (!SendMessageSync(client, comm_message)) {
+  if (!SendMessageSync(client, message_meta, Protos::PROTOBUF, register_message.SerializeAsString().data(),
+                       register_message.ByteSizeLong())) {
     MS_LOG(EXCEPTION) << "The node role:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                       << " the node id:" << node_info_.node_id_ << " register timeout!";
   }
@@ -42,9 +39,9 @@ void AbstractNode::Register(const std::shared_ptr<TcpClient> &client) {
                << " the node id:" << node_info_.node_id_ << "is registering to scheduler!";
 }
 
-void AbstractNode::ProcessRegisterResp(const CommMessage &message) {
+void AbstractNode::ProcessRegisterResp(std::shared_ptr<MessageMeta> meta, const void *data, size_t size) {
   RegisterRespMessage register_resp_message;
-  register_resp_message.ParseFromString(message.data());
+  register_resp_message.ParseFromArray(data, size);
   if (register_resp_message.node_id() != node_info_.node_id_) {
     MS_LOG(EXCEPTION) << "The node id received:" << register_resp_message.node_id()
                       << " is not match the current node id:" << node_info_.node_id_;
@@ -52,7 +49,8 @@ void AbstractNode::ProcessRegisterResp(const CommMessage &message) {
 
   node_info_.rank_id_ = register_resp_message.rank_id();
 
-  MS_LOG(INFO) << "The node id is:" << node_info_.node_id_ << ", and the rank id is:" << node_info_.rank_id_;
+  MS_LOG(INFO) << "The node id is:" << node_info_.node_id_ << ", and the rank id is:" << node_info_.rank_id_
+               << " registered scheduler success!";
 }
 
 bool AbstractNode::Broadcast(const enum NodeRole &node_role, const CommMessage &message, const uint32_t &timeout) {
@@ -83,22 +81,19 @@ void AbstractNode::set_event_callback(const OnNodeEventMessage &on_node_event_me
   on_node_event_message_ = on_node_event_message;
 }
 
-bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const CommMessage &message,
-                        const uint32_t &timeout) {
+bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
+                        std::shared_ptr<std::vector<unsigned char>> data, size_t size, const uint32_t &timeout) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
 
-  CommMessage &comm_message = const_cast<CommMessage &>(message);
+  auto message_meta = std::make_shared<MessageMeta>();
+  message_meta->set_cmd(NodeCommand::SEND_DATA);
+  message_meta->set_rank_id(node_info_.rank_id_);
+  message_meta->set_role(node_info_.node_role_);
 
-  MessageMeta message_meta;
-  message_meta.set_cmd(NodeCommand::SEND_DATA);
-  message_meta.set_rank_id(node_info_.rank_id_);
-  message_meta.set_role(node_info_.node_role_);
-
-  *comm_message.mutable_pb_meta() = {message_meta};
   auto client = GetOrCreateTcpClient(rank_id);
-  return SendMessageSync(client, comm_message, timeout);
+  return SendMessageSync(client, message_meta, Protos::RAW, data->data(), size, timeout);
 }
 
 bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
@@ -280,7 +275,13 @@ void AbstractNode::StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client)
       if (!Heartbeat(client)) {
         MS_LOG(ERROR) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                       << ", the node id is:" << node_info_.node_id_ << " Send heartbeat timeout!";
-        CheckSchedulerTimeout();
+        if (!CheckSchedulerTimeout() && on_node_event_message_) {
+          MS_LOG(ERROR) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
+                        << ", the node id is:" << node_info_.node_id_ << " exited due to scheduler timeout!";
+          is_finish_ = true;
+          wait_finish_cond_.notify_all();
+          on_node_event_message_(NodeEvent::SCHEDULER_TIMEOUT);
+        }
       } else {
         UpdateSchedulerTime();
       }
@@ -290,17 +291,15 @@ void AbstractNode::StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client)
 }
 
 bool AbstractNode::Heartbeat(const std::shared_ptr<TcpClient> &client, bool is_node_finish) {
-  MessageMeta meta;
-  meta.set_cmd(NodeCommand::HEARTBEAT);
+  auto meta = std::make_shared<MessageMeta>();
+  meta->set_cmd(NodeCommand::HEARTBEAT);
 
   HeartbeatMessage heartbeat_message;
   heartbeat_message.set_node_id(node_info_.node_id_);
   heartbeat_message.set_is_node_finish(is_node_finish);
 
-  CommMessage message;
-  *message.mutable_pb_meta() = {meta};
-  message.set_data(heartbeat_message.SerializeAsString());
-  if (!SendMessageSync(client, message)) {
+  if (!SendMessageSync(client, meta, Protos::PROTOBUF, heartbeat_message.SerializeAsString().data(),
+                       heartbeat_message.ByteSizeLong())) {
     MS_LOG(ERROR) << "The node id:" << node_info_.node_id_ << " Send heartbeat timeout!";
   }
   return true;
@@ -324,9 +323,9 @@ bool AbstractNode::CheckSchedulerTimeout() const {
   return false;
 }
 
-void AbstractNode::ProcessHeartbeatResp(const CommMessage &message) {
+void AbstractNode::ProcessHeartbeatResp(std::shared_ptr<MessageMeta> meta, const void *data, size_t size) {
   HeartbeatRespMessage heartbeat_resp_message;
-  heartbeat_resp_message.ParseFromString(message.data());
+  heartbeat_resp_message.ParseFromArray(data, size);
 
   is_ready_ = heartbeat_resp_message.is_cluster_ready();
   if (is_ready_.load()) {
@@ -351,24 +350,25 @@ void AbstractNode::ProcessHeartbeatResp(const CommMessage &message) {
   }
 }
 
-void AbstractNode::ProcessFinishResp(const CommMessage &message) {
+void AbstractNode::ProcessFinishResp(std::shared_ptr<MessageMeta> meta, const void *data, size_t size) {
   MS_LOG(INFO) << "The Node id:" << node_info_.node_id_ << " receive a finish message response!";
 }
 
 void AbstractNode::FetchServers(const std::shared_ptr<TcpClient> &client) {
-  MessageMeta meta;
-  meta.set_cmd(NodeCommand::FETCH_SERVER);
+  auto meta = std::make_shared<MessageMeta>();
+  meta->set_cmd(NodeCommand::FETCH_SERVER);
 
-  CommMessage message;
-  *message.mutable_pb_meta() = {meta};
-  if (!SendMessageSync(client, message)) {
+  FetchServersMessage fetch_servers;
+  fetch_servers.set_node_id(node_info_.node_id_);
+  if (!SendMessageSync(client, meta, Protos::PROTOBUF, fetch_servers.SerializeAsString().data(),
+                       fetch_servers.ByteSizeLong())) {
     MS_LOG(EXCEPTION) << "Fetch servers address timeout!";
   }
 }
 
-void AbstractNode::ProcessFetchServersResp(const CommMessage &message) {
+void AbstractNode::ProcessFetchServersResp(std::shared_ptr<MessageMeta> meta, const void *data, size_t size) {
   FetchServersRespMessage fetch_servers_resp_message;
-  fetch_servers_resp_message.ParseFromString(message.data());
+  fetch_servers_resp_message.ParseFromArray(data, size);
 
   for (const auto &it : fetch_servers_resp_message.servers_meta()) {
     nodes_address_[std::make_pair(NodeRole::SERVER, it.rank_id())] = std::make_pair(it.ip(), it.port());
@@ -378,16 +378,14 @@ void AbstractNode::ProcessFetchServersResp(const CommMessage &message) {
 }
 
 bool AbstractNode::Disconnect(const std::shared_ptr<TcpClient> &client, const uint32_t &timeout) {
-  MessageMeta meta;
-  meta.set_cmd(NodeCommand::FINISH);
+  auto meta = std::make_shared<MessageMeta>();
+  meta->set_cmd(NodeCommand::FINISH);
 
   FinishMessage finish_message;
   finish_message.set_node_id(node_info_.node_id_);
 
-  CommMessage message;
-  *message.mutable_pb_meta() = {meta};
-  message.set_data(finish_message.SerializeAsString());
-  if (!SendMessageSync(client, message)) {
+  if (!SendMessageSync(client, meta, Protos::PROTOBUF, finish_message.SerializeAsString().data(),
+                       finish_message.ByteSizeLong())) {
     MS_LOG(ERROR) << "The node role:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                   << " the node id:" << node_info_.node_id_ << " send Finish Message timeout!";
   }
@@ -411,13 +409,11 @@ bool AbstractNode::InitClientToScheduler() {
   client_to_scheduler_ = std::make_shared<TcpClient>(scheduler_host, scheduler_port);
   client_to_scheduler_->SetMessageCallback(
     [&](std::shared_ptr<MessageMeta> meta, const Protos &protos, const void *data, size_t size) {
-      CommMessage message;
-      message.ParseFromArray(data, size);
-      if (handlers_.count(message.pb_meta().cmd()) == 0) {
-        MS_LOG(EXCEPTION) << "The cmd:" << message.pb_meta().cmd() << " is not supported!";
+      if (handlers_.count(meta->cmd()) == 0) {
+        MS_LOG(EXCEPTION) << "The cmd:" << meta->cmd() << " is not supported!";
       }
-      auto &handler_ptr = handlers_[message.pb_meta().cmd()];
-      (this->*handler_ptr)(message);
+      auto &handler_ptr = handlers_[meta->cmd()];
+      (this->*handler_ptr)(meta, data, size);
       NotifyMessageArrival(meta);
     });
 
@@ -493,7 +489,8 @@ bool AbstractNode::SendMessageSync(const std::shared_ptr<TcpClient> &client, std
   client->SendMessage(meta, protos, data, size);
   MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                 << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
-  return Wait(request_id, timeout);
+  bool res = Wait(request_id, timeout);
+  return res;
 }
 
 void AbstractNode::ProcessSendDataResp(std::shared_ptr<MessageMeta> meta, const Protos &protos, const void *data,
@@ -602,7 +599,7 @@ uint64_t AbstractNode::NextActualRankRequestId(const uint32_t &rank_id) {
   return rank_request_id;
 }
 
-void AbstractNode::InitHandler() {
+void AbstractNode::InitCommandHandler() {
   handlers_[NodeCommand::HEARTBEAT] = &AbstractNode::ProcessHeartbeatResp;
   handlers_[NodeCommand::REGISTER] = &AbstractNode::ProcessRegisterResp;
   handlers_[NodeCommand::FETCH_SERVER] = &AbstractNode::ProcessFetchServersResp;

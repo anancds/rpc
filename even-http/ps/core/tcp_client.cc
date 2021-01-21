@@ -266,8 +266,13 @@ bool TcpClient::SendMessage(const CommMessage &message) const {
   MS_EXCEPTION_IF_NULL(buffer_event_);
   bufferevent_lock(buffer_event_);
   bool res = true;
-  size_t buf_size = message.ByteSizeLong();
-  if (bufferevent_write(buffer_event_, &buf_size, sizeof(buf_size)) == -1) {
+  size_t buf_size = IntToUint(message.ByteSizeLong());
+  uint32_t meta_size = message.pb_meta().ByteSize();
+  Messageheader header;
+  header.message_proto_ = Protos::PROTOBUF;
+  header.message_length_ = buf_size;
+  header.message_meta_length_ = meta_size;
+  if (bufferevent_write(buffer_event_, &header, sizeof(header)) == -1) {
     MS_LOG(ERROR) << "Event buffer add header failed!";
     res = false;
   }
@@ -286,18 +291,18 @@ bool TcpClient::SendMessage(std::shared_ptr<MessageMeta> meta, const Protos &pro
 
   Messageheader header;
   header.message_proto_ = protos;
-  header.message_meta_length_ = IntToUint(meta->ByteSize());
+  header.message_meta_length_ = SizeToUint(meta->ByteSizeLong());
   header.message_length_ = size + header.message_meta_length_;
 
-  std::vector<unsigned char> serialized(header.message_length_);
-  memcpy_s(serialized.data(), header.message_meta_length_, meta->SerializeAsString().data(),
-           header.message_meta_length_);
-  memcpy_s(serialized.data() + header.message_meta_length_, size, data, size);
   if (bufferevent_write(buffer_event_, &header, sizeof(header)) == -1) {
     MS_LOG(ERROR) << "Event buffer add header failed!";
     res = false;
   }
-  if (bufferevent_write(buffer_event_, serialized.data(), header.message_length_) == -1) {
+  if (bufferevent_write(buffer_event_, meta->SerializeAsString().data(), meta->ByteSizeLong()) == -1) {
+    MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
+    res = false;
+  }
+  if (bufferevent_write(buffer_event_, data, size) == -1) {
     MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
     res = false;
   }

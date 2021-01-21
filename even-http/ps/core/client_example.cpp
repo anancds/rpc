@@ -14,33 +14,6 @@ using namespace mindspore::ps;
 
 const std::string test_message(1024, 's');
 using Key = uint64_t;
-static void StartClient(mindspore::ps::core::TcpClient *client) {
-  // Run msg server
-  std::unique_ptr<std::thread> http_client_thread(nullptr);
-  http_client_thread = std::make_unique<std::thread>([&]() {
-    client->SetMessageCallback([](const void *data, size_t size) {
-      CommMessage message;
-      message.ParseFromArray(data, size);
-      KVMessage kv_message;
-      kv_message.ParseFromString(message.data());
-    });
-
-    client->Init();
-
-    CommMessage comm_message;
-    KVMessage kv_message;
-    std::vector<int> keys{1, 2};
-    std::vector<int> values{3, 4};
-    *kv_message.mutable_keys() = {keys.begin(), keys.end()};
-    *kv_message.mutable_values() = {values.begin(), values.end()};
-
-    comm_message.set_data(kv_message.SerializeAsString());
-    client->SendMessage(comm_message);
-
-    client->Start();
-  });
-}
-
 static void Start() {
   ClusterConfig::Init(1, 2, "127.0.0.1", 9999);
   NodeManagerTest::Get()->StartClient();

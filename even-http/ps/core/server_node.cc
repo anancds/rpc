@@ -93,7 +93,7 @@ void ServerNode::Initialize() {
   node_info_.port_ = server_->BoundPort();
   MS_LOG(INFO) << "The node role:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                << " is generate uuid is:" << node_info_.node_id_;
-  InitHandler();
+  InitCommandHandler();
   if (!InitClientToScheduler()) {
     MS_LOG(EXCEPTION) << "Server node init client timeout!";
   }
@@ -104,6 +104,7 @@ void ServerNode::ProcessSendData(std::shared_ptr<TcpConnection> conn, std::share
                                  const Protos &protos, const void *data, size_t size) {
   MS_EXCEPTION_IF_NULL(conn);
   MS_EXCEPTION_IF_NULL(meta);
+  MS_EXCEPTION_IF_NULL(data);
   auto res = std::make_shared<std::vector<unsigned char>>(size, 0);
   memcpy_s(res->data(), size, data, size);
   request_handler_(conn, meta, res);

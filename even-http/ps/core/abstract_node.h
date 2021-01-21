@@ -34,14 +34,14 @@ class AbstractNode : public Node {
   AbstractNode() : heart_beat_thread_(nullptr), client_to_scheduler_thread_(nullptr), client_to_scheduler_(nullptr) {}
   ~AbstractNode() override = default;
 
-  typedef void (AbstractNode::*ResponseHandler)(const CommMessage &message);
+  typedef void (AbstractNode::*ResponseHandler)(std::shared_ptr<MessageMeta> meta, const void *data, size_t size);
 
   bool Broadcast(const enum NodeRole &node_role, const CommMessage &message,
                  const uint32_t &timeout = kCommTimeoutInSeconds);
   void set_event_callback(const OnNodeEventMessage &on_node_event_message);
 
-  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const CommMessage &message,
-            const uint32_t &timeout = kCommTimeoutInSeconds);
+  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, std::shared_ptr<std::vector<unsigned char>> data,
+            size_t size, const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<CommMessage> &data,
             const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const CommMessage &message,
@@ -58,15 +58,17 @@ class AbstractNode : public Node {
 
  protected:
   void Register(const std::shared_ptr<TcpClient> &client);
-  void ProcessRegisterResp(const CommMessage &message);
-  void StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client);
   bool Heartbeat(const std::shared_ptr<TcpClient> &client, bool is_node_finish = false);
+  void FetchServers(const std::shared_ptr<TcpClient> &client);
+
+  void ProcessRegisterResp(std::shared_ptr<MessageMeta> meta, const void *data, size_t size);
+  void ProcessHeartbeatResp(std::shared_ptr<MessageMeta> meta, const void *data, size_t size);
+  void ProcessFinishResp(std::shared_ptr<MessageMeta> meta, const void *data, size_t size);
+  void ProcessFetchServersResp(std::shared_ptr<MessageMeta> meta, const void *data, size_t size);
+
+  void StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client);
   void UpdateSchedulerTime();
   bool CheckSchedulerTimeout() const;
-  void ProcessHeartbeatResp(const CommMessage &message);
-  void ProcessFinishResp(const CommMessage &message);
-  void FetchServers(const std::shared_ptr<TcpClient> &client);
-  void ProcessFetchServersResp(const CommMessage &message);
   bool Disconnect(const std::shared_ptr<TcpClient> &client, const uint32_t &timeout);
   bool WaitForDisconnect(const uint32_t &timeout);
   bool InitClientToScheduler();
@@ -84,7 +86,7 @@ class AbstractNode : public Node {
   void RunReceiveCallback(std::shared_ptr<MessageMeta> meta, const Protos &protos, const void *data, size_t size);
   uint64_t NextExpectedRankRequestId(const uint32_t &rank_id);
   uint64_t NextActualRankRequestId(const uint32_t &rank_id);
-  void InitHandler();
+  void InitCommandHandler();
   uint64_t AddMessageTrack(const uint32_t &expected_response);
   bool CheckMessageTrack(const uint64_t &request_id);
 
