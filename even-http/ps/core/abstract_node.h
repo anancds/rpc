@@ -36,24 +36,25 @@ class AbstractNode : public Node {
 
   typedef void (AbstractNode::*ResponseHandler)(std::shared_ptr<MessageMeta> meta, const void *data, size_t size);
 
-  bool Broadcast(const enum NodeRole &node_role, const CommMessage &message,
+  using VectorPtr = std::shared_ptr<std::vector<unsigned char>>;
+
+  bool Broadcast(const enum NodeRole &node_role, const VectorPtr &message,
                  const uint32_t &timeout = kCommTimeoutInSeconds);
   void set_event_callback(const OnNodeEventMessage &on_node_event_message);
 
-  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, std::shared_ptr<std::vector<unsigned char>> data,
-            size_t size, const uint32_t &timeout = kCommTimeoutInSeconds);
-  bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<CommMessage> &data,
+  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const VectorPtr &data,
             const uint32_t &timeout = kCommTimeoutInSeconds);
-  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const CommMessage &message,
+  bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<VectorPtr> &data,
+            const uint32_t &timeout = kCommTimeoutInSeconds);
+  bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const VectorPtr &message,
             std::shared_ptr<std::vector<unsigned char>> output, const uint32_t &timeout = kCommTimeoutInSeconds);
-  bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<CommMessage> &data,
-            std::vector<std::shared_ptr<std::vector<unsigned char>>> *output,
-            const uint32_t &timeout = kCommTimeoutInSeconds);
+  bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<VectorPtr> &data,
+            std::vector<VectorPtr> *output, const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Wait(uint64_t request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
 
   uint64_t CollectiveSendAsync(const enum NodeRole &node_role, const uint32_t &rank_id, const void *data, size_t size);
   std::pair<uint32_t, uint64_t> CollectiveReceiveAsync(const enum NodeRole &node_role, const uint32_t &rank_id,
-                                                       void *output, size_t *size);
+                                                       void **output, size_t *size);
   bool CollectiveWait(std::pair<uint32_t, uint64_t> request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
 
  protected:

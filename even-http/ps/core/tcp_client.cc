@@ -246,7 +246,7 @@ void TcpClient::Start() {
   MSLOG_IF(mindspore::ERROR, ret == 1, NoExceptionType)
     << "Event base dispatch failed with no events pending or active!";
   MSLOG_IF(mindspore::ERROR, ret == -1, NoExceptionType) << "Event base dispatch failed with error occurred!";
-  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base dispatch with unexpect error code!";
+  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base dispatch with unexpected error code!";
 }
 
 void TcpClient::StartWithNoBlock() {
@@ -257,7 +257,7 @@ void TcpClient::StartWithNoBlock() {
   MSLOG_IF(INFO, ret == 0, NoExceptionType) << "Event base loop success!";
   MSLOG_IF(mindspore::ERROR, ret == 1, NoExceptionType) << "Event base loop failed with no events pending or active!";
   MSLOG_IF(mindspore::ERROR, ret == -1, NoExceptionType) << "Event base loop failed with error occurred!";
-  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base loop with unexpect error code!";
+  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base loop with unexpected error code!";
 }
 
 void TcpClient::SetMessageCallback(const OnMessage &cb) { message_callback_ = cb; }
@@ -267,7 +267,7 @@ bool TcpClient::SendMessage(const CommMessage &message) const {
   bufferevent_lock(buffer_event_);
   bool res = true;
   size_t buf_size = IntToUint(message.ByteSizeLong());
-  uint32_t meta_size = message.pb_meta().ByteSize();
+  uint32_t meta_size = SizeToUint(message.pb_meta().ByteSizeLong());
   Messageheader header;
   header.message_proto_ = Protos::PROTOBUF;
   header.message_length_ = buf_size;
@@ -276,7 +276,11 @@ bool TcpClient::SendMessage(const CommMessage &message) const {
     MS_LOG(ERROR) << "Event buffer add header failed!";
     res = false;
   }
-  if (bufferevent_write(buffer_event_, message.SerializeAsString().data(), buf_size) == -1) {
+  if (bufferevent_write(buffer_event_, message.pb_meta().SerializeAsString().data(), meta_size) == -1) {
+    MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
+    res = false;
+  }
+  if (bufferevent_write(buffer_event_, message.data().data(), message.data().length()) == -1) {
     MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
     res = false;
   }

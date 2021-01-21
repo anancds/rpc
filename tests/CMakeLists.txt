@@ -60,7 +60,7 @@ foreach (_target
     target_link_libraries(${_target}
             unittest
             core1
-            ps
+        #     ps
             rpc-log
             GTest::GTest
             GTest::Main

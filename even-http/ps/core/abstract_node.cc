@@ -53,24 +53,22 @@ void AbstractNode::ProcessRegisterResp(std::shared_ptr<MessageMeta> meta, const 
                << " registered scheduler success!";
 }
 
-bool AbstractNode::Broadcast(const enum NodeRole &node_role, const CommMessage &message, const uint32_t &timeout) {
+bool AbstractNode::Broadcast(const enum NodeRole &node_role, const VectorPtr &message, const uint32_t &timeout) {
   if (node_role != NodeRole::SERVER) {
     MS_LOG(EXCEPTION) << "Currently only supports broadcast to server nodes";
   }
 
-  CommMessage &comm_message = const_cast<CommMessage &>(message);
   uint64_t request_id = AddMessageTrack(nodes_address_.size());
 
   for (auto it = nodes_address_.begin(); it != nodes_address_.end(); ++it) {
-    MessageMeta message_meta;
-    message_meta.set_cmd(NodeCommand::SEND_DATA);
-    message_meta.set_request_id(request_id);
-    message_meta.set_rank_id(node_info_.rank_id_);
-    message_meta.set_role(node_info_.node_role_);
+    auto message_meta = std::make_shared<MessageMeta>();
+    message_meta->set_cmd(NodeCommand::SEND_DATA);
+    message_meta->set_request_id(request_id);
+    message_meta->set_rank_id(node_info_.rank_id_);
+    message_meta->set_role(node_info_.node_role_);
 
-    *comm_message.mutable_pb_meta() = {message_meta};
     auto client = GetOrCreateTcpClient((*it).first.second);
-    client->SendMessage(comm_message);
+    client->SendMessage(message_meta, Protos::RAW, message->data(), message->size());
   }
   MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                 << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
@@ -81,8 +79,8 @@ void AbstractNode::set_event_callback(const OnNodeEventMessage &on_node_event_me
   on_node_event_message_ = on_node_event_message;
 }
 
-bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
-                        std::shared_ptr<std::vector<unsigned char>> data, size_t size, const uint32_t &timeout) {
+bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const VectorPtr &data,
+                        const uint32_t &timeout) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
@@ -93,11 +91,11 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
   message_meta->set_role(node_info_.node_role_);
 
   auto client = GetOrCreateTcpClient(rank_id);
-  return SendMessageSync(client, message_meta, Protos::RAW, data->data(), size, timeout);
+  return SendMessageSync(client, message_meta, Protos::RAW, data->data(), data->size(), timeout);
 }
 
 bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                        const std::vector<CommMessage> &data, const uint32_t &timeout) {
+                        const std::vector<VectorPtr> &data, const uint32_t &timeout) {
   uint64_t request_id = AddMessageTrack(data.size());
 
   if (rank_ids.size() != data.size()) {
@@ -108,31 +106,27 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
       MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
     }
 
-    MessageMeta message_meta;
-    message_meta.set_cmd(NodeCommand::SEND_DATA);
-    message_meta.set_request_id(request_id);
-    message_meta.set_rank_id(node_info_.rank_id_);
-    message_meta.set_role(node_info_.node_role_);
+    auto message_meta = std::make_shared<MessageMeta>();
+    message_meta->set_cmd(NodeCommand::SEND_DATA);
+    message_meta->set_request_id(request_id);
+    message_meta->set_rank_id(node_info_.rank_id_);
+    message_meta->set_role(node_info_.node_role_);
 
-    CommMessage &comm_message = const_cast<CommMessage &>(data.at(it));
-    *comm_message.mutable_pb_meta() = {message_meta};
-
+    auto send = data.at(it);
     auto client = GetOrCreateTcpClient(rank_ids.at(it));
-    client->SendMessage(comm_message);
+    client->SendMessage(message_meta, Protos::RAW, send->data(), send->size());
   }
   MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                 << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return Wait(request_id, timeout);
 }
 
-bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const CommMessage &message,
+bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const VectorPtr &message,
                         std::shared_ptr<std::vector<unsigned char>> output, const uint32_t &timeout) {
   MS_EXCEPTION_IF_NULL(output);
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
-
-  CommMessage &comm_message = const_cast<CommMessage &>(message);
 
   uint64_t request_id = AddMessageTrack(1);
   set_message_callback(request_id, [&]() {
@@ -143,23 +137,21 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
     receive_messages_mutex_.unlock();
   });
 
-  MessageMeta message_meta;
-  message_meta.set_cmd(NodeCommand::SEND_DATA);
-  message_meta.set_request_id(request_id);
-  message_meta.set_rank_id(node_info_.rank_id_);
-  message_meta.set_role(node_info_.node_role_);
+  auto message_meta = std::make_shared<MessageMeta>();
+  message_meta->set_cmd(NodeCommand::SEND_DATA);
+  message_meta->set_request_id(request_id);
+  message_meta->set_rank_id(node_info_.rank_id_);
+  message_meta->set_role(node_info_.node_role_);
 
-  *comm_message.mutable_pb_meta() = {message_meta};
   auto client = GetOrCreateTcpClient(rank_id);
-  client->SendMessage(comm_message);
+  client->SendMessage(message_meta, Protos::RAW, message->data(), message->size());
   MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                 << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   return Wait(request_id, timeout);
 }
 
 bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                        const std::vector<CommMessage> &data,
-                        std::vector<std::shared_ptr<std::vector<unsigned char>>> *output, const uint32_t &timeout) {
+                        const std::vector<VectorPtr> &data, std::vector<VectorPtr> *output, const uint32_t &timeout) {
   MS_EXCEPTION_IF_NULL(output);
   uint64_t request_id = AddMessageTrack(data.size());
 
@@ -184,17 +176,16 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
       MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
     }
 
-    MessageMeta message_meta;
-    message_meta.set_cmd(NodeCommand::SEND_DATA);
-    message_meta.set_request_id(request_id);
-    message_meta.set_rank_id(node_info_.rank_id_);
-    message_meta.set_role(node_info_.node_role_);
+    auto message_meta = std::make_shared<MessageMeta>();
+    message_meta->set_cmd(NodeCommand::SEND_DATA);
+    message_meta->set_request_id(request_id);
+    message_meta->set_rank_id(node_info_.rank_id_);
+    message_meta->set_role(node_info_.node_role_);
 
-    CommMessage &comm_message = const_cast<CommMessage &>(data.at(it));
-    *comm_message.mutable_pb_meta() = {message_meta};
+    auto send = data.at(it);
 
     auto client = GetOrCreateTcpClient(rank_ids.at(it));
-    client->SendMessage(comm_message);
+    client->SendMessage(message_meta, Protos::RAW, send->data(), send->size());
   }
   MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                 << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
@@ -227,7 +218,7 @@ uint64_t AbstractNode::CollectiveSendAsync(const enum NodeRole &node_role, const
 }
 
 std::pair<uint32_t, uint64_t> AbstractNode::CollectiveReceiveAsync(const enum NodeRole &node_role,
-                                                                   const uint32_t &rank_id, void *output,
+                                                                   const uint32_t &rank_id, void **output,
                                                                    size_t *size) {
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
@@ -238,7 +229,7 @@ std::pair<uint32_t, uint64_t> AbstractNode::CollectiveReceiveAsync(const enum No
   receive_messages_done_[std::make_pair(rank_id, rank_request_id)] = false;
   if (received_data_.count(std::make_pair(rank_id, rank_request_id)) > 0) {
     auto res = received_data_[std::make_pair(rank_id, rank_request_id)];
-    output = res->data();
+    *output = res->data();
     *size = res->size();
     received_data_.erase(std::make_pair(rank_id, rank_request_id));
     receive_messages_done_[std::make_pair(rank_id, rank_request_id)] = true;
@@ -247,7 +238,7 @@ std::pair<uint32_t, uint64_t> AbstractNode::CollectiveReceiveAsync(const enum No
     receive_callbacks_[std::make_pair(rank_id, rank_request_id)] = [=]() mutable {
       receive_callbacks_mutex_.lock();
       auto res = received_data_[std::make_pair(rank_id, rank_request_id)];
-      output = res->data();
+      *output = res->data();
       *size = res->size();
       received_data_.erase(std::make_pair(rank_id, rank_request_id));
       receive_messages_done_[std::make_pair(rank_id, rank_request_id)] = true;
@@ -412,7 +403,7 @@ bool AbstractNode::InitClientToScheduler() {
       if (handlers_.count(meta->cmd()) == 0) {
         MS_LOG(EXCEPTION) << "The cmd:" << meta->cmd() << " is not supported!";
       }
-      auto &handler_ptr = handlers_[meta->cmd()];
+      const auto &handler_ptr = handlers_[meta->cmd()];
       (this->*handler_ptr)(meta, data, size);
       NotifyMessageArrival(meta);
     });
@@ -502,7 +493,10 @@ void AbstractNode::ProcessSendDataResp(std::shared_ptr<MessageMeta> meta, const 
                 << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   auto it = receive_messages_.find(request_id);
   auto received_data = std::make_shared<std::vector<unsigned char>>(size, 0);
-  memcpy_s(received_data->data(), size, data, size);
+  int ret = memcpy_s(received_data->data(), size, data, size);
+  if (ret != 0) {
+    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+  }
   if (it != receive_messages_.end()) {
     it->second[rank_id] = received_data;
   } else {
@@ -556,7 +550,10 @@ void AbstractNode::RunReceiveCallback(std::shared_ptr<MessageMeta> meta, const P
   // If they are equal, then call the callback function
   uint64_t rank_request_id = NextActualRankRequestId(rank_id);
   std::shared_ptr<std::vector<unsigned char>> received_data = std::make_shared<std::vector<unsigned char>>(size, 0);
-  memcpy_s(received_data->data(), size, data, size);
+  int ret = memcpy_s(received_data->data(), size, data, size);
+  if (ret != 0) {
+    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+  }
   received_data_[std::make_pair(rank_id, rank_request_id)] = received_data;
   MS_LOG(DEBUG) << "Run Receive data callback,the rank id:" << rank_id << ", the rank request id is:" << rank_request_id
                 << ", the send request id is:" << meta->request_id();

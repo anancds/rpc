@@ -92,7 +92,7 @@ void SchedulerNode::CreateTcpServer() {
     if (handlers_.count(meta->cmd()) == 0) {
       MS_LOG(EXCEPTION) << "The cmd:" << meta->cmd() << " is not supported!";
     }
-    auto &handler_ptr = handlers_[meta->cmd()];
+    const auto &handler_ptr = handlers_[meta->cmd()];
     (this->*handler_ptr)(server_, conn, meta, data, size);
   });
 

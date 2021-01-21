@@ -181,7 +181,7 @@ void TcpServer::Start() {
   MSLOG_IF(mindspore::ERROR, ret == 1, NoExceptionType)
     << "Event base dispatch failed with no events pending or active!";
   MSLOG_IF(mindspore::ERROR, ret == -1, NoExceptionType) << "Event base dispatch failed with error occurred!";
-  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base dispatch with unexpect error code!";
+  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base dispatch with unexpected error code!";
 }
 
 void TcpServer::StartWithNoBlock() {
@@ -192,7 +192,7 @@ void TcpServer::StartWithNoBlock() {
   MSLOG_IF(INFO, ret == 0, NoExceptionType) << "Event base loop success!";
   MSLOG_IF(mindspore::ERROR, ret == 1, NoExceptionType) << "Event base loop failed with no events pending or active!";
   MSLOG_IF(mindspore::ERROR, ret == -1, NoExceptionType) << "Event base loop failed with error occurred!";
-  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base loop with unexpect error code!";
+  MSLOG_IF(mindspore::EXCEPTION, ret < -1, AbortedError) << "Event base loop with unexpected error code!";
 }
 
 void TcpServer::StartTimerOnlyOnce(const uint32_t &time) {

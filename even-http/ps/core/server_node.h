@@ -23,6 +23,7 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include "ps/core/cluster_config.h"
 #include "ps/core/tcp_client.h"

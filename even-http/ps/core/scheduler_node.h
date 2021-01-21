@@ -25,6 +25,7 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <unordered_map>
 
 #include "ps/core/cluster_config.h"
 #include "ps/core/tcp_client.h"
