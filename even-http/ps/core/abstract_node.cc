@@ -133,10 +133,9 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
 }
 
 bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const DataPtr &message, size_t len,
-                        int command, DataPtr output, size_t *output_len, const uint32_t &timeout) {
+                        int command, VectorPtr *output, const uint32_t &timeout) {
   MS_EXCEPTION_IF_NULL(message);
-  // MS_EXCEPTION_IF_NULL(output);
-  MS_EXCEPTION_IF_NULL(output_len);
+  MS_EXCEPTION_IF_NULL(output);
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
   }
@@ -145,10 +144,7 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
   set_message_callback(request_id, [&]() {
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
-    output.reset(new unsigned char[res[rank_id].len]);
-    output = res[rank_id].data;
-    *output_len = res[rank_id].len;
-
+    *output = res[rank_id];
     receive_messages_.erase(request_id);
     receive_messages_mutex_.unlock();
   });
@@ -169,9 +165,8 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
 
 bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
                         const std::vector<DataPtr> &data, const std::vector<size_t> &data_lens, int command,
-                        std::vector<DataPtr> *output, std::vector<size_t> *output_lens, const uint32_t &timeout) {
+                        std::vector<VectorPtr> *output, const uint32_t &timeout) {
   MS_EXCEPTION_IF_NULL(output);
-  MS_EXCEPTION_IF_NULL(output_lens);
   uint64_t request_id = AddMessageTrack(data.size());
 
   if (rank_ids.size() != data.size()) {
@@ -184,8 +179,7 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
     for (size_t it = 0; it < size; ++it) {
-      (*output).push_back(res[rank_ids.at(it)].data);
-      (*output_lens).push_back(res[rank_ids.at(it)].len);
+      (*output).push_back(res[rank_ids.at(it)]);
     }
     receive_messages_.erase(request_id);
     receive_messages_mutex_.unlock();
@@ -527,21 +521,18 @@ void AbstractNode::ProcessSendDataResp(std::shared_ptr<MessageMeta> meta, const 
   MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                 << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << request_id;
   auto it = receive_messages_.find(request_id);
-  std::shared_ptr<unsigned char> received_data(new unsigned char[size]);
+  VectorPtr received_data = std::make_shared<std::vector<unsigned char>>(size, 0);
   if (size > 0) {
-    int ret = memcpy_s(received_data.get(), size, data, size);
+    int ret = memcpy_s(received_data.get()->data(), size, data, size);
     if (ret != 0) {
       MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
     }
   }
-  RecvMessage message;
-  message.data = received_data;
-  message.len = size;
   if (it != receive_messages_.end()) {
-    it->second[rank_id] = message;
+    it->second[rank_id] = received_data;
   } else {
-    std::unordered_map<uint32_t, RecvMessage> res;
-    res.insert(std::make_pair(rank_id, message));
+    std::unordered_map<uint32_t, VectorPtr> res;
+    res.insert(std::make_pair(rank_id, received_data));
     receive_messages_[request_id] = res;
   }
 }

@@ -158,10 +158,15 @@ void TestVoid(void **output) {
   std::cout << "size:" << meta.ByteSizeLong() << std::endl;
 }
 
-void TestSharedPtr(std::shared_ptr<std::vector<unsigned char>> data) { data->push_back('a'); }
+void TestSharedPtr(std::shared_ptr<std::vector<unsigned char>> *data) {
+  std::shared_ptr<std::vector<unsigned char>> temp = std::make_shared<std::vector<unsigned char>>(0);
+  temp->push_back('a');
+
+  *data = temp;
+}
 
 void TestMemcpy() {
-  size_t size = 0;
+  size_t size = 80000000;
   std::vector<unsigned char> res(size + 1, 1);
 
   // auto start = std::chrono::high_resolution_clock::now();
@@ -179,7 +184,7 @@ void TestMemcpy() {
   std::shared_ptr<unsigned char[]> test1(new unsigned char[size + 1]);
   auto end4 = std::chrono::high_resolution_clock::now();
 
-  unsigned char * temp = res.data();
+  unsigned char *temp = res.data();
 
   int ret = memcpy_s(test1.get(), size + 1, temp, size);
   if (ret != 0) {
@@ -234,7 +239,7 @@ int main(int argc, char **argv) {
 
   std::cout << "test10------------------" << std::endl;
   auto res_ptr = std::make_shared<std::vector<unsigned char>>();
-  TestSharedPtr(res_ptr);
+  TestSharedPtr(&res_ptr);
   std::cout << "test10------------------" << res_ptr->at(0) << std::endl;
 
   std::cout << "test11------------------" << std::endl;

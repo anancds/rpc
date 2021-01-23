@@ -53,11 +53,6 @@ struct Meta {
   // the current Node rank id,the worker node range is:[0,numOfWorker-1], the server node range is:[0, numOfServer-1]
   int32_t rank_id = 4;
 };
-
-struct RecvMessage {
-  std::shared_ptr<unsigned char> data;
-  size_t len;
-};
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore

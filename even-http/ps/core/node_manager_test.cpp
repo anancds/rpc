@@ -86,13 +86,11 @@ uint64_t NodeManagerTest::PullTest(const uint32_t &size) {
   std::shared_ptr<unsigned char> res(new unsigned char[data.length()]);
   memcpy_s(res.get(), data.length(), data.data(), data.length());
 
-  std::shared_ptr<unsigned char> output;
-  std::shared_ptr<std::vector<unsigned char>> temp = std::make_shared<std::vector<unsigned char>>();
-  size_t ouput_len;
+  auto output = std::make_shared<std::vector<unsigned char>>();
 
-  worker_node_->Send(NodeRole::SERVER, 0, res, data.size(), 0, output, &ouput_len);
+  worker_node_->Send(NodeRole::SERVER, 0, res, data.size(), 0, &output);
   KVMessage kv_resp_message;
-  kv_resp_message.ParseFromArray(output.get(), ouput_len);
+  kv_resp_message.ParseFromArray(output.get()->data(), output->size());
   std::cout << kv_resp_message.keys_size() << std::endl;
   auto end2 = std::chrono::high_resolution_clock::now();
   MS_LOG(INFO) << "pull test ok, cost:" << (end2 - start2).count() / 1e6 << "ms";
@@ -158,7 +156,7 @@ void NodeManagerTest::StartServer() {
       // auto res = std::make_shared<std::vector<unsigned char>>(262144, 1);
       std::shared_ptr<unsigned char> res(new unsigned char[0]);
 
-      server_node_->Response(conn, meta, res, 0);
+      server_node_->Response(conn, meta, data, size);
     });
   server_node_->Start();
 
@@ -242,7 +240,7 @@ void NodeManagerTest::StartClient() {
   for (int i = 0; i < 1; i++) {
     pull_time += PullTest(262144);
   }
-  MS_LOG(INFO) << "Push total cost:" << pull_time;
+  MS_LOG(INFO) << "Pull total cost:" << pull_time;
 
   worker_node_->Finish(30);
   worker_node_->Stop();
