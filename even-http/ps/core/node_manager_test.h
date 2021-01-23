@@ -49,7 +49,7 @@ class NodeManagerTest {
   void CollectiveTest(const uint32_t &rank_id);
   void BroadCastTest();
   size_t PushTest(const uint32_t &size);
-  void PullTest(const uint32_t &size);
+  uint64_t PullTest(const uint32_t &size);
   void MultiPullTest(const uint32_t &size);
   void PackKVMessage(std::shared_ptr<CommMessage> message);
   void PackMessage(std::shared_ptr<std::vector<unsigned char>> message);

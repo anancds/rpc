@@ -38,6 +38,7 @@ class AbstractNode : public Node {
   typedef void (AbstractNode::*ResponseHandler)(std::shared_ptr<MessageMeta> meta, const void *data, size_t size);
 
   using DataPtr = std::shared_ptr<unsigned char>;
+  using VectorPtr = std::shared_ptr<std::vector<unsigned char>>;
 
   bool Broadcast(const enum NodeRole &node_role, const DataPtr &message, size_t size, int command,
                  const uint32_t &timeout = kCommTimeoutInSeconds);
@@ -50,8 +51,8 @@ class AbstractNode : public Node {
   bool Send(const enum NodeRole &node_role, const uint32_t &rank_id, const DataPtr &message, size_t len, int command,
             DataPtr output, size_t *output_len, const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids, const std::vector<DataPtr> &data,
-            const std::vector<size_t> &data_lens, std::vector<DataPtr> *output, std::vector<size_t> *output_lens,
-            int command, const uint32_t &timeout = kCommTimeoutInSeconds);
+            const std::vector<size_t> &data_lens, int command, std::vector<DataPtr> *output,
+            std::vector<size_t> *output_lens, const uint32_t &timeout = kCommTimeoutInSeconds);
   bool Wait(uint64_t request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
 
   uint64_t CollectiveSendAsync(const enum NodeRole &node_role, const uint32_t &rank_id, const void *data, size_t size);
@@ -109,7 +110,8 @@ class AbstractNode : public Node {
   std::condition_variable message_tracker_cond_;
 
   // the key is: request_id, the value is: <rank_id, RecvMessage>
-  std::unordered_map<uint64_t, std::unordered_map<uint32_t, RecvMessage>> receive_messages_;
+  std::unordered_map<uint64_t, std::unordered_map<uint32_t, std::shared_ptr<std::vector<unsigned char>>>>
+    receive_messages_;
   std::map<std::pair<uint32_t, uint64_t>, bool> receive_messages_done_;
   std::mutex receive_messages_mutex_;
   // the key is: request_id

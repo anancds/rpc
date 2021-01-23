@@ -55,7 +55,6 @@ struct Meta {
 };
 
 struct RecvMessage {
-  uint32_t rank_id;
   std::shared_ptr<unsigned char> data;
   size_t len;
 };

@@ -135,7 +135,7 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
 bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id, const DataPtr &message, size_t len,
                         int command, DataPtr output, size_t *output_len, const uint32_t &timeout) {
   MS_EXCEPTION_IF_NULL(message);
-  MS_EXCEPTION_IF_NULL(output);
+  // MS_EXCEPTION_IF_NULL(output);
   MS_EXCEPTION_IF_NULL(output_len);
   if (!CommUtil::ValidateRankId(node_role, rank_id)) {
     MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
@@ -145,6 +145,7 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
   set_message_callback(request_id, [&]() {
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
+    output.reset(new unsigned char[res[rank_id].len]);
     output = res[rank_id].data;
     *output_len = res[rank_id].len;
 
@@ -167,9 +168,8 @@ bool AbstractNode::Send(const enum NodeRole &node_role, const uint32_t &rank_id,
 }
 
 bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &rank_ids,
-                        const std::vector<DataPtr> &data, const std::vector<size_t> &data_lens,
-                        std::vector<DataPtr> *output, std::vector<size_t> *output_lens, int command,
-                        const uint32_t &timeout) {
+                        const std::vector<DataPtr> &data, const std::vector<size_t> &data_lens, int command,
+                        std::vector<DataPtr> *output, std::vector<size_t> *output_lens, const uint32_t &timeout) {
   MS_EXCEPTION_IF_NULL(output);
   MS_EXCEPTION_IF_NULL(output_lens);
   uint64_t request_id = AddMessageTrack(data.size());
@@ -178,12 +178,12 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     MS_LOG(EXCEPTION) << "The number of rank ids, data, comm_message_resp should be equal!";
   }
 
-  size_t len = rank_ids.size();
+  size_t size = rank_ids.size();
 
   set_message_callback(request_id, [&]() {
     receive_messages_mutex_.lock();
     auto res = receive_messages_[request_id];
-    for (size_t it = 0; it < len; ++it) {
+    for (size_t it = 0; it < size; ++it) {
       (*output).push_back(res[rank_ids.at(it)].data);
       (*output_lens).push_back(res[rank_ids.at(it)].len);
     }
@@ -191,7 +191,7 @@ bool AbstractNode::Send(const NodeRole &node_role, const std::vector<uint32_t> &
     receive_messages_mutex_.unlock();
   });
 
-  for (size_t it = 0; it < len; ++it) {
+  for (size_t it = 0; it < size; ++it) {
     if (!CommUtil::ValidateRankId(node_role, rank_ids.at(it))) {
       MS_LOG(EXCEPTION) << "The node role or rank_id is illegal!";
     }
@@ -431,7 +431,7 @@ bool AbstractNode::InitClientToScheduler() {
       if (handlers_[meta->cmd()] != nullptr) {
         const auto &handler_ptr = handlers_[meta->cmd()];
         (this->*handler_ptr)(meta, data, size);
-      };
+      }
       NotifyMessageArrival(meta);
     });
 

@@ -74,25 +74,29 @@ size_t NodeManagerTest::PushTest(const uint32_t &size) {
   return (end - start).count() / 1e6;
 }
 
-void NodeManagerTest::PullTest(const uint32_t &size) {
+uint64_t NodeManagerTest::PullTest(const uint32_t &size) {
   KVMessage kv_message;
   std::vector<int> keys(size, 1);
   std::vector<int> values(size, 2);
   *kv_message.mutable_keys() = {keys.begin(), keys.end()};
   *kv_message.mutable_values() = {values.begin(), values.end()};
-  CommMessage comm_message;
-  comm_message.set_data(kv_message.SerializeAsString());
-  CommMessage comm_resp_message;
   auto start2 = std::chrono::high_resolution_clock::now();
+  std::string data = kv_message.SerializeAsString();
 
-  std::shared_ptr<std::vector<unsigned char>> output = std::make_shared<std::vector<unsigned char>>();
+  std::shared_ptr<unsigned char> res(new unsigned char[data.length()]);
+  memcpy_s(res.get(), data.length(), data.data(), data.length());
 
-  // worker_node_->Send(NodeRole::SERVER, 0, comm_message, output);
+  std::shared_ptr<unsigned char> output;
+  std::shared_ptr<std::vector<unsigned char>> temp = std::make_shared<std::vector<unsigned char>>();
+  size_t ouput_len;
+
+  worker_node_->Send(NodeRole::SERVER, 0, res, data.size(), 0, output, &ouput_len);
   KVMessage kv_resp_message;
-  kv_resp_message.ParseFromArray(output->data(), output->size());
+  kv_resp_message.ParseFromArray(output.get(), ouput_len);
   std::cout << kv_resp_message.keys_size() << std::endl;
   auto end2 = std::chrono::high_resolution_clock::now();
-  MS_LOG(INFO) << "send ok, cost:" << (end2 - start2).count() / 1e6 << "ms";
+  MS_LOG(INFO) << "pull test ok, cost:" << (end2 - start2).count() / 1e6 << "ms";
+  return (end2 - start2).count() / 1e6;
 }
 
 void NodeManagerTest::MultiPullTest(const uint32_t &size) {
@@ -228,11 +232,17 @@ void NodeManagerTest::StartClient() {
   });
   worker_node_->Start();
 
-  size_t time = 0;
+  size_t push_time = 0;
   for (int i = 0; i < 1; i++) {
-    time += PushTest(262144);
+    push_time += PushTest(262144);
   }
-  MS_LOG(INFO) << "Push total cost:" << time;
+  MS_LOG(INFO) << "Push total cost:" << push_time;
+
+  size_t pull_time = 0;
+  for (int i = 0; i < 1; i++) {
+    pull_time += PullTest(262144);
+  }
+  MS_LOG(INFO) << "Push total cost:" << pull_time;
 
   worker_node_->Finish(30);
   worker_node_->Stop();
