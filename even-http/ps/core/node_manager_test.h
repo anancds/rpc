@@ -33,14 +33,14 @@ class NodeManagerTest {
   NodeManagerTest(const NodeManagerTest &) = delete;
   NodeManagerTest &operator=(const NodeManagerTest &) = delete;
   virtual ~NodeManagerTest() = default;
-
+  using DataPtr = std::shared_ptr<unsigned char>;
   void StartScheduler();
   void StartServer();
   void StartServer1();
   void StartClient();
 
-  void ThreadResponse(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
-                      std::shared_ptr<std::vector<unsigned char>> data);
+  void ThreadResponse(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta, DataPtr data,
+                      size_t size);
 
   void CollSend(const uint32_t &rank_id);
 

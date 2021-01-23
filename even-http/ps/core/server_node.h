@@ -38,17 +38,16 @@ class ServerNode : public AbstractNode {
   ServerNode() : server_(nullptr), server_thread_(nullptr) {}
   ~ServerNode() override;
 
-
   bool Start(const uint32_t &timeout = ClusterConfig::cluster_available_timeout()) override;
   bool Stop() override;
   bool Finish(const uint32_t &timeout = kTimeoutInSeconds) override;
 
   using RequestHandler = std::function<void(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
-                                            std::shared_ptr<std::vector<unsigned char>>)>;
+                                            DataPtr data, size_t size)>;
 
   void set_handler(const RequestHandler &handler);
   void Response(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
-                std::shared_ptr<std::vector<unsigned char>> data);
+                DataPtr data, size_t size);
 
  private:
   void CreateTcpServer();

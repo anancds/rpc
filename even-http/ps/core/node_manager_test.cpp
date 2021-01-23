@@ -60,26 +60,15 @@ size_t NodeManagerTest::PushTest(const uint32_t &size) {
   *kv_message.mutable_keys() = {keys.begin(), keys.end()};
   *kv_message.mutable_values() = {values.begin(), values.end()};
 
-  // auto start1 = std::chrono::high_resolution_clock::now();
-  CommMessage message;
-  auto start1 = std::chrono::high_resolution_clock::now();
   std::string data = kv_message.SerializeAsString();
-  auto end1 = std::chrono::high_resolution_clock::now();
-  message.set_data(data);
-  auto end2 = std::chrono::high_resolution_clock::now();
-  message.SerializeAsString();
-  auto end3 = std::chrono::high_resolution_clock::now();
-  MS_LOG(INFO) << "SerializeAsString, cost:" << (end1 - start1).count() / 1e6 << "ms";
-  MS_LOG(INFO) << "SerializeAsString, cost:" << (end2 - end1).count() / 1e6 << "ms";
-  MS_LOG(INFO) << "SerializeAsString, cost:" << (end3 - end2).count() / 1e6 << "ms";
 
-  auto res = std::make_shared<std::vector<unsigned char>>(data.length(), 0);
-  memcpy_s(res->data(), data.length(), data.data(), data.length());
+  std::shared_ptr<unsigned char> res(new unsigned char[data.length()]);
+  memcpy_s(res.get(), data.length(), data.data(), data.length());
   // auto end1 = std::chrono::high_resolution_clock::now();
   // MS_LOG(INFO) << "serialize, cost:" << (end1 - start1).count() / 1e6 << "ms";
 
   auto start = std::chrono::high_resolution_clock::now();
-  worker_node_->Send(NodeRole::SERVER, 0, res, data.length());
+  worker_node_->Send(NodeRole::SERVER, 0, res, data.length(), 0);
   auto end = std::chrono::high_resolution_clock::now();
   MS_LOG(INFO) << "PushTest, cost:" << (end - start).count() / 1e6 << "ms";
   return (end - start).count() / 1e6;
@@ -155,17 +144,18 @@ void NodeManagerTest::StartServer() {
       //      server_node_->Stop();
     }
   });
-  server_node_->set_handler([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
-                                std::shared_ptr<std::vector<unsigned char>> data) {
-    KVMessage kv_message;
-    // kv_message.ParseFromString(message->data());
-    // MS_LOG(INFO) << "size:" << kv_message.keys_size();
-    // PackKVMessage(message);
+  server_node_->set_handler(
+    [&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta, DataPtr data, size_t size) {
+      KVMessage kv_message;
+      // kv_message.ParseFromString(message->data());
+      // MS_LOG(INFO) << "size:" << kv_message.keys_size();
+      // PackKVMessage(message);
 
-    // auto res = std::make_shared<std::vector<unsigned char>>(262144, 1);
+      // auto res = std::make_shared<std::vector<unsigned char>>(262144, 1);
+      std::shared_ptr<unsigned char> res(new unsigned char[0]);
 
-    server_node_->Response(conn, meta, data);
-  });
+      server_node_->Response(conn, meta, res, 0);
+    });
   server_node_->Start();
 
   // BroadCastTest();
@@ -193,15 +183,15 @@ void NodeManagerTest::StartServer1() {
 
   ThreadPool pool(10);
 
-  server_node_->set_handler([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
-                                std::shared_ptr<std::vector<unsigned char>> data) {
-    KVMessage kv_message;
-    // kv_message.ParseFromArray(data->data(), data->size());
-    MS_LOG(INFO) << "size:" << kv_message.keys_size();
-    // auto res = std::make_shared<std::vector<unsigned char>>(262144, 1);
-    // auto data1 = std::make_shared<std::vector<unsigned char>>();
-    pool.Submit(&NodeManagerTest::ThreadResponse, this, conn, meta, data);
-  });
+  server_node_->set_handler(
+    [&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta, DataPtr data, size_t size) {
+      KVMessage kv_message;
+      // kv_message.ParseFromArray(data->data(), data->size());
+      MS_LOG(INFO) << "size:" << kv_message.keys_size();
+      // auto res = std::make_shared<std::vector<unsigned char>>(262144, 1);
+      // auto data1 = std::make_shared<std::vector<unsigned char>>();
+      pool.Submit(&NodeManagerTest::ThreadResponse, this, conn, meta, data, size);
+    });
   server_node_->Start();
 
   ThreadPool pool_coll(10);
@@ -215,9 +205,9 @@ void NodeManagerTest::StartServer1() {
 }
 
 void NodeManagerTest::ThreadResponse(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
-                                     std::shared_ptr<std::vector<unsigned char>> data) {
+                                     DataPtr data, size_t size) {
   MS_LOG(INFO) << "thred id:" << std::this_thread::get_id();
-  server_node_->Response(conn, meta, data);
+  server_node_->Response(conn, meta, data, size);
 }
 
 void NodeManagerTest::CollSend(const u_int32_t &rank_id) { CollectiveTest(rank_id); }
@@ -240,7 +230,7 @@ void NodeManagerTest::StartClient() {
 
   size_t time = 0;
   for (int i = 0; i < 1; i++) {
-    time += PushTest(26214400);
+    time += PushTest(262144);
   }
   MS_LOG(INFO) << "Push total cost:" << time;
 

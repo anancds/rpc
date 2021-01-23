@@ -46,8 +46,8 @@ bool ServerNode::Start(const uint32_t &timeout) {
 
 void ServerNode::set_handler(const RequestHandler &handler) { request_handler_ = handler; }
 
-void ServerNode::Response(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
-                          std::shared_ptr<std::vector<unsigned char>> data) {
+void ServerNode::Response(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta, DataPtr data,
+                          size_t size) {
   MS_EXCEPTION_IF_NULL(conn);
   MS_EXCEPTION_IF_NULL(meta);
   MS_EXCEPTION_IF_NULL(data);
@@ -55,7 +55,7 @@ void ServerNode::Response(std::shared_ptr<TcpConnection> conn, std::shared_ptr<M
   meta->set_rank_id(node_info_.rank_id_);
   MS_LOG(DEBUG) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)
                 << ", the node id is:" << node_info_.node_id_ << " send the request id is:" << meta->request_id();
-  server_->SendMessage(conn, meta, Protos::RAW, data->data(), data->size());
+  server_->SendMessage(conn, meta, Protos::RAW, data.get(), size);
 }
 
 void ServerNode::CreateTcpServer() {
@@ -105,9 +105,12 @@ void ServerNode::ProcessSendData(std::shared_ptr<TcpConnection> conn, std::share
   MS_EXCEPTION_IF_NULL(conn);
   MS_EXCEPTION_IF_NULL(meta);
   MS_EXCEPTION_IF_NULL(data);
-  auto res = std::make_shared<std::vector<unsigned char>>(size, 0);
-  memcpy_s(res->data(), size, data, size);
-  request_handler_(conn, meta, res);
+  std::shared_ptr<unsigned char> res(new unsigned char[size]);
+  int ret = memcpy_s(res.get(), size, data, size);
+  if (ret != 0) {
+    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+  }
+  request_handler_(conn, meta, res, size);
 }
 
 void ServerNode::ProcessCollectiveSendData(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,

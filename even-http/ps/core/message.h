@@ -18,6 +18,7 @@
 #define MINDSPORE_CCSRC_PS_CORE_MESSAGE_H_
 
 #include <string>
+#include <memory>
 
 namespace mindspore {
 namespace ps {
@@ -51,6 +52,12 @@ struct Meta {
   Role role;
   // the current Node rank id,the worker node range is:[0,numOfWorker-1], the server node range is:[0, numOfServer-1]
   int32_t rank_id = 4;
+};
+
+struct RecvMessage {
+  uint32_t rank_id;
+  std::shared_ptr<unsigned char> data;
+  size_t len;
 };
 }  // namespace core
 }  // namespace ps

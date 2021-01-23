@@ -49,3 +49,22 @@ message KVMessage1 {
   repeated float values = 3;
   repeated int32 len = 4;
 }
+
+message TestEnum {
+  int32 cmd = 1;
+  int32 temp = 2;
+}
+
+enum command1 {
+  PUSH = 0;
+  PULL = 1;
+  INIT_EMBEDDING_TABLE = 2;
+  INIT_WEIGHT = 3;
+  INIT_WEIGHT_TO_OPTIM_ID = 4;
+  INIT_INPUTS_SHAPE = 5;
+  CHECK_READY_FOR_PUSH = 6;
+  CHECK_READY_FOR_PULL = 7;
+  EMBEDDING_LOOKUP = 8;
+  UPDATE_EMBEDDING = 9;
+  FINALIZE = 10;
+}

@@ -153,27 +153,38 @@ void TestStruct() {
 void TestVoid(void **output) {
   unsigned char a[1] = {'a'};
   *output = a;
+  MessageMeta meta;
+  meta.set_request_id(1);
+  std::cout << "size:" << meta.ByteSizeLong() << std::endl;
 }
 
 void TestSharedPtr(std::shared_ptr<std::vector<unsigned char>> data) { data->push_back('a'); }
 
 void TestMemcpy() {
-  size_t size = 80000000;
-  std::vector<unsigned char> res(size, 1);
+  size_t size = 0;
+  std::vector<unsigned char> res(size + 1, 1);
 
-  auto start = std::chrono::high_resolution_clock::now();
-  std::shared_ptr<std::vector<unsigned char>> test = std::make_shared<std::vector<unsigned char>>(size, 0);
-  auto end = std::chrono::high_resolution_clock::now();
-  memcpy_s(test->data(), size, res.data(), size);
-  auto end1 = std::chrono::high_resolution_clock::now();
-  std::cout << "init vector, cost:" << (end - start).count() / 1e6 << "ms" << std::endl;
-  std::cout << "memcpy vector, cost:" << (end1 - end).count() / 1e6 << "ms" << std::endl;
+  // auto start = std::chrono::high_resolution_clock::now();
+  // std::shared_ptr<std::vector<unsigned char>> test = std::make_shared<std::vector<unsigned char>>(size, 0);
+  // auto end = std::chrono::high_resolution_clock::now();
+  // int ret = memcpy_s(test->data(), size, res.data(), size);
+  // if (ret != 0) {
+  //   MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+  // }
+  // auto end1 = std::chrono::high_resolution_clock::now();
+  // std::cout << "init vector, cost:" << (end - start).count() / 1e6 << "ms" << std::endl;
+  // std::cout << "memcpy vector, cost:" << (end1 - end).count() / 1e6 << "ms" << std::endl;
 
   auto start1 = std::chrono::high_resolution_clock::now();
-  std::shared_ptr<unsigned char[]> test1(new unsigned char[size]);
+  std::shared_ptr<unsigned char[]> test1(new unsigned char[size + 1]);
   auto end4 = std::chrono::high_resolution_clock::now();
 
-  memcpy_s(test1.get(), size, res.data(), size);
+  unsigned char * temp = res.data();
+
+  int ret = memcpy_s(test1.get(), size + 1, temp, size);
+  if (ret != 0) {
+    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+  }
   auto end5 = std::chrono::high_resolution_clock::now();
   std::cout << "init char, cost:" << (end4 - start1).count() / 1e6 << "ms" << std::endl;
   std::cout << "memcpy char, cost:" << (end5 - start1).count() / 1e6 << "ms" << std::endl;
@@ -181,13 +192,23 @@ void TestMemcpy() {
   auto start2 = std::chrono::high_resolution_clock::now();
   unsigned char *test2 = new unsigned char[size];
   auto end8 = std::chrono::high_resolution_clock::now();
-  memcpy_s(test2, size, res.data(), size);
+  ret = memcpy_s(test2, size, res.data(), size);
+  if (ret != 0) {
+    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+  }
   auto end9 = std::chrono::high_resolution_clock::now();
   std::cout << "init char1, cost:" << (end8 - start2).count() / 1e6 << "ms" << std::endl;
   std::cout << "memcpy char1, cost:" << (end9 - start2).count() / 1e6 << "ms" << std::endl;
 }
 
+void TestCommand() {
+  TestEnum temp;
+  temp.set_cmd(command1::PULL);
+  std::cout << "the cmd is:" << temp.cmd() << std::endl;
+}
+
 int main(int argc, char **argv) {
+  TestCommand();
   std::cout << "test1------------------" << std::endl;
   // SerializeAsString();
   std::cout << "test2------------------" << std::endl;
