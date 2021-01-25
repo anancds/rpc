@@ -39,6 +39,10 @@ bool SchedulerNode::Start(const uint32_t &timeout) {
 
 void SchedulerNode::ProcessHeartbeat(std::shared_ptr<TcpServer> server, std::shared_ptr<TcpConnection> conn,
                                      std::shared_ptr<MessageMeta> meta, const void *data, size_t size) {
+  MS_EXCEPTION_IF_NULL(server);
+  MS_EXCEPTION_IF_NULL(conn);
+  MS_EXCEPTION_IF_NULL(meta);
+  MS_EXCEPTION_IF_NULL(data);
   HeartbeatMessage heartbeat_message;
   heartbeat_message.ParseFromArray(data, size);
 
@@ -106,6 +110,10 @@ void SchedulerNode::CreateTcpServer() {
 
 void SchedulerNode::ProcessRegister(std::shared_ptr<TcpServer> server, std::shared_ptr<TcpConnection> conn,
                                     std::shared_ptr<MessageMeta> meta, const void *data, size_t size) {
+  MS_EXCEPTION_IF_NULL(server);
+  MS_EXCEPTION_IF_NULL(conn);
+  MS_EXCEPTION_IF_NULL(meta);
+  MS_EXCEPTION_IF_NULL(data);
   MS_LOG(INFO) << "The scheduler process a register message!";
   RegisterMessage register_message;
   register_message.ParseFromArray(data, size);
@@ -128,6 +136,10 @@ void SchedulerNode::ProcessRegister(std::shared_ptr<TcpServer> server, std::shar
 
 void SchedulerNode::ProcessFinish(std::shared_ptr<TcpServer> server, std::shared_ptr<TcpConnection> conn,
                                   std::shared_ptr<MessageMeta> meta, const void *data, size_t size) {
+  MS_EXCEPTION_IF_NULL(server);
+  MS_EXCEPTION_IF_NULL(conn);
+  MS_EXCEPTION_IF_NULL(meta);
+  MS_EXCEPTION_IF_NULL(data);
   FinishMessage finish_message;
   finish_message.ParseFromArray(data, size);
   node_manager_.AddFinishNode(finish_message);
