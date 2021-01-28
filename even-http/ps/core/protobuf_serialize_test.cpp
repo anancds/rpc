@@ -150,12 +150,24 @@ void TestStruct() {
   std::cout << sizeof(protos) << std::endl;
 }
 
-void TestVoid(void **output) {
-  unsigned char a[1] = {'a'};
-  *output = a;
-  MessageMeta meta;
-  meta.set_request_id(1);
-  std::cout << "size:" << meta.ByteSizeLong() << std::endl;
+void TestVoid(void *output, size_t *size) {
+  KVMessage data;
+  std::vector<int> keys(33, 11);
+  *data.mutable_keys() = {keys.begin(), keys.end()};
+
+  std::shared_ptr<std::vector<unsigned char>> received_data =
+    std::make_shared<std::vector<unsigned char>>(data.ByteSizeLong(), 0);
+  int ret = memcpy_s(received_data->data(), data.ByteSizeLong(), data.SerializeAsString().data(), data.ByteSizeLong());
+  if (ret != 0) {
+    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+  }
+
+  std::shared_ptr<unsigned char> temp(new unsigned char[data.ByteSizeLong()]);
+  memcpy_s(temp.get(), data.ByteSizeLong(), received_data->data(), data.ByteSizeLong());
+  // *output = received_data->data();
+  *size = data.ByteSizeLong();
+  KVMessage message;
+  message.ParseFromArray(temp.get(), data.ByteSizeLong());
 }
 
 void TestSharedPtr(std::shared_ptr<std::vector<unsigned char>> *data) {
@@ -231,11 +243,12 @@ int main(int argc, char **argv) {
   std::cout << "test8------------------" << std::endl;
   // TestStruct();
   std::cout << "test9------------------" << std::endl;
-  void *res;
-  TestVoid(&res);
-  char *test = reinterpret_cast<char *>(res);
-  std::string a(test, 1);
-  std::cout << "test9:" << a << std::endl;
+  std::shared_ptr<std::vector<unsigned char>> res = std::make_shared<std::vector<unsigned char>>();
+  size_t size;
+  TestVoid(res->data(), &size);
+  KVMessage message;
+  message.ParseFromArray(res->data(), size);
+  std::cout << "test9:" << message.keys_size() << " key:" << message.keys(0) << std::endl;
 
   std::cout << "test10------------------" << std::endl;
   auto res_ptr = std::make_shared<std::vector<unsigned char>>();

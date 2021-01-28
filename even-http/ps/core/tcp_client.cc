@@ -290,6 +290,8 @@ bool TcpClient::SendMessage(const CommMessage &message) const {
 
 bool TcpClient::SendMessage(std::shared_ptr<MessageMeta> meta, const Protos &protos, const void *data, size_t size) {
   MS_EXCEPTION_IF_NULL(buffer_event_);
+  MS_EXCEPTION_IF_NULL(meta);
+  MS_EXCEPTION_IF_NULL(data);
   bufferevent_lock(buffer_event_);
   bool res = true;
 

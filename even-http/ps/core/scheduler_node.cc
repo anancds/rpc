@@ -149,6 +149,10 @@ void SchedulerNode::ProcessFinish(std::shared_ptr<TcpServer> server, std::shared
 
 void SchedulerNode::ProcessFetchServers(std::shared_ptr<TcpServer> server, std::shared_ptr<TcpConnection> conn,
                                         std::shared_ptr<MessageMeta> meta, const void *data, size_t size) {
+  MS_EXCEPTION_IF_NULL(server);
+  MS_EXCEPTION_IF_NULL(conn);
+  MS_EXCEPTION_IF_NULL(meta);
+  MS_EXCEPTION_IF_NULL(data);
   FetchServersRespMessage fetch_servers_message;
   std::vector<ServersMeta> servers_meta_list = node_manager_.FetchServersMeta();
 

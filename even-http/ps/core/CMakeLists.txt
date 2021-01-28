@@ -57,6 +57,7 @@ foreach (_target
         example_old scheduler_example
         client_example server_example client_test server_test protobuf_serialize_test fsm server_example1
         retry
+        http_client
         )
     add_executable(${_target} "${_target}.cpp"
             ${HTTP_SRC}

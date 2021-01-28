@@ -34,6 +34,8 @@ class NodeManagerTest {
   NodeManagerTest &operator=(const NodeManagerTest &) = delete;
   virtual ~NodeManagerTest() = default;
   using DataPtr = std::shared_ptr<unsigned char>;
+  using VectorPtr = std::shared_ptr<std::vector<unsigned char>>;
+  
   void StartScheduler();
   void StartServer();
   void StartServer1();
@@ -51,7 +53,7 @@ class NodeManagerTest {
   size_t PushTest(const uint32_t &size);
   uint64_t PullTest(const uint32_t &size);
   void MultiPullTest(const uint32_t &size);
-  void PackKVMessage(std::shared_ptr<CommMessage> message);
+  KVMessage PackKVMessage(const size_t &size);
   void PackMessage(std::shared_ptr<std::vector<unsigned char>> message);
 
  private:
