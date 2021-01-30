@@ -11,8 +11,30 @@
 #include <sys/queue.h>
 #include <event.h>
 
+#include <ps/core/http_client.h>
+
+namespace mindspore {
+namespace ps {
+namespace core {
+bool HttpClient::Init() {
+  is_stop_ = false;
+  event_base_ = event_base_new();
+  MS_EXCEPTION_IF_NULL(event_base_);
+  event_http_ = evhttp_new(event_base_);
+  MS_EXCEPTION_IF_NULL(event_http_);
+  int ret = evhttp_bind_socket(event_http_, server_address_.c_str(), server_port_);
+  if (ret != 0) {
+    MS_LOG(EXCEPTION) << "Http bind server addr:" << server_address_.c_str() << " port:" << server_port_ << "failed";
+  }
+  is_init_ = true;
+  return true;
+}
+}  // namespace core
+}  // namespace ps
+}  // namespace mindspore
+
 void RemoteReadCallback(struct evhttp_request *remote_rsp, void *arg) {
-  event_base_loopexit((struct event_base *)arg, NULL)m
+  event_base_loopexit((struct event_base *)arg, NULL);
 }
 
 int ReadHeaderDoneCallback(struct evhttp_request *remote_rsp, void *arg) {

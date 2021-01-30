@@ -32,6 +32,8 @@
 #include <string>
 #include <atomic>
 
+#include "utils/log_adapter.h"
+
 namespace mindspore {
 namespace ps {
 namespace core {
@@ -49,10 +51,10 @@ typedef enum eHttpMethod {
 } HttpMethod;
 
 
-class HttpServer {
+class HttpClient {
  public:
   // Server address only support IPV4 now, and should be in format of "x.x.x.x"
-  explicit HttpServer(const std::string &address, std::uint16_t port)
+  explicit HttpClient(const std::string &address, std::uint16_t port)
       : server_address_(address),
         server_port_(port),
         event_base_(nullptr),
@@ -60,9 +62,9 @@ class HttpServer {
         is_init_(false),
         is_stop_(true) {}
 
-  ~HttpServer();
+  ~HttpClient();
 
-  bool InitServer();
+  bool Init();
 
   bool Start();
   void Stop();

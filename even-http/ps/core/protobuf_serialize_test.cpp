@@ -8,7 +8,7 @@
 #include "ps/core/scheduler_node.h"
 using namespace mindspore::ps::core;
 using namespace mindspore::ps;
-
+using VectorPtr = std::shared_ptr<std::vector<unsigned char>>;
 void SerializeAsString() {
   CommMessage1 comm_message;
   KVMessage1 kv_message;
@@ -154,20 +154,6 @@ void TestVoid(void *output, size_t *size) {
   KVMessage data;
   std::vector<int> keys(33, 11);
   *data.mutable_keys() = {keys.begin(), keys.end()};
-
-  std::shared_ptr<std::vector<unsigned char>> received_data =
-    std::make_shared<std::vector<unsigned char>>(data.ByteSizeLong(), 0);
-  int ret = memcpy_s(received_data->data(), data.ByteSizeLong(), data.SerializeAsString().data(), data.ByteSizeLong());
-  if (ret != 0) {
-    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
-  }
-
-  std::shared_ptr<unsigned char> temp(new unsigned char[data.ByteSizeLong()]);
-  memcpy_s(temp.get(), data.ByteSizeLong(), received_data->data(), data.ByteSizeLong());
-  // *output = received_data->data();
-  *size = data.ByteSizeLong();
-  KVMessage message;
-  message.ParseFromArray(temp.get(), data.ByteSizeLong());
 }
 
 void TestSharedPtr(std::shared_ptr<std::vector<unsigned char>> *data) {
@@ -224,6 +210,24 @@ void TestCommand() {
   std::cout << "the cmd is:" << temp.cmd() << std::endl;
 }
 
+void TestVector(VectorPtr res) {
+  KVMessage res_data;
+  res_data.add_keys(1);
+  res_data.add_values(1);
+  res->resize(res_data.ByteSizeLong());
+  int ret = memcpy_s(res->data(), res_data.ByteSizeLong(), res_data.SerializeAsString().data(),
+                     res_data.ByteSizeLong());
+  if (ret != 0) {
+    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+  }
+  std::cout << "test vector------------------" << res->size() << " -" << res_data.ByteSizeLong() << std::endl;
+}
+
+void TestVector1(std::vector<float> *res) {
+  res->push_back(1);
+  std::cout << "res:" << res->at(0) << std::endl;
+}
+
 int main(int argc, char **argv) {
   TestCommand();
   std::cout << "test1------------------" << std::endl;
@@ -246,9 +250,6 @@ int main(int argc, char **argv) {
   std::shared_ptr<std::vector<unsigned char>> res = std::make_shared<std::vector<unsigned char>>();
   size_t size;
   TestVoid(res->data(), &size);
-  KVMessage message;
-  message.ParseFromArray(res->data(), size);
-  std::cout << "test9:" << message.keys_size() << " key:" << message.keys(0) << std::endl;
 
   std::cout << "test10------------------" << std::endl;
   auto res_ptr = std::make_shared<std::vector<unsigned char>>();
@@ -256,7 +257,14 @@ int main(int argc, char **argv) {
   std::cout << "test10------------------" << res_ptr->at(0) << std::endl;
 
   std::cout << "test11------------------" << std::endl;
-  TestMemcpy();
+  // TestMemcpy();
+  auto output = std::make_shared<std::vector<unsigned char>>();
+  TestVector(output);
+  std::cout << "test11------------------" << output->size() << std::endl;
 
-  return 0;
+  std::vector<float>temp(1, 0);
+  TestVector1(&temp);
+  std::cout << "test12" << temp[0] << std::endl;
+
+    return 0;
 }

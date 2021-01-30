@@ -61,6 +61,10 @@ class Node {
   std::string node_id() const;
   uint32_t rank_id() const;
   NodeRole role() const;
+  uint32_t worker_num() const;
+  uint32_t server_num() const;
+  std::string scheduler_host() const;
+  uint16_t scheduler_port() const;
 
  protected:
   bool WaitForStart(const uint32_t &timeout);

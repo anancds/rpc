@@ -30,6 +30,14 @@ uint32_t Node::rank_id() const {
 
 NodeRole Node::role() const { return node_info_.node_role_; }
 
+uint32_t Node::worker_num() const { return ClusterConfig::worker_num(); }
+
+uint32_t Node::server_num() const { return ClusterConfig::server_num(); }
+
+std::string Node::scheduler_host() const { return ClusterConfig::scheduler_host(); }
+
+uint16_t Node::scheduler_port() const { return ClusterConfig::scheduler_port(); }
+
 bool Node::WaitForStart(const uint32_t &timeout) {
   std::unique_lock<std::mutex> lock(wait_start_mutex_);
   bool res = wait_start_cond_.wait_for(lock, std::chrono::seconds(timeout), [&] {

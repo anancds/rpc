@@ -228,8 +228,8 @@ void NodeManagerTest::StartClient() {
 
   size_t pull_time = 0;
   for (int i = 0; i < 50; i++) {
-    // pull_time += PullTest(262144);
-    pull_time += PullTest(344);
+    pull_time += PullTest(262144);
+    // pull_time += PullTest(344);
   }
   MS_LOG(INFO) << "Pull total cost:" << pull_time;
 
