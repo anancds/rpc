@@ -215,8 +215,8 @@ void TestVector(VectorPtr res) {
   res_data.add_keys(1);
   res_data.add_values(1);
   res->resize(res_data.ByteSizeLong());
-  int ret = memcpy_s(res->data(), res_data.ByteSizeLong(), res_data.SerializeAsString().data(),
-                     res_data.ByteSizeLong());
+  int ret =
+    memcpy_s(res->data(), res_data.ByteSizeLong(), res_data.SerializeAsString().data(), res_data.ByteSizeLong());
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
   }
@@ -226,6 +226,20 @@ void TestVector(VectorPtr res) {
 void TestVector1(std::vector<float> *res) {
   res->push_back(1);
   std::cout << "res:" << res->at(0) << std::endl;
+}
+
+void TestTimestamp() {
+  std::cout << "the timestamp is:"
+            << std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now())
+                 .time_since_epoch()
+                 .count()
+            << std::endl;
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::cout << "the timestamp is:"
+            << std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now())
+                 .time_since_epoch()
+                 .count()
+            << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -262,9 +276,9 @@ int main(int argc, char **argv) {
   TestVector(output);
   std::cout << "test11------------------" << output->size() << std::endl;
 
-  std::vector<float>temp(1, 0);
+  std::vector<float> temp(1, 0);
   TestVector1(&temp);
   std::cout << "test12" << temp[0] << std::endl;
-
-    return 0;
+  TestTimestamp();
+  return 0;
 }
