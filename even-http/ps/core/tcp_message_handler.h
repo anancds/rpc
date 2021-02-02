@@ -51,7 +51,7 @@ class TcpMessageHandler {
   char header_[16];
   int header_index_;
   size_t last_copy_len_;
-  Messageheader message_header_;
+  MessageHeader message_header_;
   std::string mBuffer;
 };
 }  // namespace core

@@ -108,8 +108,14 @@ void TcpClient::Init() {
 
   buffer_event_ = bufferevent_socket_new(event_base_, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
   MS_EXCEPTION_IF_NULL(buffer_event_);
+  size_t low;
+  size_t high;
+  bufferevent_getwatermark(buffer_event_, EV_WRITE, &low, &high);
+  MS_LOG(ERROR) << "the bufferevent_get_max_single_write is: " << bufferevent_get_max_single_write(buffer_event_)
+                << " the bufferevent_get_max_to_write is:" << bufferevent_get_max_to_write(buffer_event_)
+                << " the low is:" << low << " the high is:" << high;
 
-  bufferevent_setcb(buffer_event_, ReadCallback, nullptr, EventCallback, this);
+  bufferevent_setcb(buffer_event_, ReadCallback, WriteCallback, EventCallback, this);
   if (bufferevent_enable(buffer_event_, EV_READ | EV_WRITE) == -1) {
     MS_LOG(EXCEPTION) << "Buffer event enable read and write failed!";
   }
@@ -172,19 +178,42 @@ void TcpClient::TimeoutCallback(evutil_socket_t, std::int16_t, void *arg) {
 void TcpClient::ReadCallback(struct bufferevent *bev, void *ctx) {
   MS_EXCEPTION_IF_NULL(bev);
   MS_EXCEPTION_IF_NULL(ctx);
+  MS_LOG(ERROR) << " readcallback the current time is:"
+                << std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now())
+                     .time_since_epoch()
+                     .count();
   auto tcp_client = reinterpret_cast<TcpClient *>(ctx);
+  bufferevent_lock(bev);
   struct evbuffer *input = bufferevent_get_input(const_cast<struct bufferevent *>(bev));
+  bufferevent_unlock(bev);
   MS_EXCEPTION_IF_NULL(input);
 
   char read_buffer[4096];
+  int read = 0;
 
-  while (EVBUFFER_LENGTH(input) > 0) {
-    int read = evbuffer_remove(input, &read_buffer, sizeof(read_buffer));
-    if (read == -1) {
-      MS_LOG(EXCEPTION) << "Can not drain data from the event buffer!";
-    }
+  while ((read = evbuffer_remove(input, &read_buffer, sizeof(read_buffer))) > 0) {
     tcp_client->OnReadHandler(read_buffer, read);
+    MS_LOG(ERROR) << "the current time is:"
+                  << std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now())
+                       .time_since_epoch()
+                       .count()
+                  << " the read size is:" << read;
   }
+}
+
+void TcpClient::WriteCallback(struct bufferevent *bev, void *ctx) {
+  MS_EXCEPTION_IF_NULL(bev);
+  MS_EXCEPTION_IF_NULL(ctx);
+  bufferevent_lock(bev);
+  struct evbuffer *output = bufferevent_get_output(const_cast<struct bufferevent *>(bev));
+  struct evbuffer *input = bufferevent_get_input(const_cast<struct bufferevent *>(bev));
+  bufferevent_unlock(bev);
+
+  MS_LOG(ERROR) << " WriteCallback the current time is:"
+                << std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now())
+                     .time_since_epoch()
+                     .count()
+                << " the output len is: " << evbuffer_get_length(output) << " the input len is:" << evbuffer_get_length(input);
 }
 
 void TcpClient::OnReadHandler(const void *buf, size_t num) {
@@ -268,7 +297,7 @@ bool TcpClient::SendMessage(const CommMessage &message) const {
   bool res = true;
   size_t buf_size = IntToUint(message.ByteSizeLong());
   uint32_t meta_size = SizeToUint(message.pb_meta().ByteSizeLong());
-  Messageheader header;
+  MessageHeader header;
   header.message_proto_ = Protos::PROTOBUF;
   header.message_length_ = buf_size;
   header.message_meta_length_ = meta_size;
@@ -295,7 +324,7 @@ bool TcpClient::SendMessage(std::shared_ptr<MessageMeta> meta, const Protos &pro
   bufferevent_lock(buffer_event_);
   bool res = true;
 
-  Messageheader header;
+  MessageHeader header;
   header.message_proto_ = protos;
   header.message_meta_length_ = SizeToUint(meta->ByteSizeLong());
   header.message_length_ = size + header.message_meta_length_;
@@ -312,6 +341,7 @@ bool TcpClient::SendMessage(std::shared_ptr<MessageMeta> meta, const Protos &pro
     MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
     res = false;
   }
+  bufferevent_flush(buffer_event_, EV_READ | EV_WRITE, BEV_FLUSH);
   bufferevent_unlock(buffer_event_);
   return res;
 }

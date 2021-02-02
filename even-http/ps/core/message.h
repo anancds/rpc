@@ -37,7 +37,7 @@ enum class Command {
 
 enum class Role { SERVER = 0, WORKER = 1, SCHEDULER = 2 };
 
-struct Messageheader {
+struct MessageHeader {
   Protos message_proto_ = Protos::RAW;
   uint32_t message_meta_length_ = 0;
   uint64_t message_length_ = 0;
