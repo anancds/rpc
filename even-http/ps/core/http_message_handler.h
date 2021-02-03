@@ -39,11 +39,12 @@ namespace ps {
 namespace core {
 
 using HttpHeaders = std::map<std::string, std::list<std::string>>;
+using VectorPtr = std::shared_ptr<std::vector<char>>;
 
 class HttpMessageHandler {
  public:
-  explicit HttpMessageHandler(struct evhttp_request *req)
-      : event_request_(req),
+  HttpMessageHandler()
+      : event_request_(nullptr),
         event_uri_(nullptr),
         path_params_{0},
         head_params_(nullptr),
@@ -52,18 +53,25 @@ class HttpMessageHandler {
         body_(nullptr),
         resp_headers_(nullptr),
         resp_buf_(nullptr),
-        resp_code_(HTTP_OK) {}
+        resp_code_(HTTP_OK),
+        content_len_(0),
+        event_base_(nullptr),
+        offset_(0) {}
 
   virtual ~HttpMessageHandler() = default;
 
   void InitHttpMessage();
+  void InitRequest(const std::string &url);
+
   std::string GetRequestUri();
   std::string GetRequestHost();
+  const char *GetHostByUri();
   std::string GetHeadParam(const std::string &key);
   std::string GetPathParam(const std::string &key);
   std::string GetPostParam(const std::string &key);
   uint64_t GetPostMsg(unsigned char **buffer);
   std::string GetUriPath();
+  VectorPtr GetRequestPath();
   std::string GetUriQuery();
 
   // It will return -1 if no port set
@@ -84,6 +92,18 @@ class HttpMessageHandler {
 
   // If message is empty, libevent will use default error code message instead
   void RespError(int nCode, const std::string &message);
+  // Body length should no more than MAX_POST_BODY_LEN, default 64kB
+  void ParsePostParam();
+  void ReceiveMessage(const void *buffer, size_t num);
+  void set_content_len(const uint64_t &len);
+  uint64_t content_len();
+  event_base *http_base();
+  void set_http_base(const struct event_base *base);
+  void set_request(const struct evhttp_request *req);
+  struct evhttp_request *request();
+  void InitBodySize();
+  VectorPtr body();
+  void set_body(VectorPtr body);
 
  private:
   struct evhttp_request *event_request_;
@@ -92,13 +112,13 @@ class HttpMessageHandler {
   struct evkeyvalq *head_params_;
   struct evkeyvalq post_params_;
   bool post_param_parsed_;
-  std::unique_ptr<std::string> body_;
+  VectorPtr body_;
   struct evkeyvalq *resp_headers_;
   struct evbuffer *resp_buf_;
   int resp_code_;
-
-  // Body length should no more than MAX_POST_BODY_LEN, default 64kB
-  void ParsePostParam();
+  uint64_t content_len_;
+  struct event_base *event_base_;
+  uint64_t offset_;
 };
 
 }  // namespace core

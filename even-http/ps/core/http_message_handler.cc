@@ -53,6 +53,11 @@ void HttpMessageHandler::InitHttpMessage() {
   resp_buf_ = evhttp_request_get_output_buffer(event_request_);
 }
 
+void HttpMessageHandler::InitRequest(const std::string &url) {
+  event_uri_ = evhttp_uri_parse(url.c_str());
+  MS_EXCEPTION_IF_NULL(event_uri_);
+}
+
 std::string HttpMessageHandler::GetHeadParam(const std::string &key) {
   MS_EXCEPTION_IF_NULL(head_params_);
   const char *val = evhttp_find_header(head_params_, key.c_str());
@@ -75,8 +80,8 @@ void HttpMessageHandler::ParsePostParam() {
   post_param_parsed_ = true;
   const char *post_message = reinterpret_cast<const char *>(evbuffer_pullup(event_request_->input_buffer, -1));
   MS_EXCEPTION_IF_NULL(post_message);
-  body_ = std::make_unique<std::string>(post_message, len);
-  int ret = evhttp_parse_query_str(body_->c_str(), &post_params_);
+  body_ = std::make_shared<std::vector<char>>(post_message, post_message + len);
+  int ret = evhttp_parse_query_str(body_->data(), &post_params_);
   if (ret == -1) {
     MS_LOG(EXCEPTION) << "Parse post parameter failed!";
   }
@@ -106,9 +111,20 @@ std::string HttpMessageHandler::GetRequestHost() {
   return std::string(host);
 }
 
+const char *HttpMessageHandler::GetHostByUri() {
+  MS_EXCEPTION_IF_NULL(event_uri_);
+  const char *host = evhttp_uri_get_host(event_uri_);
+  MS_EXCEPTION_IF_NULL(host);
+  return host;
+}
+
 int HttpMessageHandler::GetUriPort() {
   MS_EXCEPTION_IF_NULL(event_uri_);
-  return evhttp_uri_get_port(event_uri_);
+  int port = evhttp_uri_get_port(event_uri_);
+  if (port < 0) {
+    port = 80;
+  }
+  return port;
 }
 
 std::string HttpMessageHandler::GetUriPath() {
@@ -116,6 +132,42 @@ std::string HttpMessageHandler::GetUriPath() {
   const char *path = evhttp_uri_get_path(event_uri_);
   MS_EXCEPTION_IF_NULL(path);
   return std::string(path);
+}
+
+VectorPtr HttpMessageHandler::GetRequestPath() {
+  MS_EXCEPTION_IF_NULL(event_uri_);
+  std::shared_ptr<std::vector<char>> res = std::make_shared<std::vector<char>>();
+  const char *path = evhttp_uri_get_path(event_uri_);
+  if (path == nullptr || strlen(path) == 0) {
+    path = "/";
+  }
+  const char *query = evhttp_uri_get_query(event_uri_);
+  if (query) {
+    int size = strlen(path) + strlen(query);
+    res->resize(size);
+    int ret = memcpy_s(res->data(), strlen(path), path, strlen(path));
+    if (ret != 0) {
+      MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+    }
+    char delimiter = '?';
+    ret = memcpy_s(res->data() + strlen(path), 1, &delimiter, 1);
+    if (ret != 0) {
+      MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+    }
+    ret = memcpy_s(res->data() + strlen(path) + 1, strlen(query), query, strlen(query));
+    if (ret != 0) {
+      MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+    }
+
+    return res;
+  }
+
+  res->resize(strlen(path));
+  int ret = memcpy_s(res->data(), strlen(path), path, strlen(path));
+  if (ret != 0) {
+    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+  }
+  return res;
 }
 
 std::string HttpMessageHandler::GetUriQuery() {
@@ -200,6 +252,41 @@ void HttpMessageHandler::RespError(int nCode, const std::string &message) {
     evhttp_send_error(event_request_, nCode, message.c_str());
   }
 }
+
+void HttpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
+  MS_EXCEPTION_IF_NULL(buffer);
+  int ret = memcpy_s(body_->data() + offset_, num, buffer, num);
+  if (ret != 0) {
+    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+  }
+  offset_ += num;
+}
+
+void HttpMessageHandler::set_content_len(const uint64_t &len) { content_len_ = len; }
+
+uint64_t HttpMessageHandler::content_len() { return content_len_; }
+
+event_base *HttpMessageHandler::http_base() { return event_base_; }
+
+void HttpMessageHandler::set_http_base(const struct event_base *base) {
+  MS_EXCEPTION_IF_NULL(base);
+  event_base_ = const_cast<event_base *>(base);
+}
+
+void HttpMessageHandler::set_request(const struct evhttp_request *req) {
+  MS_EXCEPTION_IF_NULL(req);
+  event_request_ = const_cast<evhttp_request *>(req);
+}
+
+struct evhttp_request *HttpMessageHandler::request() {
+  return event_request_;
+}
+
+void HttpMessageHandler::InitBodySize() { body_->resize(content_len()); }
+
+std::shared_ptr<std::vector<char>> HttpMessageHandler::body() { return body_; }
+
+void HttpMessageHandler::set_body(std::shared_ptr<std::vector<char>> body) { body_ = body; }
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore

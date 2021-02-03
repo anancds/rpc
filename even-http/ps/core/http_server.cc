@@ -101,7 +101,8 @@ bool HttpServer::RegisterRoute(const std::string &url, OnRequestReceive *functio
   auto TransFunc = [](struct evhttp_request *req, void *arg) {
     MS_EXCEPTION_IF_NULL(req);
     MS_EXCEPTION_IF_NULL(arg);
-    auto httpReq = std::make_shared<HttpMessageHandler>(req);
+    auto httpReq = std::make_shared<HttpMessageHandler>();
+    httpReq->set_request(req);
     httpReq->InitHttpMessage();
     OnRequestReceive *func = reinterpret_cast<OnRequestReceive *>(arg);
     (*func)(httpReq);

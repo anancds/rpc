@@ -33,6 +33,7 @@ set(HTTP_SRC
         abstract_node.cc
         count_down_latch.cc
         thread_pool.cc
+        http_client.cc
         )
 set(HTTP_HEADER
         comm_util.h
@@ -50,6 +51,7 @@ set(HTTP_HEADER
         count_down_latch.h
         thread_pool.h
         message.h
+        http_client.h
         )
 
 add_library(core1 ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})
@@ -57,7 +59,7 @@ foreach (_target
         example_old scheduler_example
         client_example server_example client_test server_test protobuf_serialize_test fsm server_example1
         retry
-        http_client
+        http_client_example
         )
     add_executable(${_target} "${_target}.cpp"
             ${HTTP_SRC}
