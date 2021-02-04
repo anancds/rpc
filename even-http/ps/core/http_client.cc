@@ -17,10 +17,14 @@ namespace mindspore {
 namespace ps {
 namespace core {
 bool HttpClient::Init() {
-  event_base_ = event_base_new();
-  MS_EXCEPTION_IF_NULL(event_base_);
-  dns_base_ = evdns_base_new(event_base_, 1);
-  MS_EXCEPTION_IF_NULL(dns_base_);
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (!is_init_) {
+    is_init_ = true;
+    event_base_ = event_base_new();
+    MS_EXCEPTION_IF_NULL(event_base_);
+    dns_base_ = evdns_base_new(event_base_, 1);
+    MS_EXCEPTION_IF_NULL(dns_base_);
+  }
   return true;
 }
 
@@ -38,7 +42,8 @@ int HttpClient::MakeRequest(const std::string &url, HttpMethod method, const voi
   handler->InitRequest(url);
 
   MS_LOG(DEBUG) << "The url is:" << url << ", The host is:" << handler->GetHostByUri()
-                << ", The port is:" << handler->GetUriPort() << ", The request_url is:" << handler->GetRequestPath()->data();
+                << ", The port is:" << handler->GetUriPort()
+                << ", The request_url is:" << handler->GetRequestPath()->data();
 
   struct evhttp_connection *connection =
     evhttp_connection_base_new(event_base_, dns_base_, handler->GetHostByUri(), handler->GetUriPort());
@@ -52,10 +57,20 @@ int HttpClient::MakeRequest(const std::string &url, HttpMethod method, const voi
   AddHeaders(headers, request_, handler);
 
   struct evbuffer *buffer = evhttp_request_get_output_buffer(request_);
-  evbuffer_add(buffer, data, len);
+  if (evbuffer_add(buffer, data, len) != 0) {
+    MS_LOG(ERROR) << "Add buffer failed!";
+    return HTTP_INTERNAL;
+  }
 
-  evhttp_make_request(connection, request_, evhttp_cmd_type(method), handler->GetRequestPath()->data());
-  event_base_dispatch(event_base_);
+  if (evhttp_make_request(connection, request_, evhttp_cmd_type(method), handler->GetRequestPath()->data()) != 0) {
+    MS_LOG(ERROR) << "Make request failed!";
+    return HTTP_INTERNAL;
+  }
+
+  if (!Start()) {
+    MS_LOG(ERROR) << "Start http client failed!";
+    return HTTP_INTERNAL;
+  }
 
   if (handler->request()) {
     MS_LOG(DEBUG) << "The http response code is:" << evhttp_request_get_response_code(handler->request())
@@ -69,7 +84,9 @@ void HttpClient::RemoteReadCallback(struct evhttp_request *request, void *arg) {
   MS_EXCEPTION_IF_NULL(request);
   MS_EXCEPTION_IF_NULL(arg);
   auto handler = static_cast<HttpMessageHandler *>(arg);
-  event_base_loopexit(handler->http_base(), nullptr);
+  if (event_base_loopexit(handler->http_base(), nullptr) != 0) {
+    MS_LOG(EXCEPTION) << "event base loop exit failed!";
+  }
 }
 
 int HttpClient::ReadHeaderDoneCallback(struct evhttp_request *request, void *arg) {
@@ -109,22 +126,49 @@ void HttpClient::RemoteRequestErrorCallback(enum evhttp_request_error error, voi
   MS_EXCEPTION_IF_NULL(arg);
   auto handler = static_cast<HttpMessageHandler *>(arg);
   MS_LOG(ERROR) << "The request failed, the error is:" << error;
-  event_base_loopexit(handler->http_base(), nullptr);
+  if (event_base_loopexit(handler->http_base(), nullptr) != 0) {
+    MS_LOG(EXCEPTION) << "event base loop exit failed!";
+  }
 }
 
 void HttpClient::RemoteConnectionCloseCallback(struct evhttp_connection *connection, void *arg) {
   MS_EXCEPTION_IF_NULL(connection);
   MS_EXCEPTION_IF_NULL(arg);
   MS_LOG(ERROR) << "Remote connection closed!";
-  event_base_loopexit((struct event_base *)arg, nullptr);
+  if (event_base_loopexit((struct event_base *)arg, nullptr) != 0) {
+    MS_LOG(EXCEPTION) << "event base loop exit failed!";
+  }
 }
 
 void HttpClient::AddHeaders(const std::map<std::string, std::string> &headers, struct evhttp_request *request,
                             std::shared_ptr<HttpMessageHandler> handler) {
-  evhttp_add_header(evhttp_request_get_output_headers(request), "Host", handler->GetHostByUri());
-  for (auto &header : headers) {
-    evhttp_add_header(evhttp_request_get_output_headers(request), header.first.data(), header.second.data());
+  if (evhttp_add_header(evhttp_request_get_output_headers(request), "Host", handler->GetHostByUri()) != 0) {
+    MS_LOG(EXCEPTION) << "Add header failed!";
   }
+  for (auto &header : headers) {
+    if (evhttp_add_header(evhttp_request_get_output_headers(request), header.first.data(), header.second.data()) != 0) {
+      MS_LOG(EXCEPTION) << "Add header failed!";
+    }
+  }
+}
+
+bool HttpClient::Start() {
+  MS_LOG(INFO) << "Start http Client!";
+  MS_EXCEPTION_IF_NULL(event_base_);
+  int ret = event_base_dispatch(event_base_);
+  if (ret == 0) {
+    MS_LOG(INFO) << "Event base dispatch success!";
+    return true;
+  } else if (ret == 1) {
+    MS_LOG(ERROR) << "Event base dispatch failed with no events pending or active!";
+    return false;
+  } else if (ret == -1) {
+    MS_LOG(ERROR) << "Event base dispatch failed with error occurred!";
+    return false;
+  } else {
+    MS_LOG(EXCEPTION) << "Event base dispatch with unexpect error code!";
+  }
+  return true;
 }
 }  // namespace core
 }  // namespace ps

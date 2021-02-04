@@ -32,6 +32,7 @@
 #include <string>
 #include <atomic>
 #include <thread>
+#include <mutex>
 
 #include "ps/core/http_message_handler.h"
 
@@ -71,12 +72,15 @@ class HttpClient {
   void AddHeaders(const std::map<std::string, std::string> &headers, struct evhttp_request *request,
                   std::shared_ptr<HttpMessageHandler> handler);
 
+  bool Start();
+  bool Stop();
   std::string server_address_;
   std::uint16_t server_port_;
   struct event_base *event_base_;
   struct evdns_base *dns_base_;
   struct evhttp *event_http_;
   bool is_init_;
+  std::mutex mutex_;
 };
 
 }  // namespace core

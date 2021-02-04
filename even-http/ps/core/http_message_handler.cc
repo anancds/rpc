@@ -162,7 +162,7 @@ VectorPtr HttpMessageHandler::GetRequestPath() {
     return res;
   }
 
-  res->resize(strlen(path));
+  res->resize(strlen(path) + 1);
   int ret = memcpy_s(res->data(), strlen(path), path, strlen(path));
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";

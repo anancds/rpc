@@ -143,6 +143,7 @@ bool HttpServer::Start() {
   } else {
     MS_LOG(EXCEPTION) << "Event base dispatch with unexpect error code!";
   }
+  return true;
 }
 
 void HttpServer::Stop() {
