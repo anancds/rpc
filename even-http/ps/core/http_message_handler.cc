@@ -80,7 +80,7 @@ void HttpMessageHandler::ParsePostParam() {
   post_param_parsed_ = true;
   const char *post_message = reinterpret_cast<const char *>(evbuffer_pullup(event_request_->input_buffer, -1));
   MS_EXCEPTION_IF_NULL(post_message);
-  body_ = std::make_shared<std::vector<char>>(post_message, post_message + len);
+  body_ = std::make_shared<std::vector<char>>(post_message, post_message + len + 1);
   int ret = evhttp_parse_query_str(body_->data(), &post_params_);
   if (ret == -1) {
     MS_LOG(EXCEPTION) << "Parse post parameter failed!";
@@ -144,7 +144,7 @@ VectorPtr HttpMessageHandler::GetRequestPath() {
   const char *query = evhttp_uri_get_query(event_uri_);
   if (query) {
     int size = strlen(path) + strlen(query);
-    res->resize(size);
+    res->resize(size + 2);
     int ret = memcpy_s(res->data(), strlen(path), path, strlen(path));
     if (ret != 0) {
       MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
