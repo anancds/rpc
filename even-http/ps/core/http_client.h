@@ -52,7 +52,7 @@ enum class HttpMethod {
 
 class HttpClient {
  public:
-  HttpClient() : event_base_(nullptr), event_http_(nullptr), is_init_(false) {}
+  HttpClient() : event_base_(nullptr), dns_base_(nullptr), is_init_(false), connection_timout_(120) {}
 
   virtual ~HttpClient() = default;
 
@@ -62,6 +62,8 @@ class HttpClient {
            const std::map<std::string, std::string> &headers = {});
   int Get(const std::string &url, std::shared_ptr<std::vector<char>> output,
           const std::map<std::string, std::string> &headers = {});
+
+  void set_connection_timeout(const int &timeout);
 
  private:
   static void ReadCallback(struct evhttp_request *remote_rsp, void *arg);
@@ -78,12 +80,11 @@ class HttpClient {
 
   bool Start();
   bool Stop();
-  std::string server_address_;
-  std::uint16_t server_port_;
+
   struct event_base *event_base_;
   struct evdns_base *dns_base_;
-  struct evhttp *event_http_;
   bool is_init_;
+  int connection_timout_;
 };
 
 }  // namespace core

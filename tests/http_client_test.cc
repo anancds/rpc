@@ -34,50 +34,57 @@ namespace ps {
 namespace core {
 class TestHttpClient : public UT::Common {
  public:
-  TestHttpClient() : server_(nullptr) {}
+  TestHttpClient() : server_(nullptr), http_server_thread_(nullptr) {}
 
   virtual ~TestHttpClient() = default;
 
-  static void testGetHandler(std::shared_ptr<HttpMessageHandler> resp) {
-    const std::string rKey("headKey");
-    const std::string rVal("headValue");
-    const std::string rBody("post request success!\n");
-    resp->AddRespHeadParam(rKey, rVal);
-    resp->AddRespString(rBody);
+  OnRequestReceive http_get_func = std::bind(
+    [](std::shared_ptr<HttpMessageHandler> resp) {
+      EXPECT_STREQ(resp->GetUriPath().c_str(), "/httpget");
+      const unsigned char ret[] = "get request success!\n";
+      resp->QuickResponse(200, ret, 22);
+    },
+    std::placeholders::_1);
 
-    resp->SetRespCode(200);
-    resp->SendResponse();
-  }
+  OnRequestReceive http_handler_func = std::bind(
+    [](std::shared_ptr<HttpMessageHandler> resp) {
+      std::string host = resp->GetRequestHost();
+      EXPECT_STREQ(host.c_str(), "127.0.0.1");
+
+      std::string path_param = resp->GetPathParam("key1");
+      std::string header_param = resp->GetHeadParam("headerKey");
+      std::string post_param = resp->GetPostParam("postKey");
+      unsigned char *data = nullptr;
+      const uint64_t len = resp->GetPostMsg(&data);
+      char post_message[len + 1];
+      if (memset_s(post_message, len + 1, 0, len + 1) != 0) {
+        MS_LOG(EXCEPTION) << "The memset_s error";
+      }
+      if (memcpy_s(post_message, len, data, len) != 0) {
+        MS_LOG(EXCEPTION) << "The memset_s error";
+      }
+      EXPECT_STREQ(path_param.c_str(), "value1");
+      EXPECT_STREQ(header_param.c_str(), "headerValue");
+      EXPECT_STREQ(post_param.c_str(), "postValue");
+      EXPECT_STREQ(post_message, "postKey=postValue");
+
+      const std::string rKey("headKey");
+      const std::string rVal("headValue");
+      const std::string rBody("post request success!\n");
+      resp->AddRespHeadParam(rKey, rVal);
+      resp->AddRespString(rBody);
+
+      resp->SetRespCode(200);
+      resp->SendResponse();
+    },
+    std::placeholders::_1);
 
   void SetUp() override {
-    MS_LOG(INFO) << "Start http server!";
     server_ = std::make_unique<HttpServer>("0.0.0.0", 9999);
-    OnRequestReceive http_get_func = std::bind(
-      [](std::shared_ptr<HttpMessageHandler> resp) {
-        EXPECT_STREQ(resp->GetPathParam("key1").c_str(), "value1");
-        EXPECT_STREQ(resp->GetUriQuery().c_str(), "key1=value1");
-        EXPECT_STREQ(resp->GetRequestUri().c_str(), "/httpget?key1=value1");
-        EXPECT_STREQ(resp->GetUriPath().c_str(), "/httpget");
-        const unsigned char ret[] = "get request success!\n";
-        resp->QuickResponse(200, ret, 22);
-      },
-      std::placeholders::_1);
 
-    OnRequestReceive http_handler_func = std::bind(
-      [](std::shared_ptr<HttpMessageHandler> resp) {
-        const std::string rKey("headKey");
-        const std::string rVal("headValue");
-        const std::string rBody("post request success!\n");
-        resp->AddRespHeadParam(rKey, rVal);
-        resp->AddRespString(rBody);
-
-        resp->SetRespCode(200);
-        resp->SendResponse();
-      },
-      std::placeholders::_1);
     server_->RegisterRoute("/httpget", &http_get_func);
     server_->RegisterRoute("/handler", &http_handler_func);
-    std::unique_ptr<std::thread> http_server_thread_(nullptr);
+    // std::unique_ptr<std::thread> http_server_thread_(nullptr);
     http_server_thread_ = std::make_unique<std::thread>([&]() { server_->Start(); });
     http_server_thread_->detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -90,17 +97,18 @@ class TestHttpClient : public UT::Common {
 
  private:
   std::unique_ptr<HttpServer> server_;
+  std::unique_ptr<std::thread> http_server_thread_;
 };
 
-// TEST_F(TestHttpClient, Get) {
-//   HttpClient client;
-//   client.Init();
-//   std::map<std::string, std::string> headers = {{"headerKey", "headerValue"}};
-//   auto output = std::make_shared<std::vector<char>>();
-//   int ret = client.Get("http://127.0.0.1:9999/httpget", output, headers);
-//   EXPECT_STREQ("get request success!\n", output->data());
-//   EXPECT_EQ(200, ret);
-// }
+TEST_F(TestHttpClient, Get) {
+  HttpClient client;
+  client.Init();
+  std::map<std::string, std::string> headers = {{"headerKey", "headerValue"}};
+  auto output = std::make_shared<std::vector<char>>();
+  int ret = client.Get("http://127.0.0.1:9999/httpget", output, headers);
+  EXPECT_STREQ("get request success!\n", output->data());
+  EXPECT_EQ(200, ret);
+}
 
 TEST_F(TestHttpClient, Post) {
   HttpClient client;

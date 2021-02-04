@@ -48,7 +48,8 @@ class HttpServer {
         event_base_(nullptr),
         event_http_(nullptr),
         is_init_(false),
-        is_stop_(true) {}
+        is_stop_(true),
+        request_timeout_(300) {}
 
   ~HttpServer();
 
@@ -78,6 +79,7 @@ class HttpServer {
   struct evhttp *event_http_;
   bool is_init_;
   std::atomic<bool> is_stop_;
+  int request_timeout_;
 };
 
 }  // namespace core

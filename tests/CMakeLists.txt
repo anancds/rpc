@@ -10,6 +10,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../log)
 
 add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_message_handler.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_server.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_client.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/comm_util.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/cluster_config.cc)
 #add_library(tcp ${TEST_SRC})

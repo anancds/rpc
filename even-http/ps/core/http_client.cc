@@ -82,6 +82,8 @@ int HttpClient::Get(const std::string &url, std::shared_ptr<std::vector<char>> o
   return CreateRequest(handler, connection, request, HttpMethod::HM_GET);
 }
 
+void HttpClient::set_connection_timeout(const int &timeout) { connection_timout_ = timeout; }
+
 void HttpClient::ReadCallback(struct evhttp_request *request, void *arg) {
   MS_EXCEPTION_IF_NULL(request);
   MS_EXCEPTION_IF_NULL(arg);
@@ -176,6 +178,7 @@ int HttpClient::CreateRequest(std::shared_ptr<HttpMessageHandler> handler, struc
   MS_EXCEPTION_IF_NULL(connection);
   MS_EXCEPTION_IF_NULL(request);
   evhttp_connection_set_closecb(connection, ConnectionCloseCallback, event_base_);
+  evhttp_connection_set_timeout(connection, connection_timout_);
 
   if (evhttp_make_request(connection, request, evhttp_cmd_type(method), handler->GetRequestPath()->data()) != 0) {
     MS_LOG(ERROR) << "Make request failed!";
