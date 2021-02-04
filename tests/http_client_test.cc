@@ -1,22 +1,29 @@
-//
-// Created by cds on 2020/10/9.
-//
-#include <grpc/grpc.h>
-#include <grpc/grpc_security.h>
-#include <grpc/support/alloc.h>
-#include <grpc/support/log.h>
-#include <grpc/support/string_util.h>
-#include <gtest/gtest.h>
+/**
+ * Copyright 2021 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <functional>
 #include <iostream>
-#include <memory>
 #include <string>
 #include <thread>
+#include <memory>
 
+#include "common/common_test.h"
 #include "ps/core/http_server.h"
 #include "ps/core/http_client.h"
 
@@ -25,24 +32,36 @@ using namespace std;
 namespace mindspore {
 namespace ps {
 namespace core {
-static void testGetHandler(std::shared_ptr<HttpMessageHandler> resp) {
-  const std::string rKey("headKey");
-  const std::string rVal("headValue");
-  const std::string rBody("post request success!\n");
-  resp->AddRespHeadParam(rKey, rVal);
-  resp->AddRespString(rBody);
+class TestHttpClient : public UT::Common {
+ public:
+  TestHttpClient() : server_(nullptr) {}
 
-  resp->SetRespCode(200);
-  resp->SendResponse();
-}
-class TestHttpClient : public ::testing::Test {
- protected:
+  virtual ~TestHttpClient() = default;
+
+  static void testGetHandler(std::shared_ptr<HttpMessageHandler> resp) {
+    const std::string rKey("headKey");
+    const std::string rVal("headValue");
+    const std::string rBody("post request success!\n");
+    resp->AddRespHeadParam(rKey, rVal);
+    resp->AddRespString(rBody);
+
+    resp->SetRespCode(200);
+    resp->SendResponse();
+  }
+
   void SetUp() override {
     MS_LOG(INFO) << "Start http server!";
-    server_ = new HttpServer("0.0.0.0", 9999);
-    OnRequestReceive http_get_func =
-      std::bind([](std::shared_ptr<HttpMessageHandler> resp) { resp->QuickResponse(200, "get request success!\n"); },
-                std::placeholders::_1);
+    server_ = std::make_unique<HttpServer>("0.0.0.0", 9999);
+    OnRequestReceive http_get_func = std::bind(
+      [](std::shared_ptr<HttpMessageHandler> resp) {
+        EXPECT_STREQ(resp->GetPathParam("key1").c_str(), "value1");
+        EXPECT_STREQ(resp->GetUriQuery().c_str(), "key1=value1");
+        EXPECT_STREQ(resp->GetRequestUri().c_str(), "/httpget?key1=value1");
+        EXPECT_STREQ(resp->GetUriPath().c_str(), "/httpget");
+        const unsigned char ret[] = "get request success!\n";
+        resp->QuickResponse(200, ret, 22);
+      },
+      std::placeholders::_1);
 
     OnRequestReceive http_handler_func = std::bind(
       [](std::shared_ptr<HttpMessageHandler> resp) {
@@ -70,32 +89,30 @@ class TestHttpClient : public ::testing::Test {
   }
 
  private:
-  HttpServer *server_;
+  std::unique_ptr<HttpServer> server_;
 };
 
-TEST_F(TestHttpClient, helloworld) {
-  HttpClient client;
-  client.Init();
-  std::map<std::string, std::string> headers = {{"headerKey", "headerValue"}};
-  auto output = std::make_shared<std::vector<char>>();
-  int ret = client.MakeRequest("http://127.0.0.1:9999/httpget", mindspore::ps::core::HttpMethod::HM_GET, nullptr, 0,
-                               headers, output);
-  EXPECT_STREQ("get request success!\n", output->data());
-  EXPECT_EQ(200, ret);
-}
+// TEST_F(TestHttpClient, Get) {
+//   HttpClient client;
+//   client.Init();
+//   std::map<std::string, std::string> headers = {{"headerKey", "headerValue"}};
+//   auto output = std::make_shared<std::vector<char>>();
+//   int ret = client.Get("http://127.0.0.1:9999/httpget", output, headers);
+//   EXPECT_STREQ("get request success!\n", output->data());
+//   EXPECT_EQ(200, ret);
+// }
 
-TEST_F(TestHttpClient, messageHandlerTest) {
+TEST_F(TestHttpClient, Post) {
   HttpClient client;
   client.Init();
   std::map<std::string, std::string> headers = {{"headerKey", "headerValue"}};
   auto output = std::make_shared<std::vector<char>>();
   std::string post_data = "postKey=postValue";
-  int ret = client.MakeRequest("http://127.0.0.1:9999/handler?key1=value1", mindspore::ps::core::HttpMethod::HM_POST,
-                               post_data.c_str(), post_data.length(), headers, output);
+  int ret =
+    client.Post("http://127.0.0.1:9999/handler?key1=value1", post_data.c_str(), post_data.length(), output, headers);
   EXPECT_STREQ("post request success!\n", output->data());
-  EXPECT_EQ(200, ret)
+  EXPECT_EQ(200, ret);
 }
 }  // namespace core
 }  // namespace ps
-
 }  // namespace mindspore

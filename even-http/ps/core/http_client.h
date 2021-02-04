@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2021 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,10 @@
 #include <event2/keyvalq_struct.h>
 #include <event2/listener.h>
 #include <event2/util.h>
+#include <event2/http_struct.h>
+#include <event2/dns.h>
+#include <event2/thread.h>
+#include <sys/queue.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -32,7 +36,8 @@
 #include <string>
 #include <atomic>
 #include <thread>
-#include <mutex>
+#include <vector>
+#include <map>
 
 #include "ps/core/http_message_handler.h"
 
@@ -43,13 +48,6 @@ namespace core {
 enum class HttpMethod {
   HM_GET = 1 << 0,
   HM_POST = 1 << 1,
-  HM_HEAD = 1 << 2,
-  HM_PUT = 1 << 3,
-  HM_DELETE = 1 << 4,
-  HM_OPTIONS = 1 << 5,
-  HM_TRACE = 1 << 6,
-  HM_CONNECT = 1 << 7,
-  HM_PATCH = 1 << 8
 };
 
 class HttpClient {
@@ -59,18 +57,24 @@ class HttpClient {
   virtual ~HttpClient() = default;
 
   bool Init();
-  int MakeRequest(const std::string &url, HttpMethod method, const void *data, size_t len,
-                  const std::map<std::string, std::string> &headers, std::shared_ptr<std::vector<char>> output);
+
+  int Post(const std::string &url, const void *body, size_t len, std::shared_ptr<std::vector<char>> output,
+           const std::map<std::string, std::string> &headers = {});
+  int Get(const std::string &url, std::shared_ptr<std::vector<char>> output,
+          const std::map<std::string, std::string> &headers = {});
 
  private:
-  static void RemoteReadCallback(struct evhttp_request *remote_rsp, void *arg);
+  static void ReadCallback(struct evhttp_request *remote_rsp, void *arg);
   static int ReadHeaderDoneCallback(struct evhttp_request *remote_rsp, void *arg);
-  static void ReadChunkCallback(struct evhttp_request *remote_rsp, void *arg);
-  static void RemoteRequestErrorCallback(enum evhttp_request_error error, void *arg);
-  static void RemoteConnectionCloseCallback(struct evhttp_connection *connection, void *arg);
+  static void ReadChunkDataCallback(struct evhttp_request *remote_rsp, void *arg);
+  static void RequestErrorCallback(enum evhttp_request_error error, void *arg);
+  static void ConnectionCloseCallback(struct evhttp_connection *connection, void *arg);
 
   void AddHeaders(const std::map<std::string, std::string> &headers, struct evhttp_request *request,
                   std::shared_ptr<HttpMessageHandler> handler);
+  void InitRequest(std::shared_ptr<HttpMessageHandler> handler, const std::string &url, struct evhttp_request *request);
+  int CreateRequest(std::shared_ptr<HttpMessageHandler> handler, struct evhttp_connection *connection,
+                    struct evhttp_request *request, HttpMethod method);
 
   bool Start();
   bool Stop();
@@ -80,7 +84,6 @@ class HttpClient {
   struct evdns_base *dns_base_;
   struct evhttp *event_http_;
   bool is_init_;
-  std::mutex mutex_;
 };
 
 }  // namespace core

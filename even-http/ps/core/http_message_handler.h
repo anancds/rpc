@@ -32,6 +32,8 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <vector>
+
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -61,7 +63,7 @@ class HttpMessageHandler {
   virtual ~HttpMessageHandler() = default;
 
   void InitHttpMessage();
-  void InitRequest(const std::string &url);
+  void ParseUrl(const std::string &url);
 
   std::string GetRequestUri();
   std::string GetRequestHost();
@@ -87,7 +89,7 @@ class HttpMessageHandler {
 
   // Make sure code and all response body has finished set
   void SendResponse();
-  void QuickResponse(int code, const std::string &body);
+  void QuickResponse(int code, const unsigned char *body, size_t len);
   void SimpleResponse(int code, const HttpHeaders &headers, const std::string &body);
 
   // If message is empty, libevent will use default error code message instead

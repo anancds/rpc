@@ -53,7 +53,7 @@ void HttpMessageHandler::InitHttpMessage() {
   resp_buf_ = evhttp_request_get_output_buffer(event_request_);
 }
 
-void HttpMessageHandler::InitRequest(const std::string &url) {
+void HttpMessageHandler::ParseUrl(const std::string &url) {
   event_uri_ = evhttp_uri_parse(url.c_str());
   MS_EXCEPTION_IF_NULL(event_uri_);
 }
@@ -228,10 +228,13 @@ void HttpMessageHandler::SendResponse() {
   evhttp_send_reply(event_request_, resp_code_, nullptr, resp_buf_);
 }
 
-void HttpMessageHandler::QuickResponse(int code, const std::string &body) {
+void HttpMessageHandler::QuickResponse(int code, const unsigned char *body, size_t len) {
   MS_EXCEPTION_IF_NULL(event_request_);
+  MS_EXCEPTION_IF_NULL(body);
   MS_EXCEPTION_IF_NULL(resp_buf_);
-  AddRespString(body);
+  if (evbuffer_add(resp_buf_, body, len) == -1) {
+    MS_LOG(EXCEPTION) << "Add body to response body failed.";
+  }
   evhttp_send_reply(event_request_, code, nullptr, resp_buf_);
 }
 

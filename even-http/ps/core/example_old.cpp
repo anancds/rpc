@@ -54,7 +54,8 @@ bool CheckIp(const std::string &ip) {
 void StartHttpServer(HttpServer *server_) {
   mindspore::ps::core::OnRequestReceive f1 = std::bind(
     [](std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) {
-      resp->QuickResponse(200, "get request success!\n");
+      const unsigned char ret[] = "get request success!\n";
+      resp->QuickResponse(200, ret, 22);
     },
     std::placeholders::_1);
   server_->RegisterRoute("/httpget", &f1);

@@ -52,6 +52,7 @@ foreach (_target
         count_down_latch_test
         abstract_node_test
         cluster_available_timeout_test
+        http_client_test
         )
     add_executable(${_target} "${_target}.cc"
 #            ${PROTO_SRCS}
@@ -83,4 +84,5 @@ add_test(test_all unit_tests
         count_down_latch_test
         abstract_node_test
         cluster_available_timeout_test
+        http_client_test
         )

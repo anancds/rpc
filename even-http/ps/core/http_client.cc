@@ -1,49 +1,44 @@
-#include "event2/http.h"
-#include "event2/http_struct.h"
-#include "event2/event.h"
-#include "event2/buffer.h"
-#include "event2/dns.h"
-#include "event2/thread.h"
+/**
+ * Copyright 2021 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <sys/queue.h>
-#include <event.h>
-
-#include <ps/core/http_client.h>
+#include "ps/core/http_client.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
 bool HttpClient::Init() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (!is_init_) {
-    is_init_ = true;
-    event_base_ = event_base_new();
-    MS_EXCEPTION_IF_NULL(event_base_);
-    dns_base_ = evdns_base_new(event_base_, 1);
-    MS_EXCEPTION_IF_NULL(dns_base_);
-  }
+  event_base_ = event_base_new();
+  MS_EXCEPTION_IF_NULL(event_base_);
+  dns_base_ = evdns_base_new(event_base_, 1);
+  MS_EXCEPTION_IF_NULL(dns_base_);
   return true;
 }
 
-int HttpClient::MakeRequest(const std::string &url, HttpMethod method, const void *data, size_t len,
-                            const std::map<std::string, std::string> &headers,
-                            std::shared_ptr<std::vector<char>> output) {
+int HttpClient::Post(const std::string &url, const void *body, size_t len, std::shared_ptr<std::vector<char>> output,
+                     const std::map<std::string, std::string> &headers) {
+  MS_EXCEPTION_IF_NULL(body);
+  MS_EXCEPTION_IF_NULL(output);
   auto handler = std::make_shared<HttpMessageHandler>();
-  handler->set_http_base(event_base_);
   output->clear();
   handler->set_body(output);
-  struct evhttp_request *request_ = evhttp_request_new(RemoteReadCallback, reinterpret_cast<void *>(handler.get()));
-  evhttp_request_set_header_cb(request_, ReadHeaderDoneCallback);
-  evhttp_request_set_chunked_cb(request_, ReadChunkCallback);
-  evhttp_request_set_error_cb(request_, RemoteRequestErrorCallback);
-  handler->InitRequest(url);
 
-  MS_LOG(DEBUG) << "The url is:" << url << ", The host is:" << handler->GetHostByUri()
-                << ", The port is:" << handler->GetUriPort()
-                << ", The request_url is:" << handler->GetRequestPath()->data();
+  struct evhttp_request *request = evhttp_request_new(ReadCallback, reinterpret_cast<void *>(handler.get()));
+  MS_EXCEPTION_IF_NULL(request);
+
+  InitRequest(handler, url, request);
 
   struct evhttp_connection *connection =
     evhttp_connection_base_new(event_base_, dns_base_, handler->GetHostByUri(), handler->GetUriPort());
@@ -52,35 +47,42 @@ int HttpClient::MakeRequest(const std::string &url, HttpMethod method, const voi
     return HTTP_BADREQUEST;
   }
 
-  evhttp_connection_set_closecb(connection, RemoteConnectionCloseCallback, event_base_);
-
-  AddHeaders(headers, request_, handler);
-
-  struct evbuffer *buffer = evhttp_request_get_output_buffer(request_);
-  if (evbuffer_add(buffer, data, len) != 0) {
+  struct evbuffer *buffer = evhttp_request_get_output_buffer(request);
+  if (evbuffer_add(buffer, body, len) != 0) {
     MS_LOG(ERROR) << "Add buffer failed!";
     return HTTP_INTERNAL;
   }
 
-  if (evhttp_make_request(connection, request_, evhttp_cmd_type(method), handler->GetRequestPath()->data()) != 0) {
-    MS_LOG(ERROR) << "Make request failed!";
-    return HTTP_INTERNAL;
-  }
+  AddHeaders(headers, request, handler);
 
-  if (!Start()) {
-    MS_LOG(ERROR) << "Start http client failed!";
-    return HTTP_INTERNAL;
-  }
-
-  if (handler->request()) {
-    MS_LOG(DEBUG) << "The http response code is:" << evhttp_request_get_response_code(handler->request())
-                  << ", The request code line is:" << evhttp_request_get_response_code_line(handler->request());
-    return evhttp_request_get_response_code(handler->request());
-  }
-  return HTTP_BADREQUEST;
+  return CreateRequest(handler, connection, request, HttpMethod::HM_POST);
 }
 
-void HttpClient::RemoteReadCallback(struct evhttp_request *request, void *arg) {
+int HttpClient::Get(const std::string &url, std::shared_ptr<std::vector<char>> output,
+                    const std::map<std::string, std::string> &headers) {
+  MS_EXCEPTION_IF_NULL(output);
+  auto handler = std::make_shared<HttpMessageHandler>();
+  output->clear();
+  handler->set_body(output);
+
+  struct evhttp_request *request = evhttp_request_new(ReadCallback, reinterpret_cast<void *>(handler.get()));
+  MS_EXCEPTION_IF_NULL(request);
+
+  InitRequest(handler, url, request);
+
+  struct evhttp_connection *connection =
+    evhttp_connection_base_new(event_base_, dns_base_, handler->GetHostByUri(), handler->GetUriPort());
+  if (!connection) {
+    MS_LOG(ERROR) << "Create http connection failed!";
+    return HTTP_BADREQUEST;
+  }
+
+  AddHeaders(headers, request, handler);
+
+  return CreateRequest(handler, connection, request, HttpMethod::HM_GET);
+}
+
+void HttpClient::ReadCallback(struct evhttp_request *request, void *arg) {
   MS_EXCEPTION_IF_NULL(request);
   MS_EXCEPTION_IF_NULL(arg);
   auto handler = static_cast<HttpMessageHandler *>(arg);
@@ -109,7 +111,7 @@ int HttpClient::ReadHeaderDoneCallback(struct evhttp_request *request, void *arg
   return 0;
 }
 
-void HttpClient::ReadChunkCallback(struct evhttp_request *request, void *arg) {
+void HttpClient::ReadChunkDataCallback(struct evhttp_request *request, void *arg) {
   MS_EXCEPTION_IF_NULL(request);
   MS_EXCEPTION_IF_NULL(arg);
   auto handler = static_cast<HttpMessageHandler *>(arg);
@@ -122,7 +124,7 @@ void HttpClient::ReadChunkCallback(struct evhttp_request *request, void *arg) {
   }
 }
 
-void HttpClient::RemoteRequestErrorCallback(enum evhttp_request_error error, void *arg) {
+void HttpClient::RequestErrorCallback(enum evhttp_request_error error, void *arg) {
   MS_EXCEPTION_IF_NULL(arg);
   auto handler = static_cast<HttpMessageHandler *>(arg);
   MS_LOG(ERROR) << "The request failed, the error is:" << error;
@@ -131,7 +133,7 @@ void HttpClient::RemoteRequestErrorCallback(enum evhttp_request_error error, voi
   }
 }
 
-void HttpClient::RemoteConnectionCloseCallback(struct evhttp_connection *connection, void *arg) {
+void HttpClient::ConnectionCloseCallback(struct evhttp_connection *connection, void *arg) {
   MS_EXCEPTION_IF_NULL(connection);
   MS_EXCEPTION_IF_NULL(arg);
   MS_LOG(ERROR) << "Remote connection closed!";
@@ -142,6 +144,7 @@ void HttpClient::RemoteConnectionCloseCallback(struct evhttp_connection *connect
 
 void HttpClient::AddHeaders(const std::map<std::string, std::string> &headers, struct evhttp_request *request,
                             std::shared_ptr<HttpMessageHandler> handler) {
+  MS_EXCEPTION_IF_NULL(request);
   if (evhttp_add_header(evhttp_request_get_output_headers(request), "Host", handler->GetHostByUri()) != 0) {
     MS_LOG(EXCEPTION) << "Add header failed!";
   }
@@ -152,12 +155,52 @@ void HttpClient::AddHeaders(const std::map<std::string, std::string> &headers, s
   }
 }
 
+void HttpClient::InitRequest(std::shared_ptr<HttpMessageHandler> handler, const std::string &url,
+                             struct evhttp_request *request) {
+  MS_EXCEPTION_IF_NULL(request);
+  MS_EXCEPTION_IF_NULL(handler);
+  handler->set_http_base(event_base_);
+  handler->ParseUrl(url);
+  evhttp_request_set_header_cb(request, ReadHeaderDoneCallback);
+  evhttp_request_set_chunked_cb(request, ReadChunkDataCallback);
+  evhttp_request_set_error_cb(request, RequestErrorCallback);
+
+  MS_LOG(DEBUG) << "The url is:" << url << ", The host is:" << handler->GetHostByUri()
+                << ", The port is:" << handler->GetUriPort()
+                << ", The request_url is:" << handler->GetRequestPath()->data();
+}
+
+int HttpClient::CreateRequest(std::shared_ptr<HttpMessageHandler> handler, struct evhttp_connection *connection,
+                              struct evhttp_request *request, HttpMethod method) {
+  MS_EXCEPTION_IF_NULL(handler);
+  MS_EXCEPTION_IF_NULL(connection);
+  MS_EXCEPTION_IF_NULL(request);
+  evhttp_connection_set_closecb(connection, ConnectionCloseCallback, event_base_);
+
+  if (evhttp_make_request(connection, request, evhttp_cmd_type(method), handler->GetRequestPath()->data()) != 0) {
+    MS_LOG(ERROR) << "Make request failed!";
+    return HTTP_INTERNAL;
+  }
+
+  if (!Start()) {
+    MS_LOG(ERROR) << "Start http client failed!";
+    return HTTP_INTERNAL;
+  }
+
+  if (handler->request()) {
+    MS_LOG(DEBUG) << "The http response code is:" << evhttp_request_get_response_code(handler->request())
+                  << ", The request code line is:" << evhttp_request_get_response_code_line(handler->request());
+    return evhttp_request_get_response_code(handler->request());
+  }
+  return HTTP_INTERNAL;
+}
+
 bool HttpClient::Start() {
-  MS_LOG(INFO) << "Start http Client!";
   MS_EXCEPTION_IF_NULL(event_base_);
-  int ret = event_base_dispatch(event_base_);
+  // int ret = event_base_dispatch(event_base_);
+  int ret = event_base_loop(event_base_, 0);
   if (ret == 0) {
-    MS_LOG(INFO) << "Event base dispatch success!";
+    MS_LOG(DEBUG) << "Event base dispatch success!";
     return true;
   } else if (ret == 1) {
     MS_LOG(ERROR) << "Event base dispatch failed with no events pending or active!";
@@ -166,7 +209,7 @@ bool HttpClient::Start() {
     MS_LOG(ERROR) << "Event base dispatch failed with error occurred!";
     return false;
   } else {
-    MS_LOG(EXCEPTION) << "Event base dispatch with unexpect error code!";
+    MS_LOG(EXCEPTION) << "Event base dispatch with unexpected error code!";
   }
   return true;
 }
