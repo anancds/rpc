@@ -37,7 +37,6 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-
 void HttpMessageHandler::InitHttpMessage() {
   MS_EXCEPTION_IF_NULL(event_request_);
   event_uri_ = evhttp_request_get_evhttp_uri(event_request_);
@@ -45,6 +44,7 @@ void HttpMessageHandler::InitHttpMessage() {
 
   const char *query = evhttp_uri_get_query(event_uri_);
   if (query) {
+    MS_LOG(ERROR) << "The query is:" << query;
     evhttp_parse_query_str(query, &path_params_);
   }
 
@@ -145,7 +145,7 @@ VectorPtr HttpMessageHandler::GetRequestPath() {
   if (query) {
     int path_size = strlen(path);
     int query_size = strlen(query);
-    int dest_size = path_size + query_size + 2;
+    int dest_size = path_size + 1 + query_size + 1;
     res->resize(dest_size);
     int ret = memcpy_s(res->data(), dest_size, path, path_size);
     if (ret != 0) {
@@ -165,7 +165,7 @@ VectorPtr HttpMessageHandler::GetRequestPath() {
   }
 
   res->resize(strlen(path) + 1);
-  int ret = memcpy_s(res->data(), strlen(path), path, strlen(path));
+  int ret = memcpy_s(res->data(), strlen(path) + 1, path, strlen(path));
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
   }
