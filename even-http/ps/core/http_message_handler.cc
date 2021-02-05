@@ -122,7 +122,7 @@ int HttpMessageHandler::GetUriPort() {
   MS_EXCEPTION_IF_NULL(event_uri_);
   int port = evhttp_uri_get_port(event_uri_);
   if (port < 0) {
-    port = kDnsPort;
+    MS_LOG(EXCEPTION) << "The port:" << port << " should not be less than 0!";
   }
   return port;
 }
@@ -143,18 +143,20 @@ VectorPtr HttpMessageHandler::GetRequestPath() {
   }
   const char *query = evhttp_uri_get_query(event_uri_);
   if (query) {
-    int size = strlen(path) + strlen(query);
-    res->resize(size + 2);
-    int ret = memcpy_s(res->data(), strlen(path), path, strlen(path));
+    int path_size = strlen(path);
+    int query_size = strlen(query);
+    int dest_size = path_size + query_size + 2;
+    res->resize(dest_size);
+    int ret = memcpy_s(res->data(), dest_size, path, path_size);
     if (ret != 0) {
       MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
     }
     char delimiter = '?';
-    ret = memcpy_s(res->data() + strlen(path), 1, &delimiter, 1);
+    ret = memcpy_s(res->data() + path_size, dest_size - path_size, &delimiter, 1);
     if (ret != 0) {
       MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
     }
-    ret = memcpy_s(res->data() + strlen(path) + 1, strlen(query), query, strlen(query));
+    ret = memcpy_s(res->data() + path_size + 1, dest_size - path_size - 1, query, query_size);
     if (ret != 0) {
       MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
     }

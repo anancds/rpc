@@ -40,7 +40,6 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-
 using HttpHeaders = std::map<std::string, std::list<std::string>>;
 using VectorPtr = std::shared_ptr<std::vector<char>>;
 
@@ -123,7 +122,6 @@ class HttpMessageHandler {
   struct event_base *event_base_;
   uint64_t offset_;
 };
-
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
