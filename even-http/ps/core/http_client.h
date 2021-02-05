@@ -40,28 +40,33 @@
 #include <map>
 
 #include "ps/core/http_message_handler.h"
+#include "ps/core/comm_util.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
 
-enum class HttpMethod {
-  HM_GET = 1 << 0,
-  HM_POST = 1 << 1,
+enum class HttpMethod { HM_GET = 1 << 0, HM_POST = 1 << 1 };
+
+enum class Status : int {
+  OK = 200,          // request completed ok
+  BADREQUEST = 400,  // invalid http request was made
+  NOTFOUND = 404,    // could not find content for uri
+  INTERNAL = 500     // internal error
 };
 
 class HttpClient {
  public:
-  HttpClient() : event_base_(nullptr), dns_base_(nullptr), is_init_(false), connection_timout_(120) {}
+  HttpClient() : event_base_(nullptr), dns_base_(nullptr), is_init_(false), connection_timout_(kConnectionTimeout) {}
 
   virtual ~HttpClient() = default;
 
   bool Init();
 
-  int Post(const std::string &url, const void *body, size_t len, std::shared_ptr<std::vector<char>> output,
-           const std::map<std::string, std::string> &headers = {});
-  int Get(const std::string &url, std::shared_ptr<std::vector<char>> output,
-          const std::map<std::string, std::string> &headers = {});
+  Status Post(const std::string &url, const void *body, size_t len, std::shared_ptr<std::vector<char>> output,
+              const std::map<std::string, std::string> &headers = {});
+  Status Get(const std::string &url, std::shared_ptr<std::vector<char>> output,
+             const std::map<std::string, std::string> &headers = {});
 
   void set_connection_timeout(const int &timeout);
 
@@ -75,11 +80,10 @@ class HttpClient {
   void AddHeaders(const std::map<std::string, std::string> &headers, struct evhttp_request *request,
                   std::shared_ptr<HttpMessageHandler> handler);
   void InitRequest(std::shared_ptr<HttpMessageHandler> handler, const std::string &url, struct evhttp_request *request);
-  int CreateRequest(std::shared_ptr<HttpMessageHandler> handler, struct evhttp_connection *connection,
-                    struct evhttp_request *request, HttpMethod method);
+  Status CreateRequest(std::shared_ptr<HttpMessageHandler> handler, struct evhttp_connection *connection,
+                       struct evhttp_request *request, HttpMethod method);
 
   bool Start();
-  bool Stop();
 
   struct event_base *event_base_;
   struct evdns_base *dns_base_;

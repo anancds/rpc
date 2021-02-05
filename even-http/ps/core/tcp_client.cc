@@ -188,7 +188,7 @@ void TcpClient::ReadCallback(struct bufferevent *bev, void *ctx) {
   bufferevent_unlock(bev);
   MS_EXCEPTION_IF_NULL(input);
 
-  char read_buffer[4096];
+  char read_buffer[kMessageChunkLength];
   int read = 0;
 
   while ((read = evbuffer_remove(input, &read_buffer, sizeof(read_buffer))) > 0) {

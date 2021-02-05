@@ -105,9 +105,9 @@ TEST_F(TestHttpClient, Get) {
   client.Init();
   std::map<std::string, std::string> headers = {{"headerKey", "headerValue"}};
   auto output = std::make_shared<std::vector<char>>();
-  int ret = client.Get("http://127.0.0.1:9999/httpget", output, headers);
+  auto ret = client.Get("http://127.0.0.1:9999/httpget", output, headers);
   EXPECT_STREQ("get request success!\n", output->data());
-  EXPECT_EQ(200, ret);
+  EXPECT_EQ(Status::OK, ret);
 }
 
 TEST_F(TestHttpClient, Post) {
@@ -116,10 +116,10 @@ TEST_F(TestHttpClient, Post) {
   std::map<std::string, std::string> headers = {{"headerKey", "headerValue"}};
   auto output = std::make_shared<std::vector<char>>();
   std::string post_data = "postKey=postValue";
-  int ret =
+  auto ret =
     client.Post("http://127.0.0.1:9999/handler?key1=value1", post_data.c_str(), post_data.length(), output, headers);
   EXPECT_STREQ("post request success!\n", output->data());
-  EXPECT_EQ(200, ret);
+  EXPECT_EQ(Status::OK, ret);
 }
 }  // namespace core
 }  // namespace ps

@@ -122,7 +122,7 @@ int HttpMessageHandler::GetUriPort() {
   MS_EXCEPTION_IF_NULL(event_uri_);
   int port = evhttp_uri_get_port(event_uri_);
   if (port < 0) {
-    port = 80;
+    port = kDnsPort;
   }
   return port;
 }

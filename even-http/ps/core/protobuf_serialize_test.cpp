@@ -242,6 +242,21 @@ void TestTimestamp() {
             << std::endl;
 }
 
+void TestMemcpy_s() {
+  const char *a = "abcefgh";
+  const char *b = "hijk";
+  int dest_size = strlen(a) + strlen(b) + 2;
+  std::vector<char> c(dest_size);
+  std::cout << "dest_size" << dest_size << std::endl;
+  memcpy_s(c.data(), dest_size, a, strlen(a));
+  char d = '?';
+  std::cout << "dest_size - strlen(a)" << dest_size - strlen(a) << std::endl;
+  memcpy_s(c.data() + strlen(a), dest_size - strlen(a), &d, 1);
+  std::cout << "dest_size - strlen(a) - 1" << dest_size - strlen(a) - 1 << std::endl;
+  memcpy_s(c.data() + strlen(a) + 1, dest_size - strlen(a) - 1, b, strlen(b));
+  std::cout << c.data() << std::endl;
+}
+
 int main(int argc, char **argv) {
   TestCommand();
   std::cout << "test1------------------" << std::endl;
@@ -280,5 +295,6 @@ int main(int argc, char **argv) {
   TestVector1(&temp);
   std::cout << "test12" << temp[0] << std::endl;
   TestTimestamp();
+  TestMemcpy_s();
   return 0;
 }

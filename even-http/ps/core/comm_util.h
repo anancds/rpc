@@ -61,6 +61,10 @@ constexpr int kGroup3RandomLength = 4;
 constexpr int kGroup4RandomLength = 4;
 constexpr int kGroup5RandomLength = 12;
 
+constexpr int kMessageChunkLength = 4096;
+constexpr int kConnectionTimeout = 120;
+constexpr int kDnsPort = 80;
+
 class CommUtil {
  public:
   static bool CheckIpWithRegex(const std::string &ip);

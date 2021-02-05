@@ -34,6 +34,7 @@
 #include <memory>
 #include <vector>
 
+#include "ps/core/comm_util.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

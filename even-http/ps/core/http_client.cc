@@ -27,8 +27,8 @@ bool HttpClient::Init() {
   return true;
 }
 
-int HttpClient::Post(const std::string &url, const void *body, size_t len, std::shared_ptr<std::vector<char>> output,
-                     const std::map<std::string, std::string> &headers) {
+Status HttpClient::Post(const std::string &url, const void *body, size_t len, std::shared_ptr<std::vector<char>> output,
+                        const std::map<std::string, std::string> &headers) {
   MS_EXCEPTION_IF_NULL(body);
   MS_EXCEPTION_IF_NULL(output);
   auto handler = std::make_shared<HttpMessageHandler>();
@@ -44,13 +44,13 @@ int HttpClient::Post(const std::string &url, const void *body, size_t len, std::
     evhttp_connection_base_new(event_base_, dns_base_, handler->GetHostByUri(), handler->GetUriPort());
   if (!connection) {
     MS_LOG(ERROR) << "Create http connection failed!";
-    return HTTP_BADREQUEST;
+    return Status::BADREQUEST;
   }
 
   struct evbuffer *buffer = evhttp_request_get_output_buffer(request);
   if (evbuffer_add(buffer, body, len) != 0) {
     MS_LOG(ERROR) << "Add buffer failed!";
-    return HTTP_INTERNAL;
+    return Status::INTERNAL;
   }
 
   AddHeaders(headers, request, handler);
@@ -58,8 +58,8 @@ int HttpClient::Post(const std::string &url, const void *body, size_t len, std::
   return CreateRequest(handler, connection, request, HttpMethod::HM_POST);
 }
 
-int HttpClient::Get(const std::string &url, std::shared_ptr<std::vector<char>> output,
-                    const std::map<std::string, std::string> &headers) {
+Status HttpClient::Get(const std::string &url, std::shared_ptr<std::vector<char>> output,
+                       const std::map<std::string, std::string> &headers) {
   MS_EXCEPTION_IF_NULL(output);
   auto handler = std::make_shared<HttpMessageHandler>();
   output->clear();
@@ -74,7 +74,7 @@ int HttpClient::Get(const std::string &url, std::shared_ptr<std::vector<char>> o
     evhttp_connection_base_new(event_base_, dns_base_, handler->GetHostByUri(), handler->GetUriPort());
   if (!connection) {
     MS_LOG(ERROR) << "Create http connection failed!";
-    return HTTP_BADREQUEST;
+    return Status::BADREQUEST;
   }
 
   AddHeaders(headers, request, handler);
@@ -117,7 +117,7 @@ void HttpClient::ReadChunkDataCallback(struct evhttp_request *request, void *arg
   MS_EXCEPTION_IF_NULL(request);
   MS_EXCEPTION_IF_NULL(arg);
   auto handler = static_cast<HttpMessageHandler *>(arg);
-  char buf[4096];
+  char buf[kMessageChunkLength];
   struct evbuffer *evbuf = evhttp_request_get_input_buffer(request);
   MS_EXCEPTION_IF_NULL(evbuf);
   int n = 0;
@@ -172,8 +172,8 @@ void HttpClient::InitRequest(std::shared_ptr<HttpMessageHandler> handler, const 
                 << ", The request_url is:" << handler->GetRequestPath()->data();
 }
 
-int HttpClient::CreateRequest(std::shared_ptr<HttpMessageHandler> handler, struct evhttp_connection *connection,
-                              struct evhttp_request *request, HttpMethod method) {
+Status HttpClient::CreateRequest(std::shared_ptr<HttpMessageHandler> handler, struct evhttp_connection *connection,
+                                 struct evhttp_request *request, HttpMethod method) {
   MS_EXCEPTION_IF_NULL(handler);
   MS_EXCEPTION_IF_NULL(connection);
   MS_EXCEPTION_IF_NULL(request);
@@ -182,20 +182,20 @@ int HttpClient::CreateRequest(std::shared_ptr<HttpMessageHandler> handler, struc
 
   if (evhttp_make_request(connection, request, evhttp_cmd_type(method), handler->GetRequestPath()->data()) != 0) {
     MS_LOG(ERROR) << "Make request failed!";
-    return HTTP_INTERNAL;
+    return Status::INTERNAL;
   }
 
   if (!Start()) {
     MS_LOG(ERROR) << "Start http client failed!";
-    return HTTP_INTERNAL;
+    return Status::INTERNAL;
   }
 
   if (handler->request()) {
     MS_LOG(DEBUG) << "The http response code is:" << evhttp_request_get_response_code(handler->request())
                   << ", The request code line is:" << evhttp_request_get_response_code_line(handler->request());
-    return evhttp_request_get_response_code(handler->request());
+    return Status(evhttp_request_get_response_code(handler->request()));
   }
-  return HTTP_INTERNAL;
+  return Status::INTERNAL;
 }
 
 bool HttpClient::Start() {
