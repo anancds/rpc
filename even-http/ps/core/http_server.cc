@@ -53,7 +53,7 @@ bool HttpServer::InitServer() {
   MS_EXCEPTION_IF_NULL(event_base_);
   event_http_ = evhttp_new(event_base_);
   MS_EXCEPTION_IF_NULL(event_http_);
-  evhttp_set_timeout(event_http_, request_timeout_);
+  // evhttp_set_timeout(event_http_, request_timeout_);
   int ret = evhttp_bind_socket(event_http_, server_address_.c_str(), server_port_);
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "Http bind server addr:" << server_address_.c_str() << " port:" << server_port_ << "failed";

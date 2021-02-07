@@ -73,7 +73,7 @@ class HttpMessageHandler {
   std::string GetPostParam(const std::string &key);
   uint64_t GetPostMsg(unsigned char **buffer);
   std::string GetUriPath();
-  VectorPtr GetRequestPath();
+  std::string GetRequestPath();
   std::string GetUriQuery();
 
   // It will return -1 if no port set

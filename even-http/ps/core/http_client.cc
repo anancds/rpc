@@ -85,12 +85,17 @@ Status HttpClient::Get(const std::string &url, std::shared_ptr<std::vector<char>
 void HttpClient::set_connection_timeout(const int &timeout) { connection_timout_ = timeout; }
 
 void HttpClient::ReadCallback(struct evhttp_request *request, void *arg) {
-  MS_EXCEPTION_IF_NULL(request);
+  // MS_EXCEPTION_IF_NULL(request);
+  // MS_LOG(INFO) << "body size:" << request->body_size;
+  if (request == nullptr) {
+  MS_LOG(ERROR) << "the request is nullptr!=====================";
+  }
   MS_EXCEPTION_IF_NULL(arg);
   auto handler = static_cast<HttpMessageHandler *>(arg);
   if (event_base_loopexit(handler->http_base(), nullptr) != 0) {
     MS_LOG(EXCEPTION) << "event base loop exit failed!";
   }
+  MS_LOG(INFO) << "read call back!";
 }
 
 int HttpClient::ReadHeaderDoneCallback(struct evhttp_request *request, void *arg) {
@@ -130,9 +135,9 @@ void HttpClient::RequestErrorCallback(enum evhttp_request_error error, void *arg
   MS_EXCEPTION_IF_NULL(arg);
   auto handler = static_cast<HttpMessageHandler *>(arg);
   MS_LOG(ERROR) << "The request failed, the error is:" << error;
-  if (event_base_loopexit(handler->http_base(), nullptr) != 0) {
-    MS_LOG(EXCEPTION) << "event base loop exit failed!";
-  }
+  // if (event_base_loopexit(handler->http_base(), nullptr) != 0) {
+  //   MS_LOG(EXCEPTION) << "event base loop exit failed!";
+  // }
 }
 
 void HttpClient::ConnectionCloseCallback(struct evhttp_connection *connection, void *arg) {
@@ -168,8 +173,7 @@ void HttpClient::InitRequest(std::shared_ptr<HttpMessageHandler> handler, const 
   evhttp_request_set_error_cb(request, RequestErrorCallback);
 
   MS_LOG(DEBUG) << "The url is:" << url << ", The host is:" << handler->GetHostByUri()
-                << ", The port is:" << handler->GetUriPort()
-                << ", The request_url is:" << handler->GetRequestPath()->data();
+                << ", The port is:" << handler->GetUriPort() << ", The request_url is:" << handler->GetRequestPath();
 }
 
 Status HttpClient::CreateRequest(std::shared_ptr<HttpMessageHandler> handler, struct evhttp_connection *connection,
@@ -178,9 +182,9 @@ Status HttpClient::CreateRequest(std::shared_ptr<HttpMessageHandler> handler, st
   MS_EXCEPTION_IF_NULL(connection);
   MS_EXCEPTION_IF_NULL(request);
   evhttp_connection_set_closecb(connection, ConnectionCloseCallback, event_base_);
-  evhttp_connection_set_timeout(connection, connection_timout_);
+  // evhttp_connection_set_timeout(connection, connection_timout_);
 
-  if (evhttp_make_request(connection, request, evhttp_cmd_type(method), handler->GetRequestPath()->data()) != 0) {
+  if (evhttp_make_request(connection, request, evhttp_cmd_type(method), handler->GetRequestPath().c_str()) != 0) {
     MS_LOG(ERROR) << "Make request failed!";
     return Status::INTERNAL;
   }

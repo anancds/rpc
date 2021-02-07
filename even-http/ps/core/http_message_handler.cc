@@ -80,8 +80,7 @@ void HttpMessageHandler::ParsePostParam() {
   post_param_parsed_ = true;
   const char *post_message = reinterpret_cast<const char *>(evbuffer_pullup(event_request_->input_buffer, -1));
   MS_EXCEPTION_IF_NULL(post_message);
-  body_ = std::make_shared<std::vector<char>>(post_message, post_message + len + 1);
-  int ret = evhttp_parse_query_str(body_->data(), &post_params_);
+  int ret = evhttp_parse_query_str(post_message, &post_params_);
   if (ret == -1) {
     MS_LOG(EXCEPTION) << "Parse post parameter failed!";
   }
@@ -122,7 +121,8 @@ int HttpMessageHandler::GetUriPort() {
   MS_EXCEPTION_IF_NULL(event_uri_);
   int port = evhttp_uri_get_port(event_uri_);
   if (port < 0) {
-    MS_LOG(EXCEPTION) << "The port:" << port << " should not be less than 0!";
+    port = 80;
+    // MS_LOG(EXCEPTION) << "The port:" << port << " should not be less than 0!";
   }
   return port;
 }
@@ -134,42 +134,19 @@ std::string HttpMessageHandler::GetUriPath() {
   return std::string(path);
 }
 
-VectorPtr HttpMessageHandler::GetRequestPath() {
+std::string HttpMessageHandler::GetRequestPath() {
   MS_EXCEPTION_IF_NULL(event_uri_);
-  std::shared_ptr<std::vector<char>> res = std::make_shared<std::vector<char>>();
   const char *path = evhttp_uri_get_path(event_uri_);
   if (path == nullptr || strlen(path) == 0) {
     path = "/";
   }
+  std::string path_res(path);
   const char *query = evhttp_uri_get_query(event_uri_);
   if (query) {
-    int path_size = strlen(path);
-    int query_size = strlen(query);
-    int dest_size = path_size + 1 + query_size + 1;
-    res->resize(dest_size);
-    int ret = memcpy_s(res->data(), dest_size, path, path_size);
-    if (ret != 0) {
-      MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
-    }
-    char delimiter = '?';
-    ret = memcpy_s(res->data() + path_size, dest_size - path_size, &delimiter, 1);
-    if (ret != 0) {
-      MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
-    }
-    ret = memcpy_s(res->data() + path_size + 1, dest_size - path_size - 1, query, query_size);
-    if (ret != 0) {
-      MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
-    }
-
-    return res;
+    path_res.append("?");
+    path_res.append(query);
   }
-
-  res->resize(strlen(path) + 1);
-  int ret = memcpy_s(res->data(), strlen(path) + 1, path, strlen(path));
-  if (ret != 0) {
-    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
-  }
-  return res;
+  return path_res;
 }
 
 std::string HttpMessageHandler::GetUriQuery() {
