@@ -55,10 +55,6 @@ void Worker::InitPSEmbeddingTable(const size_t &key, const std::vector<size_t> &
   *embedding_table_meta.mutable_indices_shape() = {indices_shape.begin(), indices_shape.end()};
   *embedding_table_meta.mutable_output_shape() = {output_shape.begin(), output_shape.end()};
 
-  PSMessage ps_message;
-  ps_message.set_command(PSCommand::INIT_EMBEDDING_TABLE);
-  ps_message.set_data(embedding_table_meta.SerializeAsString());
-
   worker_node_.Broadcast(NodeRole::SERVER, ps_message.SerializeAsString());
 }
 
