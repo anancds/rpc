@@ -55,7 +55,6 @@ void Worker::InitPSEmbeddingTable(const size_t &key, const std::vector<size_t> &
   *embedding_table_meta.mutable_indices_shape() = {indices_shape.begin(), indices_shape.end()};
   *embedding_table_meta.mutable_output_shape() = {output_shape.begin(), output_shape.end()};
 
-  worker_node_.Broadcast(NodeRole::SERVER, ps_message.SerializeAsString());
 }
 
 void Worker::UpdateEmbeddingTable(const std::vector<Key> &keys, const std::vector<int> &lookup_ids,
