@@ -4,3 +4,6 @@
 [submodule "brpc-src"]
 	path = incubator-brpc
 	url = git@github.com:apache/incubator-brpc.git
+[submodule "libevent-src"]
+	path = libevent
+	url = git@github.com:libevent/libevent.git

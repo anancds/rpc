@@ -7,6 +7,16 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -Wall -g -ggdb")
 
 include_directories(../..)
 include_directories(../../../log)
+include_directories(
+        "${PROJECT_SOURCE_DIR}"
+        "${PROJECT_SOURCE_DIR}/libevent/include"
+        "${PROJECT_BINARY_DIR}"
+)
+link_directories(
+        "${PROJECT_BINARY_DIR}"
+        "${PROJECT_BINARY_DIR}/libevent/include"
+)
+
 set(protobuf_MODULE_COMPATIBLE TRUE)
 find_package(Protobuf CONFIG REQUIRED)
 message(STATUS "Using protobuf ${protobuf_VERSION}")

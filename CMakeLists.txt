@@ -3,7 +3,7 @@ project(rpc)
 
 add_subdirectory(zeromq)
 add_subdirectory(grpc)
-add_subdirectory(libevent-example)
+# add_subdirectory(libevent-example)
 #add_subdirectory(brpc)
 add_subdirectory(libuv)
 add_subdirectory(ps-lite)
@@ -19,6 +19,7 @@ add_subdirectory(log)
 add_subdirectory(event-tcp)
 add_subdirectory(consistent_hash)
 add_subdirectory(builder)
+add_subdirectory(libevent)
 
 
 #FILE(GLOB_RECURSE newList *.cpp)

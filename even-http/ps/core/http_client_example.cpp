@@ -3,6 +3,8 @@
 using namespace mindspore::ps::core;
 
 int main(int argc, char **argv) {
+  auto test = std::make_shared<std::vector<char>>();
+  std::cout << test->data() << std::endl;
   mindspore::ps::core::HttpClient client;
   client.Init();
   Status ret;

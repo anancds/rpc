@@ -264,7 +264,7 @@ struct evhttp_request *HttpMessageHandler::request() {
   return event_request_;
 }
 
-void HttpMessageHandler::InitBodySize() { body_->resize(content_len()); }
+void HttpMessageHandler::InitBodySize() { body_->resize(content_len() + 1, 0); }
 
 std::shared_ptr<std::vector<char>> HttpMessageHandler::body() { return body_; }
 

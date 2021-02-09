@@ -257,6 +257,32 @@ void TestMemcpy_s() {
   std::cout << c.data() << std::endl;
 }
 
+void TestMemcpyCost() {
+  std::string temp(4096, 'a');
+  char res[40960] = {0};
+  std::cout << "the timestamp is:"
+            << std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now())
+                 .time_since_epoch()
+                 .count()
+            << std::endl;
+  memcpy_s(&res, 40960, temp.data(), 40);
+  std::cout << "the timestamp is:"
+            << std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now())
+                 .time_since_epoch()
+                 .count()
+            << std::endl;
+
+  // int offset = 40;
+  // for (int i = 0; i < 256; i++) {
+  //   memcpy_s(&res, 40960, temp.data(), 40);
+  // }
+  // std::cout << "the timestamp is:"
+  //           << std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now())
+  //                .time_since_epoch()
+  //                .count()
+  //           << std::endl;
+}
+
 int main(int argc, char **argv) {
   TestCommand();
   std::cout << "test1------------------" << std::endl;
@@ -294,7 +320,11 @@ int main(int argc, char **argv) {
   std::vector<float> temp(1, 0);
   TestVector1(&temp);
   std::cout << "test12" << temp[0] << std::endl;
-  TestTimestamp();
-  TestMemcpy_s();
+  // TestTimestamp();
+  // TestMemcpy_s();
+  for (int i = 0; i < 356;i ++) {
+
+  TestMemcpyCost();
+  }
   return 0;
 }

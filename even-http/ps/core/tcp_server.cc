@@ -90,7 +90,12 @@ bool TcpConnection::SendMessage(std::shared_ptr<MessageMeta> meta, const Protos 
     MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
     res = false;
   }
+  bufferevent_flush(buffer_event_, EV_READ | EV_WRITE, BEV_FLUSH);
   bufferevent_unlock(buffer_event_);
+  MS_LOG(ERROR) << "SendMessage the request id is:" << meta->request_id() << " the current time is:"
+                << std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now())
+                     .time_since_epoch()
+                     .count();
   return res;
 }
 
@@ -292,7 +297,7 @@ void TcpServer::ListenerCallback(struct evconnlistener *, evutil_socket_t fd, st
       on_server_receive(conn, meta, protos, data, size);
     }
   });
-  bufferevent_setcb(bev, TcpServer::ReadCallback, nullptr, TcpServer::EventCallback,
+  bufferevent_setcb(bev, TcpServer::ReadCallback, WriteCallback, TcpServer::EventCallback,
                     reinterpret_cast<void *>(conn.get()));
   if (bufferevent_enable(bev, EV_READ | EV_WRITE) == -1) {
     MS_LOG(EXCEPTION) << "Buffer event enable read and write failed!";
@@ -337,7 +342,26 @@ void TcpServer::ReadCallback(struct bufferevent *bev, void *connection) {
       MS_LOG(EXCEPTION) << "Can not drain data from the event buffer!";
     }
     conn->OnReadHandler(read_buffer, IntToSize(read));
+    MS_LOG(ERROR) << "the current time is:"
+                  << std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now())
+                       .time_since_epoch()
+                       .count()
+                  << " the read size is:" << read;
   }
+}
+
+void TcpServer::WriteCallback(struct bufferevent *bev, void *ctx) {
+  MS_EXCEPTION_IF_NULL(bev);
+  MS_EXCEPTION_IF_NULL(ctx);
+  bufferevent_lock(bev);
+  struct evbuffer *output = bufferevent_get_output(const_cast<struct bufferevent *>(bev));
+  bufferevent_unlock(bev);
+
+  MS_LOG(ERROR) << "WriteCallback the current time is:"
+                << std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now())
+                     .time_since_epoch()
+                     .count()
+                << " the len is: " << evbuffer_get_length(output);
 }
 
 void TcpServer::EventCallback(struct bufferevent *bev, std::int16_t events, void *data) {

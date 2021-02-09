@@ -86,12 +86,17 @@ void HttpClient::set_connection_timeout(const int &timeout) { connection_timout_
 
 void HttpClient::ReadCallback(struct evhttp_request *request, void *arg) {
   // MS_EXCEPTION_IF_NULL(request);
-  // MS_LOG(INFO) << "body size:" << request->body_size;
+  MS_LOG(INFO) << "body size:" << request->body_size;
   if (request == nullptr) {
-  MS_LOG(ERROR) << "the request is nullptr!=====================";
+    MS_LOG(ERROR) << "the request is nullptr!=====================";
   }
   MS_EXCEPTION_IF_NULL(arg);
   auto handler = static_cast<HttpMessageHandler *>(arg);
+  if (request != nullptr) {
+    handler->set_request(request);
+    // handler->set_content_len(request->body_size);
+    handler->body()->resize(request->body_size);
+  }
   if (event_base_loopexit(handler->http_base(), nullptr) != 0) {
     MS_LOG(EXCEPTION) << "event base loop exit failed!";
   }
@@ -102,7 +107,7 @@ int HttpClient::ReadHeaderDoneCallback(struct evhttp_request *request, void *arg
   MS_EXCEPTION_IF_NULL(request);
   MS_EXCEPTION_IF_NULL(arg);
   auto handler = static_cast<HttpMessageHandler *>(arg);
-  handler->set_request(request);
+  // handler->set_request(request);
   MS_LOG(DEBUG) << "The http response code is:" << evhttp_request_get_response_code(request)
                 << ", The request code line is:" << evhttp_request_get_response_code_line(request);
   struct evkeyvalq *headers = evhttp_request_get_input_headers(request);
@@ -195,8 +200,8 @@ Status HttpClient::CreateRequest(std::shared_ptr<HttpMessageHandler> handler, st
   }
 
   if (handler->request()) {
-    MS_LOG(DEBUG) << "The http response code is:" << evhttp_request_get_response_code(handler->request())
-                  << ", The request code line is:" << evhttp_request_get_response_code_line(handler->request());
+    // MS_LOG(DEBUG) << "The http response code is:" << evhttp_request_get_response_code(handler->request())
+    // << ", The request code line is:" << evhttp_request_get_response_code_line(handler->request());
     return Status(evhttp_request_get_response_code(handler->request()));
   }
   return Status::INTERNAL;
