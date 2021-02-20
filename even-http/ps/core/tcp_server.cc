@@ -23,6 +23,8 @@
 #include <event2/event.h>
 #include <event2/listener.h>
 #include <event2/util.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <csignal>
 #include <utility>
@@ -289,7 +291,7 @@ void TcpServer::ListenerCallback(struct evconnlistener *, evutil_socket_t fd, st
 
   std::shared_ptr<TcpConnection> conn = server->onCreateConnection(bev, fd);
   MS_EXCEPTION_IF_NULL(conn);
-
+  SetTcpNoDelay(fd);
   server->AddConnection(fd, conn);
   conn->InitConnection([=](std::shared_ptr<MessageMeta> meta, const Protos &protos, const void *data, size_t size) {
     OnServerReceiveMessage on_server_receive = server->GetServerReceive();
@@ -409,6 +411,14 @@ void TcpServer::TimerOnceCallback(evutil_socket_t, int16_t, void *arg) {
   auto tcp_server = reinterpret_cast<TcpServer *>(arg);
   if (tcp_server->on_timer_once_callback_) {
     tcp_server->on_timer_once_callback_(*tcp_server);
+  }
+}
+
+void TcpServer::SetTcpNoDelay(const evutil_socket_t &fd) {
+  const int one = 1;
+  int ret = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(int));
+  if (ret < 0) {
+    MS_LOG(EXCEPTION) << "Set socket no delay failed!";
   }
 }
 

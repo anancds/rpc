@@ -64,6 +64,7 @@ size_t NodeManagerTest::PushTest(const uint32_t &size) {
   memcpy_s(res.get(), data.length(), data.data(), data.length());
   // auto end1 = std::chrono::high_resolution_clock::now();
   // MS_LOG(INFO) << "serialize, cost:" << (end1 - start1).count() / 1e6 << "ms";
+  MS_LOG(INFO) << "PushTest, len:" << data.length();
 
   auto start = std::chrono::high_resolution_clock::now();
   worker_node_->Send(NodeRole::SERVER, 0, res, data.length(), 0);
@@ -78,7 +79,6 @@ uint64_t NodeManagerTest::PullTest(const uint32_t &size) {
   std::vector<int> values(size, 2);
   *kv_message.mutable_keys() = {keys.begin(), keys.end()};
   *kv_message.mutable_values() = {values.begin(), values.end()};
-  auto start2 = std::chrono::high_resolution_clock::now();
   std::string data = kv_message.SerializeAsString();
 
   std::shared_ptr<unsigned char> res(new unsigned char[data.length()]);
@@ -86,12 +86,13 @@ uint64_t NodeManagerTest::PullTest(const uint32_t &size) {
 
   auto output = std::make_shared<std::vector<unsigned char>>();
 
+  auto start2 = std::chrono::high_resolution_clock::now();
   worker_node_->Send(NodeRole::SERVER, 0, res, data.size(), 0, &output);
+  auto end2 = std::chrono::high_resolution_clock::now();
+  MS_LOG(INFO) << "pull test ok, cost:" << (end2 - start2).count() / 1e6 << "ms";
   KVMessage kv_resp_message;
   kv_resp_message.ParseFromArray(output.get()->data(), output->size());
   MS_LOG(INFO) << "key size:" << kv_resp_message.keys_size();
-  auto end2 = std::chrono::high_resolution_clock::now();
-  MS_LOG(INFO) << "pull test ok, cost:" << (end2 - start2).count() / 1e6 << "ms";
   return (end2 - start2).count() / 1e6;
 }
 
@@ -147,7 +148,7 @@ void NodeManagerTest::StartServer() {
       KVMessage kv_message;
       // auto res = std::make_shared<std::vector<unsigned char>>(262144, 1);
       std::shared_ptr<unsigned char> res(new unsigned char[0]);
-      server_node_->Response(conn, meta, data, size);
+      server_node_->Response(conn, meta, data.get(), size);
     });
   server_node_->Start();
 
@@ -199,7 +200,7 @@ void NodeManagerTest::StartServer1() {
 void NodeManagerTest::ThreadResponse(std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
                                      DataPtr data, size_t size) {
   MS_LOG(INFO) << "thred id:" << std::this_thread::get_id();
-  server_node_->Response(conn, meta, data, size);
+  server_node_->Response(conn, meta, data.get(), size);
 }
 
 void NodeManagerTest::CollSend(const u_int32_t &rank_id) { CollectiveTest(rank_id); }
@@ -222,18 +223,18 @@ void NodeManagerTest::StartClient() {
 
   size_t push_time = 0;
   for (int i = 0; i < 1; i++) {
-    push_time += PushTest(262144);
+    push_time += PushTest(10000000);
   }
   MS_LOG(INFO) << "Push total cost:" << push_time;
 
   size_t pull_time = 0;
   for (int i = 0; i < 50; i++) {
-    pull_time += PullTest(262144);
+    pull_time += PullTest(10000000);
     // pull_time += PullTest(344);
   }
   MS_LOG(INFO) << "Pull total cost:" << pull_time;
 
-  MultiPullTest(1);
+  // MultiPullTest(1);
 
   worker_node_->Finish(30);
   worker_node_->Stop();

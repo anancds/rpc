@@ -74,6 +74,7 @@ class TcpClient {
   static void EventCallback(struct bufferevent *bev, std::int16_t events, void *ptr);
   virtual void OnReadHandler(const void *buf, size_t num);
   static void TimerCallback(evutil_socket_t fd, int16_t event, void *arg);
+  static void LogCallback(int severity, const char *msg);
   void NotifyConnected();
 
  private:

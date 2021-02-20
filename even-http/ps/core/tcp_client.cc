@@ -88,6 +88,8 @@ void TcpClient::Init() {
     MS_LOG(EXCEPTION) << "The tcp client ip:" << server_address_ << " is illegal!";
   }
 
+  event_enable_debug_logging(EVENT_DBG_ALL);
+  event_set_log_callback(LogCallback);
   int result = evthread_use_pthreads();
   if (result != 0) {
     MS_LOG(EXCEPTION) << "Use event pthread failed!";
@@ -213,7 +215,8 @@ void TcpClient::WriteCallback(struct bufferevent *bev, void *ctx) {
                 << std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now())
                      .time_since_epoch()
                      .count()
-                << " the output len is: " << evbuffer_get_length(output) << " the input len is:" << evbuffer_get_length(input);
+                << " the output len is: " << evbuffer_get_length(output)
+                << " the input len is:" << evbuffer_get_length(input);
 }
 
 void TcpClient::OnReadHandler(const void *buf, size_t num) {
@@ -230,6 +233,38 @@ void TcpClient::TimerCallback(evutil_socket_t, int16_t, void *arg) {
   if (tcp_client->on_timer_callback_) {
     tcp_client->on_timer_callback_();
   }
+}
+
+void TcpClient::LogCallback(int severity, const char *msg) {
+  char szBuffer[512];
+
+  FILE *pFd = fopen("./log.txt", "ab+");
+  if (pFd == NULL) return;
+
+  const char *severity_str;
+  switch (severity) {
+    case EVENT_LOG_DEBUG:
+      severity_str = "debug";
+      break;
+    case EVENT_LOG_MSG:
+      severity_str = "msg";
+      break;
+    case EVENT_LOG_WARN:
+      severity_str = "warn";
+      break;
+    case EVENT_LOG_ERR:
+      severity_str = "err";
+      break;
+    default:
+      severity_str = "???";
+      break;
+  }
+
+  snprintf(szBuffer, sizeof(szBuffer), "[%s]:%s", severity_str, msg);
+
+  (void)fwrite(szBuffer, 1, strlen(szBuffer), pFd);
+
+  fclose(pFd);
 }
 
 void TcpClient::NotifyConnected() {
@@ -258,6 +293,8 @@ void TcpClient::EventCallback(struct bufferevent *bev, std::int16_t events, void
     }
   } else if (events & BEV_EVENT_EOF) {
     MS_LOG(ERROR) << "Client connected end of file";
+  } else {
+    MS_LOG(ERROR) << "event callback----------------";
   }
 }
 

@@ -118,6 +118,7 @@ class TcpServer {
   static void EventCallback(struct bufferevent *, std::int16_t events, void *server);
   static void TimerCallback(evutil_socket_t fd, int16_t event, void *arg);
   static void TimerOnceCallback(evutil_socket_t fd, int16_t event, void *arg);
+  static void SetTcpNoDelay(const evutil_socket_t &fd);
   std::shared_ptr<TcpConnection> onCreateConnection(struct bufferevent *bev, const evutil_socket_t &fd);
 
   struct event_base *base_;
