@@ -283,8 +283,35 @@ void TestMemcpyCost() {
   //           << std::endl;
 }
 
+void TestNull(std::shared_ptr<std::vector<unsigned char>> test) {
+  char *abc;
+
+  std::cout << test << abc;
+}
+
+void TestSharedPointer() {
+  {
+    std::unique_ptr<char[]> ptr(new char[1024 * 1024 * 10]);
+    auto temp = new char[1024 * 1024 * 100];
+    std::cout << ptr.get();
+    std::cout << temp;
+  }
+  std::cout << "";
+}
+
+void TestVector() {
+  std::vector<size_t> temp{1, 2, 3};
+
+  std::shared_ptr<std::vector<size_t>> input_shape = std::make_shared<std::vector<size_t>>(temp.begin(), temp.end());
+  for (auto i = 0; i < input_shape->size(); i++) {
+    std::cout << input_shape->at(i) << std::endl;
+  }
+
+  EmbeddingTableMeta meta;
+}
+
 int main(int argc, char **argv) {
-  TestCommand();
+  // TestCommand();
   std::cout << "test1------------------" << std::endl;
   // SerializeAsString();
   std::cout << "test2------------------" << std::endl;
@@ -302,29 +329,30 @@ int main(int argc, char **argv) {
   std::cout << "test8------------------" << std::endl;
   // TestStruct();
   std::cout << "test9------------------" << std::endl;
-  std::shared_ptr<std::vector<unsigned char>> res = std::make_shared<std::vector<unsigned char>>();
+  // std::shared_ptr<std::vector<unsigned char>> res = std::make_shared<std::vector<unsigned char>>();
   size_t size;
-  TestVoid(res->data(), &size);
+  // TestVoid(res->data(), &size);
 
   std::cout << "test10------------------" << std::endl;
-  auto res_ptr = std::make_shared<std::vector<unsigned char>>();
-  TestSharedPtr(&res_ptr);
-  std::cout << "test10------------------" << res_ptr->at(0) << std::endl;
+  // auto res_ptr = std::make_shared<std::vector<unsigned char>>();
+  // TestSharedPtr(&res_ptr);
+  // std::cout << "test10------------------" << res_ptr->at(0) << std::endl;
 
   std::cout << "test11------------------" << std::endl;
   // TestMemcpy();
-  auto output = std::make_shared<std::vector<unsigned char>>();
-  TestVector(output);
-  std::cout << "test11------------------" << output->size() << std::endl;
+  // auto output = std::make_shared<std::vector<unsigned char>>();
+  // TestVector(output);
+  // std::cout << "test11------------------" << output->size() << std::endl;
 
-  std::vector<float> temp(1, 0);
-  TestVector1(&temp);
-  std::cout << "test12" << temp[0] << std::endl;
+  // std::vector<float> temp(1, 0);
+  // TestVector1(&temp);
+  // std::cout << "test12" << temp[0] << std::endl;
   // TestTimestamp();
   // TestMemcpy_s();
-  for (int i = 0; i < 356;i ++) {
-
-  TestMemcpyCost();
+  for (int i = 0; i < 356; i++) {
+    // TestMemcpyCost();
   }
+  // TestSharedPointer();
+  TestVector();
   return 0;
 }

@@ -114,6 +114,7 @@ void Worker::WorkerInitEmbeddingSlicer(const KVMessage &send, std::vector<std::p
     KVMessage kvs;
     *kvs.mutable_keys() = {keys.begin(), keys.end()};
     *kvs.mutable_values() = {vals.begin() + offset_begin, vals.begin() + offset_end};
+    
     sliced->at(i).first = true;
     sliced->at(i).second = kvs;
   }

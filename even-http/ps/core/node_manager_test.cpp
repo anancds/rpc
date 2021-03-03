@@ -147,7 +147,7 @@ void NodeManagerTest::StartServer() {
     [&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta, DataPtr data, size_t size) {
       KVMessage kv_message;
       // auto res = std::make_shared<std::vector<unsigned char>>(262144, 1);
-      std::shared_ptr<unsigned char> res(new unsigned char[0]);
+      std::shared_ptr<uint8_t[]> res(new uint8_t[0]);
       server_node_->Response(conn, meta, data.get(), size);
     });
   server_node_->Start();
