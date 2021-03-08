@@ -277,6 +277,7 @@ void AbstractNode::StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client)
                << ", the node id:" << node_info_.node_id_ << ", the node rank id:" << node_info_.rank_id_
                << " begin send heartbeat to the scheduler!";
   heart_beat_thread_ = std::make_unique<std::thread>([&]() {
+    MS_LOG(ERROR) << "the finish:" << is_finish_.load();
     while (!is_finish_.load()) {
       if (!Heartbeat(client)) {
         MS_LOG(ERROR) << "The node role is:" << CommUtil::NodeRoleToString(node_info_.node_role_)

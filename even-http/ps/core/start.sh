@@ -11,4 +11,3 @@ sleep 1
 
 
 ../../../build/even-http/ps/core/client_example > worker.log 2>&1 &
-sleep 1

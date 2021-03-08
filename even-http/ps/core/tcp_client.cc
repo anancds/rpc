@@ -180,10 +180,6 @@ void TcpClient::TimeoutCallback(evutil_socket_t, std::int16_t, void *arg) {
 void TcpClient::ReadCallback(struct bufferevent *bev, void *ctx) {
   MS_EXCEPTION_IF_NULL(bev);
   MS_EXCEPTION_IF_NULL(ctx);
-  MS_LOG(ERROR) << " readcallback the current time is:"
-                << std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now())
-                     .time_since_epoch()
-                     .count();
   auto tcp_client = reinterpret_cast<TcpClient *>(ctx);
   bufferevent_lock(bev);
   struct evbuffer *input = bufferevent_get_input(const_cast<struct bufferevent *>(bev));
@@ -195,11 +191,6 @@ void TcpClient::ReadCallback(struct bufferevent *bev, void *ctx) {
 
   while ((read = evbuffer_remove(input, &read_buffer, sizeof(read_buffer))) > 0) {
     tcp_client->OnReadHandler(read_buffer, read);
-    MS_LOG(ERROR) << "the current time is:"
-                  << std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now())
-                       .time_since_epoch()
-                       .count()
-                  << " the read size is:" << read;
   }
 }
 

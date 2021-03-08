@@ -283,10 +283,12 @@ void TestMemcpyCost() {
   //           << std::endl;
 }
 
-void TestNull(std::shared_ptr<std::vector<unsigned char>> test) {
-  char *abc;
+void TestNull(void *data) {
+  char *abc = nullptr;
+  std::string a;
+  char *test;
 
-  std::cout << test << abc;
+  std::cout << test << a.data() << a.length();
 }
 
 void TestSharedPointer() {
@@ -308,6 +310,10 @@ void TestVector() {
   }
 
   EmbeddingTableMeta meta;
+
+  std::shared_ptr<uint8_t[]> res(new uint8_t[0]);
+  std::shared_ptr<std::vector<uint8_t>> temp1 = std::make_shared<std::vector<uint8_t>>();
+  std::cout << temp1.get() << " " << temp1->data() << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -353,6 +359,8 @@ int main(int argc, char **argv) {
     // TestMemcpyCost();
   }
   // TestSharedPointer();
-  TestVector();
+  // TestVector();
+  std::string a;
+  TestNull(a.data());
   return 0;
 }

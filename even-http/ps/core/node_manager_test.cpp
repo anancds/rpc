@@ -140,7 +140,7 @@ void NodeManagerTest::StartServer() {
     if (event == NodeEvent::CLUSTER_TIMEOUT) {
       MS_LOG(INFO) << "111111111111111111111111111111!";
       //      server_node_->Finish();
-      //      server_node_->Stop();
+      server_node_->Stop();
     }
   });
   server_node_->set_handler(
@@ -160,7 +160,7 @@ void NodeManagerTest::StartServer() {
     CollectiveTest(1);
   }
 
-  // std::this_thread::sleep_for(std::chrono::seconds(600000));
+  std::this_thread::sleep_for(std::chrono::seconds(100));
   server_node_->Finish(30);
   server_node_->Stop();
 }
@@ -171,7 +171,7 @@ void NodeManagerTest::StartServer1() {
     if (event == NodeEvent::CLUSTER_TIMEOUT) {
       MS_LOG(INFO) << "111111111111111111111111111111!";
       //      server_node_->Finish();
-      //      server_node_->Stop();
+      server_node_->Stop();
     }
   });
 
@@ -193,6 +193,7 @@ void NodeManagerTest::StartServer1() {
     CollectiveTest(0);
   }
 
+  std::this_thread::sleep_for(std::chrono::seconds(100));
   server_node_->Finish(30);
   server_node_->Stop();
 }
@@ -223,16 +224,17 @@ void NodeManagerTest::StartClient() {
 
   size_t push_time = 0;
   for (int i = 0; i < 1; i++) {
-    push_time += PushTest(10000000);
+    push_time += PushTest(1000000);
   }
   MS_LOG(INFO) << "Push total cost:" << push_time;
 
   size_t pull_time = 0;
-  for (int i = 0; i < 50; i++) {
-    pull_time += PullTest(10000000);
-    // pull_time += PullTest(344);
-  }
+  // for (int i = 0; i < 50; i++) {
+  //   pull_time += PullTest(1000000);
+  //   // pull_time += PullTest(344);
+  // }
   MS_LOG(INFO) << "Pull total cost:" << pull_time;
+  std::this_thread::sleep_for(std::chrono::seconds(20));
 
   // MultiPullTest(1);
 
