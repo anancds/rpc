@@ -22,7 +22,7 @@ using namespace mindspore::ps::core;
 
 static atomic_uint64_t a = 0;
 
-static ThreadPool pool(10);
+static ThreadPool pool(1);
 
 void Process(std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) {
   std::string host = resp->GetRequestHost();
