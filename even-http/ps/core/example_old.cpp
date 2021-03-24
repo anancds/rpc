@@ -12,6 +12,7 @@
 #include <memory>
 #include <regex>
 #include <thread>
+#include <atomic>
 #include "http_server.h"
 #include "ps/core/thread_pool.h"
 
@@ -19,7 +20,7 @@ using namespace std;
 using namespace mindspore;
 using namespace mindspore::ps::core;
 
-static uint64_t a = 0;
+static atomic_uint64_t a = 0;
 
 static ThreadPool pool(10);
 
