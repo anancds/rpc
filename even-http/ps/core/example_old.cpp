@@ -13,6 +13,7 @@
 #include <regex>
 #include <thread>
 #include "http_server.h"
+#include "ps/core/thread_pool.h"
 
 using namespace std;
 using namespace mindspore;
@@ -20,7 +21,9 @@ using namespace mindspore::ps::core;
 
 static uint64_t a = 0;
 
-static void testGetHandler(std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) {
+static ThreadPool pool(10);
+
+void Process(std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) {
   std::string host = resp->GetRequestHost();
 
   std::string path_param = resp->GetPathParam("key1");
@@ -33,8 +36,6 @@ static void testGetHandler(std::shared_ptr<mindspore::ps::core::HttpMessageHandl
   memset_s(post_message, len + 1, 0, len + 1);
   if (memcpy_s(post_message, len, data, len) != 0) {
   }
-  a++;
-  MS_LOG(ERROR) << "the count is:" << a;
 
   const std::string rKey("headKey");
   const std::string rVal("headValue");
@@ -44,7 +45,11 @@ static void testGetHandler(std::shared_ptr<mindspore::ps::core::HttpMessageHandl
 
   resp->SetRespCode(200);
   resp->SendResponse();
+  a++;
+  MS_LOG(ERROR) << "the count is:" << a;
 }
+
+void testGetHandler(std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) { pool.Submit(Process, resp); }
 
 bool CheckIp(const std::string &ip) {
   std::regex pattern("((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)");
