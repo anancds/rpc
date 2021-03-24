@@ -52,6 +52,7 @@ class HttpMessageHandler {
         head_params_(nullptr),
         post_params_{0},
         post_param_parsed_(false),
+        post_message_(nullptr),
         body_(nullptr),
         resp_headers_(nullptr),
         resp_buf_(nullptr),
@@ -114,6 +115,7 @@ class HttpMessageHandler {
   struct evkeyvalq *head_params_;
   struct evkeyvalq post_params_;
   bool post_param_parsed_;
+  std::unique_ptr<std::string> post_message_;
   VectorPtr body_;
   struct evkeyvalq *resp_headers_;
   struct evbuffer *resp_buf_;

@@ -80,7 +80,8 @@ void HttpMessageHandler::ParsePostParam() {
   post_param_parsed_ = true;
   const char *post_message = reinterpret_cast<const char *>(evbuffer_pullup(event_request_->input_buffer, -1));
   MS_EXCEPTION_IF_NULL(post_message);
-  int ret = evhttp_parse_query_str(post_message, &post_params_);
+  post_message_ = std::make_unique<std::string>(post_message, len);
+  int ret = evhttp_parse_query_str(post_message_->c_str(), &post_params_);
   if (ret == -1) {
     MS_LOG(EXCEPTION) << "Parse post parameter failed!";
   }
