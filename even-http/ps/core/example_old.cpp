@@ -18,7 +18,7 @@ using namespace std;
 using namespace mindspore;
 using namespace mindspore::ps::core;
 
-static uint64_t count = 0;
+static uint64_t a = 0;
 
 static void testGetHandler(std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) {
   std::string host = resp->GetRequestHost();
@@ -33,7 +33,7 @@ static void testGetHandler(std::shared_ptr<mindspore::ps::core::HttpMessageHandl
   memset_s(post_message, len + 1, 0, len + 1);
   if (memcpy_s(post_message, len, data, len) != 0) {
   }
-  count++;
+  a++;
   MS_LOG(ERROR) << "the count is:" << a;
 
   const std::string rKey("headKey");
