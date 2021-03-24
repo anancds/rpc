@@ -288,7 +288,6 @@ void TestNull(void *data) {
   std::string a;
   char *test;
 
-  std::cout << test << a.data() << a.length();
 }
 
 void TestSharedPointer() {
@@ -314,6 +313,17 @@ void TestVector() {
   std::shared_ptr<uint8_t[]> res(new uint8_t[0]);
   std::shared_ptr<std::vector<uint8_t>> temp1 = std::make_shared<std::vector<uint8_t>>();
   std::cout << temp1.get() << " " << temp1->data() << std::endl;
+}
+
+void Testtime() {
+  std::cout << std::endl;
+  std::string a;
+  std::shared_ptr<u_int8_t> res(new uint8_t[0]);
+  std::cout << res.get() << std::endl;
+  std::cout << a.data() << ", " << a.length() << std::endl;
+
+  char temp[0];
+  std::cout << "temp:" << temp << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -362,5 +372,6 @@ int main(int argc, char **argv) {
   // TestVector();
   std::string a;
   TestNull(a.data());
+  Testtime();
   return 0;
 }
