@@ -50,7 +50,7 @@ void Process(std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) {
   MS_LOG(ERROR) << "the count is:" << a;
 }
 
-void testGetHandler(std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) { pool.Submit(Process, resp); }
+void testGetHandler(std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) { Process(resp); }
 
 bool CheckIp(const std::string &ip) {
   std::regex pattern("((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)");
@@ -61,6 +61,7 @@ bool CheckIp(const std::string &ip) {
   return false;
 }
 void StartHttpServer(HttpServer *server_) {
+  server_->InitServer();
   mindspore::ps::core::OnRequestReceive f1 = std::bind(
     [](std::shared_ptr<mindspore::ps::core::HttpMessageHandler> resp) {
       const unsigned char ret[] = "get request success!\n";
@@ -71,6 +72,7 @@ void StartHttpServer(HttpServer *server_) {
   mindspore::ps::core::OnRequestReceive f2 = std::bind(testGetHandler, std::placeholders::_1);
   server_->RegisterRoute("/handler", &f2);
   server_->Start();
+  server_->Wait();
 }
 int main() {
   std::int16_t test = -1;
