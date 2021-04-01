@@ -57,15 +57,11 @@ class ParameterServer {
     ~ServerHandler() = default;
     void Init();
     void operator()(std::shared_ptr<core::TcpConnection> conn, std::shared_ptr<core::CommMessage> message);
-    void HandleInitWeights(const PSMessage &message, PSMessage *res);
-    void HandleInitEmbeddings(const PSMessage &message, PSMessage *res);
 
    private:
     ParameterServer *ps_;
-    typedef void (ServerHandler::*RequestHandler)(const PSMessage &message, PSMessage *res);
     //    using RequestHandler =
     //      std::function<void(const core::MessageMeta &meta, const std::string &message, std::string *res)>;
-    std::unordered_map<int64_t, RequestHandler> handlers_;
     std::unordered_map<Key, bool> init_weights_;
     std::unordered_map<Key, bool> init_weight_to_optim_;
     std::unordered_map<Key, bool> init_optim_info_;

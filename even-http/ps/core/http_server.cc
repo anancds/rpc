@@ -41,7 +41,7 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-HttpServer::~HttpServer() {}
+HttpServer::~HttpServer() { Stop(); }
 
 bool HttpServer::InitServer() {
   if (!CommUtil::CheckIp(server_address_)) {
@@ -56,6 +56,11 @@ bool HttpServer::InitServer() {
     return false;
   }
 
+  if (!SSLUtil::InitSSL()) {
+    MS_LOG(ERROR) << "Init SSL failed!";
+    return false;
+  }
+
   fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
   if (fd_ < 0) {
     MS_LOG(ERROR) << "Socker error!";
@@ -63,7 +68,11 @@ bool HttpServer::InitServer() {
   }
 
   int one = 1;
-  result = setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(int));
+  result = setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char *>(&one), sizeof(int));
+  if (result < 0) {
+    MS_LOG(ERROR) << "Set sock opt error!";
+    return false;
+  }
 
   struct sockaddr_in addr;
   errno_t ret = memset_s(&addr, sizeof(addr), 0, sizeof(addr));
@@ -115,7 +124,7 @@ bool HttpServer::Start() {
   MS_LOG(INFO) << "Start http server!";
   for (size_t i = 0; i < thread_num_; i++) {
     auto worker_queue = std::make_shared<WorkerQueue>();
-    worker_queue->Init(fd_, request_handlers_);
+    worker_queue->Initialize(fd_, request_handlers_);
     worker_queues_.push_back(worker_queue);
     worker_threads_.push_back(std::shared_ptr<std::thread>(new std::thread(&WorkerQueue::Run, worker_queue)));
   }

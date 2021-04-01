@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2021 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,28 @@
  * limitations under the License.
  */
 
-#include "common/common_test.h"
-#include "ps/core/node.h"
-#include "ps/core/scheduler_node.h"
+#ifndef MINDSPORE_CCSRC_PS_CORE_COMMUNICATOR_SSL_UTIL_H_
+#define MINDSPORE_CCSRC_PS_CORE_COMMUNICATOR_SSL_UTIL_H_
+
+#include <openssl/ssl.h>
+#include <openssl/rand.h>
+#include <openssl/err.h>
+
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
-class TestClusterAvailableTimeout : public UT::Common {
+class SSLUtil {
  public:
-  TestClusterAvailableTimeout() = default;
-  ~TestClusterAvailableTimeout() override = default;
+  static bool InitSSL();
+  static void CleanSSL();
+  static SSL_CTX *GetSSLCtx();
 
-  void SetUp() override {}
-  void TearDown() override {}
+ private:
+  static SSL_CTX *g_ssl_ctx_;
 };
-
-TEST_F(TestClusterAvailableTimeout, TestClusterAvailableTimeout) {
-  ClusterConfig::set_cluster_available_timeout(3);
-  SchedulerNode node;
-  node.Start();
-  node.Finish();
-  node.Stop();
-}
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
+#endif  // MINDSPORE_CCSRC_PS_CORE_COMMUNICATOR_SSL_UTIL_H_

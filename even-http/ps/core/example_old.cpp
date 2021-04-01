@@ -78,7 +78,7 @@ int main() {
   std::int16_t test = -1;
   std::cout << test << std::endl;
   cout << CheckIp("0.0.0.0") << endl;
-  HttpServer *server_ = new HttpServer("0.0.0.0", 9999);
+  HttpServer *server_ = new HttpServer("0.0.0.0", 9999, 1);
   std::thread http_server_thread_([&]() { StartHttpServer(server_); });
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));

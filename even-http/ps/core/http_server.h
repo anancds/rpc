@@ -36,8 +36,10 @@
 #include <string>
 #include <atomic>
 #include <unordered_map>
+#include <vector>
 
 #include "ps/core/worker_queue.h"
+#include "ps/core/ssl_util.h"
 
 namespace mindspore {
 namespace ps {

@@ -20,9 +20,16 @@
 #include <event2/event.h>
 #include <event2/http.h>
 #include <event2/http_struct.h>
+#include <event2/bufferevent.h>
+#include <event2/bufferevent_ssl.h>
+
+#include <string>
+#include <memory>
+#include <unordered_map>
 
 #include "utils/log_adapter.h"
 #include "ps/core/http_message_handler.h"
+#include "ps/core/ssl_util.h"
 
 namespace mindspore {
 namespace ps {
@@ -30,12 +37,13 @@ namespace core {
 using OnRequestReceive = std::function<void(std::shared_ptr<HttpMessageHandler>)>;
 class WorkerQueue {
  public:
-  explicit WorkerQueue() : evbase_(nullptr) {}
+  WorkerQueue() : evbase_(nullptr) {}
   virtual ~WorkerQueue() = default;
 
-  bool Init(int fd, std::unordered_map<std::string, OnRequestReceive *> handlers);
+  bool Initialize(int fd, std::unordered_map<std::string, OnRequestReceive *> handlers);
   void Run();
   void Stop();
+  static bufferevent *BuffereventCallback(event_base *base, void *arg);
 
  private:
   struct event_base *evbase_;

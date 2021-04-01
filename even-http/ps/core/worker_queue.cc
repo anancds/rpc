@@ -1,4 +1,3 @@
-
 /**
  * Copyright 2021 Huawei Technologies Co., Ltd
  *
@@ -20,18 +19,40 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-bool WorkerQueue::Init(int fd, std::unordered_map<std::string, OnRequestReceive *> handlers) {
+bool WorkerQueue::Initialize(int fd, std::unordered_map<std::string, OnRequestReceive *> handlers) {
   evbase_ = event_base_new();
   MS_EXCEPTION_IF_NULL(evbase_);
   struct evhttp *http = evhttp_new(evbase_);
   MS_EXCEPTION_IF_NULL(http);
+
+  SSL_CTX_set_options(SSLUtil::GetSSLCtx(), SSL_OP_SINGLE_DH_USE | SSL_OP_SINGLE_ECDH_USE | SSL_OP_NO_SSLv2);
+  EC_KEY *ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+  MS_EXCEPTION_IF_NULL(ecdh);
+
+  if (!SSL_CTX_use_certificate_chain_file(SSLUtil::GetSSLCtx(), "server.crt")) {
+    MS_LOG(ERROR) << "SSL use certificate chain file failed!";
+    return false;
+  }
+
+  if (!SSL_CTX_use_PrivateKey_file(SSLUtil::GetSSLCtx(), "server.key", SSL_FILETYPE_PEM)) {
+    MS_LOG(ERROR) << "SSL use private key file failed!";
+    return false;
+  }
+
+  if (!SSL_CTX_check_private_key(SSLUtil::GetSSLCtx())) {
+    MS_LOG(ERROR) << "SSL check private key file failed!";
+    return false;
+  }
+
+  evhttp_set_bevcb(http, BuffereventCallback, SSLUtil::GetSSLCtx());
+
   int result = evhttp_accept_socket(http, fd);
   if (result < 0) {
     MS_LOG(ERROR) << "Evhttp accept socket failed!";
     return false;
   }
 
-  for (auto &handler : handlers) {
+  for (const auto &handler : handlers) {
     auto TransFunc = [](struct evhttp_request *req, void *arg) {
       MS_EXCEPTION_IF_NULL(req);
       MS_EXCEPTION_IF_NULL(arg);
@@ -44,12 +65,13 @@ bool WorkerQueue::Init(int fd, std::unordered_map<std::string, OnRequestReceive 
 
     // O SUCCESS,-1 ALREADY_EXIST,-2 FAILURE
     int ret = evhttp_set_cb(http, handler.first.c_str(), TransFunc, reinterpret_cast<void *>(handler.second));
+    std::string log_prefix = "Ev http register handle of:";
     if (ret == 0) {
-      MS_LOG(INFO) << "Ev http register handle of:" << handler.first.c_str() << " success.";
+      MS_LOG(INFO) << log_prefix << handler.first.c_str() << " success.";
     } else if (ret == -1) {
-      MS_LOG(WARNING) << "Ev http register handle of:" << handler.first.c_str() << " exist.";
+      MS_LOG(WARNING) << log_prefix << handler.first.c_str() << " exist.";
     } else {
-      MS_LOG(ERROR) << "Ev http register handle of:" << handler.first.c_str() << " failed.";
+      MS_LOG(ERROR) << log_prefix << handler.first.c_str() << " failed.";
       return false;
     }
   }
@@ -74,6 +96,7 @@ void WorkerQueue::Run() {
     event_base_free(evbase_);
     evbase_ = nullptr;
   }
+  SSLUtil::CleanSSL();
 }
 
 void WorkerQueue::Stop() {
@@ -83,6 +106,13 @@ void WorkerQueue::Stop() {
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "event base loop break failed!";
   }
+}
+
+bufferevent *WorkerQueue::BuffereventCallback(event_base *base, void *arg) {
+  SSL_CTX *ctx = reinterpret_cast<SSL_CTX *>(arg);
+  SSL *ssl = SSL_new(ctx);
+  bufferevent *bev = bufferevent_openssl_socket_new(base, -1, ssl, BUFFEREVENT_SSL_ACCEPTING, BEV_OPT_CLOSE_ON_FREE);
+  return bev;
 }
 }  // namespace core
 }  // namespace ps

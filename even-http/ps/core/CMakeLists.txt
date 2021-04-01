@@ -45,6 +45,7 @@ set(HTTP_SRC
         thread_pool.cc
         http_client.cc
         worker_queue.cc
+        ssl_util.cc
         )
 set(HTTP_HEADER
         comm_util.h
@@ -64,6 +65,7 @@ set(HTTP_HEADER
         message.h
         http_client.h
         worker_queue.h
+        ssl_util.h
         )
 
 add_library(core1 ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})
@@ -83,5 +85,8 @@ foreach (_target
             Threads::Threads
             rpc-log
             ${_PROTOBUF_LIBPROTOBUF}
+            ssl
+            crypto
+            event_openssl
             event_pthreads)
 endforeach ()
