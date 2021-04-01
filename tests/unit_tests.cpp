@@ -113,17 +113,17 @@ class TestHttpServer : public UT::Common {
         resp->SendResponse();
       },
       std::placeholders::_1);
+    server_->InitServer();
     server_->RegisterRoute("/httpget", &http_get_func);
     server_->RegisterRoute("/handler", &http_handler_func);
-    std::unique_ptr<std::thread> http_server_thread_(nullptr);
-    http_server_thread_ = std::make_unique<std::thread>([&]() { server_->Start(); });
-    http_server_thread_->detach();
+    server_->Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   }
 
   void TearDown() override {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     server_->Stop();
+    server_->Wait();
   }
 
  private:

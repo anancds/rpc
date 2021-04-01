@@ -41,7 +41,7 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-HttpServer::~HttpServer() { Stop(); }
+HttpServer::~HttpServer() {}
 
 bool HttpServer::InitServer() {
   if (!CommUtil::CheckIp(server_address_)) {

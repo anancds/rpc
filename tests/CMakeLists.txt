@@ -12,7 +12,8 @@ add_library(unittest ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_messa
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_server.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/http_client.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/comm_util.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/cluster_config.cc)
+        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/cluster_config.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/../even-http/ps/core/worker_queue.cc)
 #add_library(tcp ${TEST_SRC})
 
 find_package(Threads REQUIRED)
