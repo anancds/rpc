@@ -34,7 +34,7 @@ bool WorkerQueue::Initialize(int fd, std::unordered_map<std::string, OnRequestRe
     return false;
   }
 
-  if (!SSL_CTX_use_PrivateKey_file(SSLUtil::GetSSLCtx(), "server.key", SSL_FILETYPE_PEM)) {
+  if (!SSL_CTX_use_PrivateKey_file(SSLUtil::GetSSLCtx(), "server.key.unsecure", SSL_FILETYPE_PEM)) {
     MS_LOG(ERROR) << "SSL use private key file failed!";
     return false;
   }
