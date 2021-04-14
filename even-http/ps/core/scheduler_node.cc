@@ -59,10 +59,13 @@ void SchedulerNode::ProcessHeartbeat(std::shared_ptr<TcpServer> server, std::sha
   }
 
   HeartbeatRespMessage heartbeat_resp_message;
-  heartbeat_resp_message.set_is_cluster_ready(node_manager_.is_cluster_ready());
-  heartbeat_resp_message.set_is_cluster_finish(node_manager_.is_cluster_finish());
-  heartbeat_resp_message.set_is_cluster_timeout(node_manager_.is_cluster_timeout());
-  heartbeat_resp_message.set_is_node_timeout(node_manager_.is_node_timeout());
+  heartbeat_resp_message.mutable_node_attribute()->at(NodeAttribute::IS_CLUSTER_READY) =
+    node_manager_.is_cluster_ready();
+  heartbeat_resp_message.mutable_node_attribute()->at(NodeAttribute::IS_CLUSTER_FINISH) =
+    node_manager_.is_cluster_finish();
+  heartbeat_resp_message.mutable_node_attribute()->at(NodeAttribute::IS_CLUSTER_TIMEOUT) =
+    node_manager_.is_cluster_timeout();
+  heartbeat_resp_message.mutable_node_attribute()->at(NodeAttribute::IS_NODE_TIMEOUT) = node_manager_.is_node_timeout();
 
   server->SendMessage(conn, meta, Protos::PROTOBUF, heartbeat_resp_message.SerializeAsString().data(),
                       heartbeat_resp_message.ByteSizeLong());

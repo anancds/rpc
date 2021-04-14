@@ -69,12 +69,16 @@ message HeartbeatMessage {
   bool is_node_finish = 2;
 }
 
+enum NodeAttribute {
+  IS_CLUSTER_READY = 0;
+  IS_CLUSTER_FINISH = 1;
+  IS_CLUSTER_TIMEOUT = 2;
+  IS_NODE_TIMEOUT = 3;
+}
+
+// todo gaicheng map
 message HeartbeatRespMessage {
-  // Is the entire system ready to use.
-  bool is_cluster_ready = 1;
-  bool is_cluster_finish = 2;
-  bool is_cluster_timeout = 3;
-  bool is_node_timeout = 4;
+  map<int32, bool> node_attribute = 1;
 }
 
 message FetchServersMessage {

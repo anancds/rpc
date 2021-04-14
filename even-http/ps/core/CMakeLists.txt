@@ -26,6 +26,8 @@ set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
 file(GLOB_RECURSE PROTO_FILES "protos/*.proto")
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
 
+find_package(nlohmann_json REQUIRED)
+
 set(HTTP_SRC
         comm_util.cc
         node_manager_test.cpp
@@ -88,5 +90,6 @@ foreach (_target
             ssl
             crypto
             event_openssl
+            nlohmann_json::nlohmann_json
             event_pthreads)
 endforeach ()

@@ -336,25 +336,25 @@ void AbstractNode::ProcessHeartbeatResp(std::shared_ptr<MessageMeta> meta, const
   HeartbeatRespMessage heartbeat_resp_message;
   heartbeat_resp_message.ParseFromArray(data, size);
 
-  is_ready_ = heartbeat_resp_message.is_cluster_ready();
+  is_ready_ = heartbeat_resp_message.node_attribute().at(NodeAttribute::IS_CLUSTER_READY);
   if (is_ready_.load()) {
     wait_start_cond_.notify_all();
     MS_LOG(DEBUG) << "The node id:" << node_info_.node_id_ << " is ready!";
   }
-  if (heartbeat_resp_message.is_cluster_finish()) {
+  if (heartbeat_resp_message.node_attribute().at(NodeAttribute::IS_CLUSTER_FINISH)) {
     Heartbeat(client_to_scheduler_, true);
     is_finish_ = true;
     wait_finish_cond_.notify_all();
     MS_LOG(DEBUG) << "The node id:" << node_info_.node_id_ << " is finish!";
   }
-  is_timeout_ = heartbeat_resp_message.is_cluster_timeout();
+  is_timeout_ = heartbeat_resp_message.node_attribute().at(NodeAttribute::IS_CLUSTER_TIMEOUT);
   if (is_timeout_ && on_node_event_message_) {
     is_ready_ = true;
     wait_start_cond_.notify_all();
     on_node_event_message_(NodeEvent::CLUSTER_TIMEOUT);
   }
 
-  if (heartbeat_resp_message.is_node_timeout() && on_node_event_message_) {
+  if (heartbeat_resp_message.node_attribute().at(NodeAttribute::IS_NODE_TIMEOUT) && on_node_event_message_) {
     on_node_event_message_(NodeEvent::NODE_TIMEOUT);
   }
 }
