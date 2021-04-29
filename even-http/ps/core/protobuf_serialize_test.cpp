@@ -6,6 +6,8 @@
 #include "../../../build/even-http/ps/core/ps.pb.h"
 #include "../../../build/even-http/ps/core/test.pb.h"
 #include "ps/core/scheduler_node.h"
+#include "nlohmann/json.hpp"
+
 using namespace mindspore::ps::core;
 using namespace mindspore::ps;
 using VectorPtr = std::shared_ptr<std::vector<unsigned char>>;
@@ -287,7 +289,6 @@ void TestNull(void *data) {
   char *abc = nullptr;
   std::string a;
   char *test;
-
 }
 
 void TestSharedPointer() {
@@ -324,6 +325,23 @@ void Testtime() {
 
   char temp[0];
   std::cout << "temp:" << temp << std::endl;
+}
+
+void TestJson() {
+  nlohmann::json js;
+  nlohmann::json js_ret;
+  js["server"] = 4;
+  std::cout << js.dump() << std::endl;
+  js_ret = js.parse(js.dump());
+  if (js_ret.contains("server")) {
+    uint32_t temp = js_ret.at("server");
+    std::cout << temp << std::endl;
+  }
+}
+
+void TestMap() {
+  HeartbeatRespMessage heartbeat_resp_message;
+  heartbeat_resp_message.mutable_node_attribute()->insert({NodeAttribute::IS_CLUSTER_FINISH, true});
 }
 
 int main(int argc, char **argv) {
@@ -372,6 +390,8 @@ int main(int argc, char **argv) {
   // TestVector();
   std::string a;
   TestNull(a.data());
-  Testtime();
+  // Testtime();
+  // TestJson();
+  TestMap();
   return 0;
 }
