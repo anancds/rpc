@@ -331,12 +331,20 @@ void TestJson() {
   nlohmann::json js;
   nlohmann::json js_ret;
   js["server"] = 4;
+  js["node_id"] = {"a", "b"};
   std::cout << js.dump() << std::endl;
   js_ret = js.parse(js.dump());
   if (js_ret.contains("server")) {
     uint32_t temp = js_ret.at("server");
     std::cout << temp << std::endl;
   }
+  const nlohmann::json &res = js_ret.at("node_id");
+  std::vector<std::string> vec;
+  for (auto &element : res) {
+    std::cout << element << '\n';
+    vec.emplace_back(element);
+  }
+  std::cout << vec[0] << std::endl;
 }
 
 void TestMap() {
@@ -391,7 +399,7 @@ int main(int argc, char **argv) {
   std::string a;
   TestNull(a.data());
   // Testtime();
-  // TestJson();
-  TestMap();
+  TestJson();
+  // TestMap();
   return 0;
 }
