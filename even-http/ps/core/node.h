@@ -48,6 +48,7 @@ class Node {
         is_timeout_(false),
         is_already_stopped_(true),
         is_already_finished_(false),
+        attr(NodeAttribute::IS_CLUSTER_FINISH),
         next_request_id_(0) {}
   virtual ~Node() = default;
 
@@ -82,6 +83,8 @@ class Node {
   std::mutex wait_finish_mutex_;
   std::condition_variable wait_finish_cond_;
   std::mutex finish_mutex_;
+
+  NodeAttribute attr;
 };
 }  // namespace core
 }  // namespace ps

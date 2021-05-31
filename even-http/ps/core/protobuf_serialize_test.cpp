@@ -7,6 +7,7 @@
 #include "../../../build/even-http/ps/core/test.pb.h"
 #include "ps/core/scheduler_node.h"
 #include "nlohmann/json.hpp"
+#include <unordered_map>
 
 using namespace mindspore::ps::core;
 using namespace mindspore::ps;
@@ -345,11 +346,15 @@ void TestJson() {
     vec.emplace_back(element);
   }
   std::cout << vec[0] << std::endl;
+  SchedulerNode node;
+  std::cout << node.node_id() << std::endl;
 }
 
 void TestMap() {
-  HeartbeatRespMessage heartbeat_resp_message;
-  heartbeat_resp_message.mutable_node_attribute()->insert({NodeAttribute::IS_CLUSTER_FINISH, true});
+  nlohmann::json js;
+  std::unordered_map<std::string, std::string> res;
+  js["node_ids"].push_back(res);
+  std::cout << js.dump() << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -399,7 +404,7 @@ int main(int argc, char **argv) {
   std::string a;
   TestNull(a.data());
   // Testtime();
-  TestJson();
-  // TestMap();
+  // TestJson();
+  TestMap();
   return 0;
 }
