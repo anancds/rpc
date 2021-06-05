@@ -48,6 +48,7 @@ set(HTTP_SRC
         http_client.cc
         worker_queue.cc
         ssl_util.cc
+        file_configuration.cc
         )
 set(HTTP_HEADER
         comm_util.h
@@ -68,6 +69,8 @@ set(HTTP_HEADER
         http_client.h
         worker_queue.h
         ssl_util.h
+        configuration.h
+        file_configuration.h
         )
 
 add_library(core1 ${HTTP_SRC} ${HTTP_HEADER} ${PROTO_SRCS} ${PROTO_HDRS})

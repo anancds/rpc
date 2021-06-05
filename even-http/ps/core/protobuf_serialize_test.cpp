@@ -12,6 +12,7 @@
 using namespace mindspore::ps::core;
 using namespace mindspore::ps;
 using VectorPtr = std::shared_ptr<std::vector<unsigned char>>;
+std::unordered_map<std::string, int> abc = {{"a", 1}, {"b", 2}};
 void SerializeAsString() {
   CommMessage1 comm_message;
   KVMessage1 kv_message;
@@ -357,6 +358,16 @@ void TestMap() {
   std::cout << js.dump() << std::endl;
 }
 
+std::unordered_map<std::string, int> &GetNode() { return abc; }
+
+void TestGetNode() {
+  std::unordered_map<std::string, int> test = GetNode();
+  test["c"] = 2;
+  abc.clear();
+  std::unordered_map<std::string, int> test1 = GetNode();
+  std::cout << test1["b"];
+}
+
 int main(int argc, char **argv) {
   // TestCommand();
   std::cout << "test1------------------" << std::endl;
@@ -406,5 +417,7 @@ int main(int argc, char **argv) {
   // Testtime();
   // TestJson();
   TestMap();
+
+  TestGetNode();
   return 0;
 }
