@@ -46,6 +46,9 @@
 #include <string>
 #include <utility>
 #include <thread>
+#include <fstream>
+#include <iostream>
+#include <vector>
 
 #include "../../../build/even-http/ps/core/comm.pb.h"
 #include "../../../build/even-http/ps/core/ps.pb.h"
@@ -74,6 +77,9 @@ class CommUtil {
   static std::string NodeRoleToString(const NodeRole &role);
   static bool ValidateRankId(const enum NodeRole &node_role, const uint32_t &rank_id);
   static bool Retry(const std::function<bool()> &func, size_t max_attempts, size_t interval_milliseconds);
+
+  // Check if the file exists.
+  static bool IsFileExists(const std::string &file);
 
  private:
   static std::random_device rd;

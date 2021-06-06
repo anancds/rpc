@@ -27,7 +27,7 @@
 #include <mutex>
 #include <unordered_map>
 
-#include "utils/log_adapter.h
+#include "utils/log_adapter.h"
 #include "ps/core/comm_util.h"
 #include "nlohmann/json.hpp"
 #include "ps/core/configuration.h"

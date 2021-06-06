@@ -139,6 +139,16 @@ bool CommUtil::Retry(const std::function<bool()> &func, size_t max_attempts, siz
   }
   return false;
 }
+
+bool CommUtil::IsFileExists(const std::string &file) {
+  std::ifstream f(file.c_str());
+  if (!f.good()) {
+    return false;
+  } else {
+    f.close();
+    return true;
+  }
+}
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore

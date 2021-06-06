@@ -13,6 +13,15 @@ using namespace mindspore::ps::core;
 using namespace mindspore::ps;
 using VectorPtr = std::shared_ptr<std::vector<unsigned char>>;
 std::unordered_map<std::string, int> abc = {{"a", 1}, {"b", 2}};
+
+#define CHECK_FAIL_RETURN_UNEXPECTED(_condition)                             \
+  do {                                                                       \
+    if (!(_condition)) {                                                     \
+      MS_LOG(ERROR) << "parse protobuf message failed.";                     \
+    }                                                                        \
+  } while (false)
+
+
 void SerializeAsString() {
   CommMessage1 comm_message;
   KVMessage1 kv_message;
@@ -366,6 +375,9 @@ void TestGetNode() {
   abc.clear();
   std::unordered_map<std::string, int> test1 = GetNode();
   std::cout << test1["b"];
+
+  CHECK_FAIL_RETURN_UNEXPECTED(true);
+  CHECK_FAIL_RETURN_UNEXPECTED(false);
 }
 
 int main(int argc, char **argv) {
