@@ -51,12 +51,17 @@ void TestFindIf() {
   std::cout << num << std::endl;
 }
 
+void TestIp() {
+  std::cout << CommUtil::CheckIp("255.255.255.255") << std::endl;
+  std::cout << CommUtil::CheckIp("0.0.0.0") << std::endl;
+  std::cout << CommUtil::CheckIp("127.0.0.1") << std::endl;
+}
+
 int main(int argc, char **argv) {
   // TestFileConfiguration();
   // TestDeque();
   TestFindIf();
 
-  std::string b = "aflsdj";
-  auto a = std::strtol(b.c_str(), nullptr, 10);
-  std::cout << a << std::endl;
+  TestIp();
+  std::cout << UINT32_MAX << std::endl;
 }
