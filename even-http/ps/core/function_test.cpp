@@ -8,6 +8,10 @@
 #include "nlohmann/json.hpp"
 #include <unordered_map>
 #include <deque>
+#include <thread>
+#include <chrono>
+#include <mutex>
+#include <condition_variable>
 
 using namespace mindspore::ps::core;
 using namespace mindspore::ps;
@@ -15,10 +19,34 @@ using VectorPtr = std::shared_ptr<std::vector<unsigned char>>;
 
 enum class StorageType : int { kFileStorage = 1, kDatabase = 2 };
 
+std::mutex mtx;
+std::condition_variable cv;
+
+void LockThread() {
+  std::cout << "before" << std::endl;
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+  mtx.lock();
+  std::cout << "after" << std::endl;
+  std::this_thread::sleep_for(std::chrono::seconds(5));
+  mtx.unlock();
+}
+
+void TestWait() {
+  std::thread th(LockThread);
+  std::unique_lock<std::mutex> lock(mtx);
+  cv.wait_for(lock, std::chrono::seconds(4), [] {
+    return false;
+  });
+  std::cout << "aaaa" << std::endl;
+  std::this_thread::sleep_for(std::chrono::seconds(1199));
+}
+
 void TestFileConfiguration() {
   FileConfiguration file_config("/home/cds/test.json");
-  file_config.Put("a", "b");
-  std::cout << file_config.Get("aa", "aaa");
+  file_config.Initialize();
+  file_config.Put("aa", "bb");
+  std::cout << file_config.Get("recovery", "aaa") << std::endl;
+  std::cout << file_config.Get("aa", "aaa") << std::endl;
 }
 
 void TestDeque() {
@@ -60,8 +88,8 @@ void TestIp() {
 int main(int argc, char **argv) {
   // TestFileConfiguration();
   // TestDeque();
-  TestFindIf();
+  // TestFindIf();
 
-  TestIp();
-  std::cout << UINT32_MAX << std::endl;
+  // TestIp();
+  TestWait();
 }

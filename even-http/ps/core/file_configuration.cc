@@ -42,7 +42,7 @@ std::string FileConfiguration::Get(const std::string &key, const std::string &de
     MS_LOG(WARNING) << "The key:" << key << " is not exit.";
     return defaultvalue;
   }
-  std::string res = js.at(key);
+  std::string res = js.at(key).dump();
   return res;
 }
 
