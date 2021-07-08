@@ -21,6 +21,7 @@ enum class StorageType : int { kFileStorage = 1, kDatabase = 2 };
 
 std::mutex mtx;
 std::condition_variable cv;
+std::map<uint64_t, std::pair<uint32_t, uint32_t>> message_tracker_;
 
 void LockThread() {
   std::cout << "before" << std::endl;
@@ -31,12 +32,16 @@ void LockThread() {
   mtx.unlock();
 }
 
+void TestMap() {
+  message_tracker_[1].second++;
+  message_tracker_.erase(1);
+  message_tracker_[1];
+}
+
 void TestWait() {
   std::thread th(LockThread);
   std::unique_lock<std::mutex> lock(mtx);
-  cv.wait_for(lock, std::chrono::seconds(4), [] {
-    return false;
-  });
+  cv.wait_for(lock, std::chrono::seconds(4), [] { return false; });
   std::cout << "aaaa" << std::endl;
   std::this_thread::sleep_for(std::chrono::seconds(1199));
 }
@@ -91,5 +96,6 @@ int main(int argc, char **argv) {
   // TestFindIf();
 
   // TestIp();
-  TestWait();
+  // TestWait();
+  TestMap();
 }
