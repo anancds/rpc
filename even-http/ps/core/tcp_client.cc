@@ -201,13 +201,6 @@ void TcpClient::WriteCallback(struct bufferevent *bev, void *ctx) {
   struct evbuffer *output = bufferevent_get_output(const_cast<struct bufferevent *>(bev));
   struct evbuffer *input = bufferevent_get_input(const_cast<struct bufferevent *>(bev));
   bufferevent_unlock(bev);
-
-  MS_LOG(ERROR) << " WriteCallback the current time is:"
-                << std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now())
-                     .time_since_epoch()
-                     .count()
-                << " the output len is: " << evbuffer_get_length(output)
-                << " the input len is:" << evbuffer_get_length(input);
 }
 
 void TcpClient::OnReadHandler(const void *buf, size_t num) {

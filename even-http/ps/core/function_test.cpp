@@ -49,9 +49,7 @@ void TestWait() {
 void TestFileConfiguration() {
   FileConfiguration file_config("/home/cds/test.json");
   file_config.Initialize();
-  file_config.Put("aa", "bb");
-  std::cout << file_config.Get("recovery", "aaa") << std::endl;
-  std::cout << file_config.Get("aa", "aaa") << std::endl;
+  std::cout << file_config.Get("storge_type", "aaa").size() << std::endl;
 }
 
 void TestDeque() {
@@ -91,11 +89,11 @@ void TestIp() {
 }
 
 int main(int argc, char **argv) {
-  // TestFileConfiguration();
+  TestFileConfiguration();
   // TestDeque();
   // TestFindIf();
 
   // TestIp();
   // TestWait();
-  TestMap();
+  // TestMap();
 }

@@ -13,10 +13,13 @@ int main(int /*argc*/, char ** /*argv*/) {
   std::shared_ptr<TcpServer> server_ = std::make_shared<TcpServer>("127.0.0.1", 9999);
   server_->SetMessageCallback([&](std::shared_ptr<TcpConnection> conn, std::shared_ptr<MessageMeta> meta,
                                   const Protos &protos, const void *data, size_t size) {
+    // std::shared_ptr<CommMessage> message = std::make_shared<CommMessage>();
+    // message->ParseFromArray(data, size);
+
+MS_LOG(ERROR);
     // KVMessage kv_message;
     // kv_message.ParseFromString(message->data());
-    // std::cout << kv_message.keys_size() << std::endl;
-    // server_->SendMessage(conn, message);
+    server_->SendMessage(conn, meta, protos, data, size);
   });
   server_->Init();
   std::thread server_thread = std::thread([&]() { server_->Start(); });

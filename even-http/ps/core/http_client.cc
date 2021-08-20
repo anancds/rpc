@@ -24,6 +24,7 @@ bool HttpClient::Init() {
   MS_EXCEPTION_IF_NULL(event_base_);
   dns_base_ = evdns_base_new(event_base_, 1);
   MS_EXCEPTION_IF_NULL(dns_base_);
+  evdns_base_free(dns_base_, 0);
   return true;
 }
 
@@ -74,6 +75,7 @@ Status HttpClient::Get(const std::string &url, std::shared_ptr<std::vector<char>
     evhttp_connection_base_new(event_base_, dns_base_, handler->GetHostByUri(), handler->GetUriPort());
   if (!connection) {
     MS_LOG(ERROR) << "Create http connection failed!";
+    evhttp_request_free(request);
     return Status::BADREQUEST;
   }
 
@@ -191,11 +193,15 @@ Status HttpClient::CreateRequest(std::shared_ptr<HttpMessageHandler> handler, st
 
   if (evhttp_make_request(connection, request, evhttp_cmd_type(method), handler->GetRequestPath().c_str()) != 0) {
     MS_LOG(ERROR) << "Make request failed!";
+    evhttp_request_free(request);
+    evhttp_connection_free(connection);
     return Status::INTERNAL;
   }
 
   if (!Start()) {
     MS_LOG(ERROR) << "Start http client failed!";
+    evhttp_request_free(request);
+    evhttp_connection_free(connection);
     return Status::INTERNAL;
   }
 
@@ -204,6 +210,8 @@ Status HttpClient::CreateRequest(std::shared_ptr<HttpMessageHandler> handler, st
     // << ", The request code line is:" << evhttp_request_get_response_code_line(handler->request());
     return Status(evhttp_request_get_response_code(handler->request()));
   }
+  evhttp_request_free(request);
+  evhttp_connection_free(connection);
   return Status::INTERNAL;
 }
 
