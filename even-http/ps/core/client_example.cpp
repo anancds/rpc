@@ -15,7 +15,7 @@ using namespace mindspore::ps;
 const std::string test_message(1024, 's');
 using Key = uint64_t;
 static void Start() {
-  ClusterConfig::Init(1, 2, "127.0.0.1", 9999);
+  ClusterConfig::Init(1, 1, "127.0.0.1", 9999);
   NodeManagerTest::Get()->StartClient();
 }
 

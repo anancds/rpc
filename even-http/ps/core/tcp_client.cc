@@ -362,14 +362,6 @@ bool TcpClient::SendMessage(std::shared_ptr<MessageMeta> meta, const Protos &pro
     MS_LOG(ERROR) << "Event buffer add protobuf data failed!";
     res = false;
   }
-  struct evbuffer *output = bufferevent_get_output(const_cast<struct bufferevent *>(buffer_event_));
-  struct evbuffer *input = bufferevent_get_input(const_cast<struct bufferevent *>(buffer_event_));
-  MS_LOG(ERROR) << " SendMessage the current time is:"
-                << std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now())
-                     .time_since_epoch()
-                     .count()
-                << " the output len is: " << evbuffer_get_length(output)
-                << " the input len is:" << evbuffer_get_length(input);
   bufferevent_flush(buffer_event_, EV_READ | EV_WRITE, BEV_FLUSH);
   bufferevent_unlock(buffer_event_);
   return res;

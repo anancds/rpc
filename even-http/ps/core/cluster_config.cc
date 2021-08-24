@@ -26,11 +26,11 @@ uint32_t ClusterConfig::server_num_ = 0;
 std::unique_ptr<std::string> ClusterConfig::scheduler_host_ = nullptr;
 uint16_t ClusterConfig::scheduler_port_ = 0;
 // The interval for sending heartbeat packets between worker node,server node and scheduler node is 3 seconds.
-uint32_t ClusterConfig::heartbeat_interval_ = 3;
+uint32_t ClusterConfig::heartbeat_interval_ = 1;
 // The timeout for worker node and server node sending heartbeat packets to scheduler node is 30 seconds.
 uint32_t ClusterConfig::heartbeat_timeout_ = 30;
 // Timeout period for cluster preparation is 300 seconds.
-uint32_t ClusterConfig::cluster_available_timeout_ = 300;
+uint32_t ClusterConfig::cluster_available_timeout_ = 30000;
 // The timeout period for the client to connect to the server is 100ms.
 uint32_t ClusterConfig::connect_interval_ = 100;
 // When the scheduler exits, the worker and server can continue to work for 5 hours
