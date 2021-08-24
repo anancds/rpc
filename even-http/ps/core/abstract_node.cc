@@ -292,7 +292,7 @@ void AbstractNode::StartHeartbeatTimer(const std::shared_ptr<TcpClient> &client)
       } else {
         UpdateSchedulerTime();
       }
-      std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval()));
+      // std::this_thread::sleep_for(std::chrono::seconds(ClusterConfig::heartbeat_interval()));
     }
   });
 }
